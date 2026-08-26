@@ -136,7 +136,7 @@ export interface RawRelease {
 	uri?: string;
 }
 
-interface SearchResultItem {
+export interface SearchResultItem {
 	id: number;
 	title: string;
 	type: string;

@@ -63,6 +63,29 @@ export interface DiscogsSeed {
 	cover_url: string | null;
 }
 
+/** Editable draft of a record (all-string form state + one boolean), shared by import/manual/edit. */
+export interface RecordDraft {
+	discogs_id: string;
+	barcode: string;
+	artist: string;
+	title: string;
+	style: string;
+	genre: string;
+	year: string;
+	label: string;
+	format: string;
+	limited_edition: boolean;
+	condition_media: string;
+	condition_sleeve: string;
+	price_paid: string;
+	acquired_at: string;
+	source: string;
+	status: RecordStatus;
+	notes: string;
+	/** Hidden input so a Discogs remote cover URL survives the round trip as fallback. */
+	cover_url: string;
+}
+
 export type SortColumn =
 	| 'artist'
 	| 'title'
