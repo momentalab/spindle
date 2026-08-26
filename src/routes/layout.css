@@ -1,1 +1,151 @@
-@import 'tailwindcss';
+@import "tailwindcss";
+
+@font-face {
+	font-family: 'Archivo';
+	src: url('/fonts/archivo-latin.woff2') format('woff2');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+	font-weight: 400 900;
+	font-style: normal;
+	font-display: swap;
+}
+@font-face {
+	font-family: 'Archivo';
+	src: url('/fonts/archivo-latin-ext.woff2') format('woff2');
+	unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+	font-weight: 400 900;
+	font-style: normal;
+	font-display: swap;
+}
+
+/*
+ * mynyl — neobrutalist theme tokens.
+ * Light: warm cream base + dark-ink structural color + dark-pastel accents (plum, forest, rust, butter).
+ * Dark: neutral WARM GREY base (not black, not tinted green/purple) with light warm-grey surfaces,
+ * RUST as the primary accent, and LIGHT white/grey neobrutal shadows so the offset pop still reads
+ * against the dark base.
+ */
+:root {
+	--paper: #f3eee4;
+	--surface: #fffdf6;
+	--surface-2: #ede5d4;
+	/* text color */
+	--ink: #2a2118;
+	--muted: #6f6353;
+	/* structural edge: borders + shadows use ONE color so the pop stays coherent */
+	--edge: #2a2118;
+
+	--plum: #7c5295;
+	--plum-soft: #e4d5ee;
+	/* text that sits ON solid plum */
+	--plum-contrast: #fbf7ee;
+	--forest: #33684b;
+	--forest-soft: #d0e3cf;
+	--rust: #a84a28;
+	--rust-soft: #efcdbf;
+	--butter: #ecbf45;
+	--butter-soft: #f7e6b2;
+
+	/* structural color for 2px borders + text */
+	--shadow-color: #2a2118;
+}
+
+html.dark {
+	/* user-specified near-black neutral (hue ~285, minimal chroma); surfaces derive from it */
+	--paper: oklch(18.1% 0.005 285.823);
+	--surface: oklch(23.5% 0.006 285.823);
+	--surface-2: oklch(16.5% 0.005 285.823);
+	/* text stays light… */
+	--ink: #e8e6df;
+	--muted: #9ca0a8;
+	/* …but the edge (borders) stays near-black, matching the black shadows */
+	--edge: #0a0b0c;
+
+	/* deep reddish-brown RUST — the dark-mode accent */
+	--plum: #c24e2a;
+	--plum-soft: #42302b;
+	--plum-contrast: #1d1512;
+	--forest: #9dc4a2;
+	--forest-soft: #36403a;
+	--rust: #c24e2a;
+	--rust-soft: #42302b;
+	--butter: #e5c063;
+	--butter-soft: #433c26;
+
+	/* black shadows (the base is light enough to let them read) */
+	--shadow-color: #0a0b0c;
+}
+
+/* Expose the raw tokens as Tailwind v4 color utilities (bg-paper, text-plum, border-ink, …).
+   `inline` keeps them referencing the runtime vars so class-based dark mode re-colors everything. */
+@theme inline {
+	--font-display: 'Archivo', system-ui, sans-serif;
+	--font-sans: 'Archivo', system-ui, sans-serif;
+
+	--color-paper: var(--paper);
+	--color-surface: var(--surface);
+	--color-surface-2: var(--surface-2);
+	--color-ink: var(--ink);
+	--color-edge: var(--edge);
+	--color-muted: var(--muted);
+
+	--color-plum: var(--plum);
+	--color-plum-soft: var(--plum-soft);
+	--color-plum-contrast: var(--plum-contrast);
+	--color-forest: var(--forest);
+	--color-forest-soft: var(--forest-soft);
+	--color-rust: var(--rust);
+	--color-rust-soft: var(--rust-soft);
+	--color-butter: var(--butter);
+	--color-butter-soft: var(--butter-soft);
+
+	/* hard offset shadows — the neobrutalist signature */
+	--shadow-brutal-sm: 2px 2px 0 0 var(--shadow-color);
+	--shadow-brutal: 4px 4px 0 0 var(--shadow-color);
+	--shadow-brutal-lg: 6px 6px 0 0 var(--shadow-color);
+}
+
+body {
+	background-color: var(--paper);
+	color: var(--ink);
+	font-family: 'Archivo', system-ui, sans-serif;
+	min-height: 100vh;
+	-webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+	letter-spacing: -0.01em;
+}
+
+/* Animated neobrutal shadows: every card/banner/pill "pops" its offset shadow into place on mount. */
+@keyframes shadow-pop {
+	from {
+		box-shadow: 0 0 0 0 var(--shadow-color);
+	}
+	to {
+		box-shadow: var(--shadow-brutal);
+	}
+}
+
+@keyframes shadow-pop-sm {
+	from {
+		box-shadow: 0 0 0 0 var(--shadow-color);
+	}
+	to {
+		box-shadow: var(--shadow-brutal-sm);
+	}
+}
+
+.card-pop {
+	animation: shadow-pop 0.6s cubic-bezier(0.25, 1.2, 0.4, 1) both;
+}
+
+.card-pop-sm {
+	animation: shadow-pop-sm 0.45s cubic-bezier(0.25, 1.2, 0.4, 1) both;
+}
+
+::selection {
+	background: var(--plum);
+	color: var(--paper);
+}

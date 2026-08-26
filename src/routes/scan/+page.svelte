@@ -1,6 +1,11 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import Banner from '$lib/components/ui/Banner.svelte';
+	import Badge from '$lib/components/ui/Badge.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
 
 	type NativeDetector = {
 		detect: (source: CanvasImageSource) => Promise<{ rawValue: string }[]>;
@@ -131,30 +136,47 @@
 	});
 </script>
 
-<div class="mx-auto max-w-xl space-y-6 p-6">
-	<h1 class="text-2xl font-bold">Scan a barcode</h1>
-	<p class="text-sm opacity-70">
-		Point your camera at the EAN-13 / UPC-A on the back of the record sleeve. Works best in bright
-		light with the code flat and filling the frame. {engine === 'native' ? '(using native camera decoding)' : engine === 'zxing' ? '(using in-browser ZXing decoder)' : ''}
-	</p>
+<svelte:head><title>Scan a barcode · mynyl</title></svelte:head>
 
-	<div class="relative overflow-hidden rounded-xl bg-black" style="aspect-ratio: 4/3;">
-		<video bind:this={videoEl} class="h-full w-full object-cover" muted playsinline></video>
-		{#if scanning && engine}
-			<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
-				<div class="h-40 w-full max-w-xs rounded border-2 border-white/80"></div>
-			</div>
-		{:else if !error}
-			<div class="absolute inset-0 flex items-center justify-center">
-				<button class="rounded-lg bg-white/90 px-4 py-2 font-medium" onclick={() => void start()}>
-					📷 Start camera
-				</button>
-			</div>
-		{/if}
-	</div>
+<div class="mx-auto max-w-xl space-y-5">
+	<header class="space-y-1">
+		<h1 class="font-display text-3xl font-black tracking-tight">Scan a barcode</h1>
+		<p class="text-sm text-muted">
+			Point your camera at the EAN-13 / UPC-A on the back of the record sleeve. Works best in
+			bright light with the code flat and filling the frame.
+		</p>
+	</header>
+
+	<Card shadow class="relative overflow-hidden p-0">
+		<div class="relative w-full bg-ink" style="aspect-ratio: 4/3;">
+			<video bind:this={videoEl} class="h-full w-full object-cover" muted playsinline></video>
+
+			{#if scanning && engine}
+				<!-- corner-bracket scan frame -->
+				<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+					<div class="relative h-44 w-full max-w-xs">
+						<span class="absolute left-0 top-0 h-8 w-8 rounded-tl-xl border-l-4 border-t-4 border-plum" aria-hidden="true"></span>
+						<span class="absolute right-0 top-0 h-8 w-8 rounded-tr-xl border-r-4 border-t-4 border-plum" aria-hidden="true"></span>
+						<span class="absolute bottom-0 left-0 h-8 w-8 rounded-bl-xl border-b-4 border-l-4 border-plum" aria-hidden="true"></span>
+						<span class="absolute bottom-0 right-0 h-8 w-8 rounded-br-xl border-b-4 border-r-4 border-plum" aria-hidden="true"></span>
+						<span class="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 animate-pulse bg-plum/70" aria-hidden="true"></span>
+					</div>
+				</div>
+				<div class="absolute bottom-2 right-2">
+					<Badge tone={engine === 'native' ? 'forest' : 'plum'}>
+						{engine === 'native' ? 'native decoder' : 'ZXing decoder'}
+					</Badge>
+				</div>
+			{:else if !error}
+				<div class="absolute inset-0 flex items-center justify-center bg-surface-2/80">
+					<Button onclick={() => void start()}>📷 Start camera</Button>
+				</div>
+			{/if}
+		</div>
+	</Card>
 
 	{#if error}
-		<p class="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">{error}</p>
+		<Banner variant="warn">{error}</Banner>
 	{/if}
 
 	<form
@@ -164,14 +186,20 @@
 			submitManual();
 		}}
 	>
-		<input
+		<Input
 			bind:value={manual}
 			inputmode="numeric"
 			placeholder="…or type a barcode (12–13 digits)"
-			class="flex-1 rounded-lg border border-zinc-700 bg-transparent px-3 py-2"
+			class="flex-1"
 		/>
-		<button class="rounded-lg bg-emerald-600 px-4 py-2 font-medium">Look up</button>
+		<Button type="button" onclick={submitManual}>Look up</Button>
 	</form>
+
+	<p class="text-center">
+		<a href="/import/manual" class="text-sm font-semibold text-muted underline underline-offset-4 hover:text-plum">
+			no barcode? enter details manually →
+		</a>
+	</p>
 </div>
 
 <style>

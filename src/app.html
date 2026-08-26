@@ -4,6 +4,20 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<!--
+			FOUC-free theme boot: apply the persisted preference (or system
+			preference) before first paint. Runs inline so no flash of the
+			wrong mode on any navigation.
+		-->
+		<script>
+			(() => {
+				const stored = localStorage.getItem('mynyl-theme');
+				const dark =
+					stored === 'dark' ||
+					(!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+				document.documentElement.classList.toggle('dark', dark);
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
