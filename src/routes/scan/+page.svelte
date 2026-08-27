@@ -4,7 +4,6 @@
 	import Banner from '$lib/components/ui/Banner.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 
 	type NativeDetector = {
@@ -138,65 +137,67 @@
 
 <svelte:head><title>Scan a barcode · mynyl</title></svelte:head>
 
-<div class="mx-auto max-w-xl space-y-5">
-	<header class="space-y-1">
-		<h1 class="font-display text-3xl font-black tracking-tight">Scan a barcode</h1>
-		<p class="text-sm text-muted">
-			Point your camera at the EAN-13 / UPC-A on the back of the record sleeve. Works best in
-			bright light with the code flat and filling the frame.
+<div class="mx-auto max-w-2xl">
+	<!-- page head -->
+	<header class="border-b border-edge pb-7">
+		<p class="mb-3.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">The Collection — Intake</p>
+		<h1 class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em]">Scan a barcode.</h1>
+		<p class="mt-3 max-w-xl font-display text-[15px] italic text-muted">
+			Point your camera at the EAN-13 / UPC-A on the back of the record sleeve. Works best in bright
+			light with the code flat and filling the frame.
 		</p>
 	</header>
 
-	<Card shadow class="relative overflow-hidden p-0">
-		<div class="relative w-full bg-ink" style="aspect-ratio: 4/3;">
-			<video bind:this={videoEl} class="h-full w-full object-cover" muted playsinline></video>
+	<!-- viewer -->
+	<div class="relative mt-8 overflow-hidden rounded-xs border border-edge bg-surface-2">
+		<video bind:this={videoEl} class="block aspect-4/3 w-full object-cover" muted playsinline></video>
 
-			{#if scanning && engine}
-				<!-- corner-bracket scan frame -->
-				<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
-					<div class="relative h-44 w-full max-w-xs">
-						<span class="absolute left-0 top-0 h-8 w-8 rounded-tl-xl border-l-4 border-t-4 border-plum" aria-hidden="true"></span>
-						<span class="absolute right-0 top-0 h-8 w-8 rounded-tr-xl border-r-4 border-t-4 border-plum" aria-hidden="true"></span>
-						<span class="absolute bottom-0 left-0 h-8 w-8 rounded-bl-xl border-b-4 border-l-4 border-plum" aria-hidden="true"></span>
-						<span class="absolute bottom-0 right-0 h-8 w-8 rounded-br-xl border-b-4 border-r-4 border-plum" aria-hidden="true"></span>
-						<span class="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 animate-pulse bg-plum/70" aria-hidden="true"></span>
-					</div>
+		{#if scanning && engine}
+			<!-- corner-bracket scan frame — hairline gold -->
+			<div class="pointer-events-none absolute inset-0 flex items-center justify-center">
+				<div class="relative h-44 w-full max-w-xs">
+					<span class="absolute left-0 top-0 h-8 w-8 rounded-tl-xs border-l-2 border-t-2 border-accent" aria-hidden="true"></span>
+					<span class="absolute right-0 top-0 h-8 w-8 rounded-tr-xs border-r-2 border-t-2 border-accent" aria-hidden="true"></span>
+					<span class="absolute bottom-0 left-0 h-8 w-8 rounded-bl-xs border-b-2 border-l-2 border-accent" aria-hidden="true"></span>
+					<span class="absolute bottom-0 right-0 h-8 w-8 rounded-br-xs border-b-2 border-r-2 border-accent" aria-hidden="true"></span>
+					<span class="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 animate-pulse bg-accent/60" aria-hidden="true"></span>
 				</div>
-				<div class="absolute bottom-2 right-2">
-					<Badge tone={engine === 'native' ? 'forest' : 'plum'}>
-						{engine === 'native' ? 'native decoder' : 'ZXing decoder'}
-					</Badge>
-				</div>
-			{:else if !error}
-				<div class="absolute inset-0 flex items-center justify-center bg-surface-2/80">
-					<Button onclick={() => void start()}>📷 Start camera</Button>
-				</div>
-			{/if}
-		</div>
-	</Card>
+			</div>
+			<div class="absolute bottom-3 right-3">
+				<Badge tone={engine === 'native' ? 'forest' : 'plum'}>
+					{engine === 'native' ? 'native decoder' : 'ZXing decoder'}
+				</Badge>
+			</div>
+		{:else if !error}
+			<div class="absolute inset-0 flex items-center justify-center bg-paper/85">
+				<Button onclick={() => void start()}>Start camera</Button>
+			</div>
+		{/if}
+	</div>
 
 	{#if error}
-		<Banner variant="warn">{error}</Banner>
+		<div class="mt-6"><Banner variant="warn">{error}</Banner></div>
 	{/if}
 
+	<!-- manual entry — a single elegant line -->
 	<form
-		class="flex gap-2"
+		class="mt-10 flex items-end gap-5 border-b border-hair pb-4"
 		onsubmit={(e) => {
 			e.preventDefault();
 			submitManual();
 		}}
 	>
-		<Input
-			bind:value={manual}
-			inputmode="numeric"
-			placeholder="…or type a barcode (12–13 digits)"
-			class="flex-1"
-		/>
-		<Button type="button" onclick={submitManual}>Look up</Button>
+		<label class="min-w-0 flex-1">
+			<span class="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">
+				…or type a barcode (12–13 digits)
+			</span>
+			<Input bind:value={manual} inputmode="numeric" placeholder="8 43176 145012" class="font-display text-[19px] italic" />
+		</label>
+		<Button type="button" variant="secondary">Look up</Button>
 	</form>
 
-	<p class="text-center">
-		<a href="/import/manual" class="text-sm font-semibold text-muted underline underline-offset-4 hover:text-plum">
+	<p class="mt-8 text-center">
+		<a href="/import/manual" class="text-[11.5px] uppercase tracking-[.2em] text-faint underline underline-offset-4 transition-colors hover:text-accent">
 			no barcode? enter details manually →
 		</a>
 	</p>

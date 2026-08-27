@@ -24,22 +24,24 @@
 	} = $props();
 
 	const sizes = {
-		sm: 'px-3 py-1.5 text-xs',
-		md: 'px-4 py-2 text-sm',
-		lg: 'px-6 py-3 text-base'
+		sm: 'px-4 py-2 text-[11px]',
+		md: 'px-[22px] py-3 text-xs',
+		lg: 'px-7 py-3.5 text-[13px]'
 	} as const;
 
-	const pressable =
-		'shadow-brutal-sm hover:-translate-x-px hover:-translate-y-px hover:shadow-brutal active:translate-x-0.5 active:translate-y-0.5 active:shadow-none';
-
+	/* Editorial buttons: one hairline, letterspaced caps, no offset shadow. */
 	const variants = {
-		primary: `border-edge bg-plum text-plum-contrast ${pressable}`,
-		secondary: `border-edge bg-surface text-ink ${pressable}`,
-		danger: `border-rust bg-rust-soft text-rust ${pressable}`,
-		ghost: 'border-transparent bg-transparent text-ink hover:bg-surface-2'
+		/* solid ink — the mock's masthead "addbtn" */
+		primary: 'border border-ink bg-ink text-paper hover:border-accent hover:bg-accent',
+		/* hairline outline — the mock's "btnline" */
+		secondary: 'border border-edge bg-transparent text-ink hover:border-accent hover:text-accent',
+		danger: 'border border-edge bg-transparent text-rust hover:border-rust',
+		ghost: 'border border-transparent bg-transparent text-faint hover:text-ink'
 	} as const;
 
-	const classes = `inline-flex select-none items-center justify-center gap-1.5 rounded-full border-2 font-semibold transition-all duration-300 disabled:pointer-events-none disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`;
+	const classes = $derived(
+		`inline-flex select-none items-center justify-center gap-2 font-medium uppercase tracking-[.18em] transition-colors duration-300 disabled:pointer-events-none disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`
+	);
 </script>
 
 {#if href}

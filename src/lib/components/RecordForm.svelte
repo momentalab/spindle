@@ -12,11 +12,11 @@
 </script>
 
 {#if draft}
-	<div class="space-y-8">
+	<div class="space-y-12">
 		<!-- Release -->
 		<section>
-			<h3 class="mb-3 font-display text-sm font-black uppercase tracking-widest text-plum">Release</h3>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+			<h3 class="mb-6 border-b border-hair pb-3 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">Release</h3>
+			<div class="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
 				<Input id="f-artist" name="artist" label="Artist" required bind:value={draft.artist} />
 				<Input id="f-title" name="title" label="Title" required bind:value={draft.title} />
 				<Input id="f-genre" name="genre" label="Genre" bind:value={draft.genre} />
@@ -30,8 +30,8 @@
 
 		<!-- Condition & purchase -->
 		<section>
-			<h3 class="mb-3 font-display text-sm font-black uppercase tracking-widest text-plum">Condition & purchase</h3>
-			<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+			<h3 class="mb-6 border-b border-hair pb-3 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">Condition & purchase</h3>
+			<div class="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
 				<Select id="f-cond-media" name="condition_media" label="Condition (media)" bind:value={draft.condition_media}>
 					<option value="">—</option>
 					{#each CONDITIONS as c}<option value={c}>{c}</option>{/each}
@@ -51,17 +51,17 @@
 
 		<!-- More -->
 		<section>
-			<h3 class="mb-3 font-display text-sm font-black uppercase tracking-widest text-plum">More</h3>
-			<div class="space-y-4">
-				<label class="card-pop-sm flex w-fit cursor-pointer items-center gap-2.5 rounded-full border-2 border-edge bg-surface px-4 py-2 shadow-brutal-sm select-none">
+			<h3 class="mb-6 border-b border-hair pb-3 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">More</h3>
+			<div class="space-y-5">
+				<label class="inline-flex cursor-pointer select-none items-center gap-3 text-sm text-muted transition-colors hover:text-ink">
 					<input
 						type="checkbox"
 						name="limited_edition"
 						id="f-limited"
-						class="h-4 w-4 accent-(--plum)"
+						class="h-4 w-4 accent-accent"
 						bind:checked={draft.limited_edition}
 					/>
-					<span class="text-sm font-semibold">Limited edition</span>
+					<span>Limited edition</span>
 				</label>
 
 				<Textarea
@@ -78,15 +78,15 @@
 		<input type="hidden" name="discogs_id" value={draft.discogs_id} />
 		<input type="hidden" name="cover_url" value={draft.cover_url} />
 		{#if draft.source === 'discogs'}
-			<p class="rounded-xl border-2 border-plum/40 bg-plum-soft p-3 text-xs font-medium">
+			<p class="border-l-2 border-l-accent bg-surface px-4 py-3 text-xs text-muted">
 				Sourced from Discogs — edit any field; your changes are stored locally and will not be
 				overwritten by Discogs.
 			</p>
 		{/if}
 	</div>
 
-	<div class="mt-8">
-		<button type="submit" class="card-pop-sm inline-flex items-center justify-center gap-1.5 rounded-full border-2 border-edge bg-plum px-6 py-3 text-base font-semibold text-plum-contrast shadow-brutal-sm transition-all duration-300 hover:-translate-x-px hover:-translate-y-px hover:shadow-brutal active:translate-x-0.5 active:translate-y-0.5 active:shadow-none">
+	<div class="mt-10">
+		<button type="submit" class="inline-flex items-center justify-center border border-ink bg-ink px-6.5 py-3 text-[12px] font-medium uppercase tracking-[.18em] text-paper transition-colors duration-300 hover:border-accent hover:bg-accent">
 			{submitLabel}
 		</button>
 	</div>

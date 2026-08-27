@@ -19,23 +19,17 @@
 	}
 </script>
 
+<!-- Editorial: a bare letterspaced micro-link, not a boxed button. -->
 <button
 	type="button"
 	onclick={toggle}
-	aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-	title={isDark ? 'Light mode' : 'Dark mode'}
-	class="card-pop-sm inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-edge bg-surface text-ink shadow-brutal-sm transition-all duration-300 hover:-translate-x-px hover:-translate-y-px hover:shadow-brutal active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+	class="group relative shrink-0 px-0 text-[11px] font-medium uppercase tracking-[.2em] text-faint transition-colors duration-300 hover:text-ink"
 >
 	{#if isDark}
-		<!-- sun -->
-		<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-			<circle cx="12" cy="12" r="4" fill="var(--butter)" stroke="var(--edge)" />
-			<path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1L7 17M17 7l2.1-2.1" />
-		</svg>
+		<span class="mr-1.5 inline-block align-middle transition-colors group-hover:text-accent">☀</span>
+		<span>Light</span>
 	{:else}
-		<!-- moon -->
-		<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-			<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="var(--plum)" />
-		</svg>
+		<span class="mr-1.5 inline-block align-middle transition-colors group-hover:text-accent">☾</span>
+		<span>Dark</span>
 	{/if}
 </button>

@@ -11,17 +11,18 @@
 		children: Snippet;
 	} = $props();
 
+	/* Editorial "status": a letterspaced micro-label, no pill. */
 	const tones = {
-		forest: 'border-forest bg-forest-soft text-ink',
-		plum: 'border-plum bg-plum-soft text-ink',
-		rust: 'border-rust bg-rust-soft text-ink',
-		butter: 'border-butter bg-butter-soft text-ink',
-		muted: 'border-muted/50 bg-surface-2 text-muted'
+		forest: 'text-accent-dim', /* in collection — quiet gold */
+		plum: 'text-accent',
+		rust: 'text-rust',
+		butter: 'text-faint',
+		muted: 'text-faint'
 	} as const;
 </script>
 
 <span
-	class={`inline-flex items-center gap-1 whitespace-nowrap rounded-full border-2 px-2.5 py-0.5 text-xs font-bold ${tones[tone]} ${className}`}
+	class={`inline-flex items-center whitespace-nowrap text-[10.5px] font-semibold uppercase tracking-[.2em] ${tones[tone]} ${className}`}
 >
 	{@render children()}
 </span>

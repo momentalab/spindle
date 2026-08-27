@@ -15,16 +15,15 @@
 <svelte:head><title>Error {status} · mynyl</title></svelte:head>
 
 <div class="flex min-h-[50vh] items-center justify-center">
-	<div class="w-full max-w-md space-y-6 text-center">
-		<p class="font-display text-7xl font-black tracking-tight" style="color: var(--rust)">{status}</p>
-		<h1 class="font-display text-2xl font-black tracking-tight">
-			{titles[status] ?? 'Oops.'}
-		</h1>
-		<p class="text-sm text-muted">
+	<div class="w-full max-w-md text-center">
+		<p class="mb-3 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">Error No. {status}</p>
+		<h1 class="font-display text-6xl font-normal leading-none">{titles[status] ?? 'Oops.'}</h1>
+		<div class="mx-auto my-8 h-px w-14 bg-accent"></div>
+		<p class="mb-9 font-display text-[15px] italic text-muted">
 			Your collection is safe — this only affects the page you were trying to reach.
 		</p>
-		<div class="flex justify-center gap-3">
-			<Button href="/">← Back to collection</Button>
+		<div class="flex flex-wrap justify-center gap-4">
+			<Button href="/" variant="primary">Back to collection</Button>
 			<Button href="/scan" variant="secondary">Scan a record</Button>
 		</div>
 	</div>

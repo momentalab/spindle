@@ -18,75 +18,81 @@
 }
 
 /*
- * mynyl — neobrutalist theme tokens.
- * Light: warm cream base + dark-ink structural color + dark-pastel accents (plum, forest, rust, butter).
- * Dark: neutral WARM GREY base (not black, not tinted green/purple) with light warm-grey surfaces,
- * RUST as the primary accent, and LIGHT white/grey neobrutal shadows so the offset pop still reads
- * against the dark base.
+ * mynyl — editorial theme tokens (high-end catalogue: Vogue meets Aesop).
+ * Serif display type for titles, letterspaced uppercase micro-labels, hairline
+ * rules and generous whitespace instead of boxes. The collection reads like a
+ * printed catalogue — restrained, expensive, professional.
+ * Light: warm ivory paper + ink text + antique-gold accent.
+ * Dark: warm near-black base so it stays in the dark-mode family without
+ * feeling like software; muted gold used sparingly.
  */
 :root {
-	--paper: #f3eee4;
-	--surface: #fffdf6;
-	--surface-2: #ede5d4;
+	color-scheme: light;
+	--paper: #f4efe5;
+	--surface: #faf7f0;
+	--surface-2: #eae3d3;
 	/* text color */
-	--ink: #2a2118;
-	--muted: #6f6353;
-	/* structural edge: borders + shadows use ONE color so the pop stays coherent */
-	--edge: #2a2118;
+	--ink: #1b1813;
+	--muted: #6f675c;
+	--faint: #948b7a;
+	/* hairline rules — the structural element of the editorial look */
+	--edge: rgba(27, 24, 19, 0.2);
+	--hair: rgba(27, 24, 19, 0.1);
+	--accent: #8a6c33; /* antique gold — used sparingly */
+	--accent-dim: rgba(138, 108, 51, 0.65);
 
-	--plum: #7c5295;
-	--plum-soft: #e4d5ee;
-	/* text that sits ON solid plum */
-	--plum-contrast: #fbf7ee;
-	--forest: #33684b;
-	--forest-soft: #d0e3cf;
-	--rust: #a84a28;
-	--rust-soft: #efcdbf;
-	--butter: #ecbf45;
-	--butter-soft: #f7e6b2;
-
-	/* structural color for 2px borders + text */
-	--shadow-color: #2a2118;
+	/* legacy token slots, remapped into the editorial palette */
+	--plum: #8a6c33;
+	--plum-soft: rgba(138, 108, 51, 0.1);
+	--plum-contrast: #f6f2e9;
+	--forest: #5d6e4b;
+	--forest-soft: rgba(93, 110, 75, 0.12);
+	--rust: #9c4a2f;
+	--rust-soft: rgba(156, 74, 47, 0.1);
+	--butter: #8f7431;
+	--butter-soft: rgba(143, 116, 49, 0.12);
 }
 
 html.dark {
-	/* user-specified near-black neutral (hue ~285, minimal chroma); surfaces derive from it */
-	--paper: oklch(18.1% 0.005 285.823);
-	--surface: oklch(23.5% 0.006 285.823);
-	--surface-2: oklch(16.5% 0.005 285.823);
-	/* text stays light… */
-	--ink: #e8e6df;
-	--muted: #9ca0a8;
-	/* …but the edge (borders) stays near-black, matching the black shadows */
-	--edge: #0a0b0c;
+	color-scheme: dark;
+	--paper: #0e0d0c;
+	--surface: #151312;
+	--surface-2: #1c1917;
+	--ink: #efe9e1;
+	--muted: #a89f93;
+	--faint: #6f675d;
+	--edge: rgba(240, 235, 228, 0.16);
+	--hair: rgba(240, 235, 228, 0.08);
+	--accent: #c8a06a; /* muted gold */
+	--accent-dim: rgba(200, 160, 106, 0.45);
 
-	/* deep reddish-brown RUST — the dark-mode accent */
-	--plum: #c24e2a;
-	--plum-soft: #42302b;
-	--plum-contrast: #1d1512;
-	--forest: #9dc4a2;
-	--forest-soft: #36403a;
-	--rust: #c24e2a;
-	--rust-soft: #42302b;
-	--butter: #e5c063;
-	--butter-soft: #433c26;
-
-	/* black shadows (the base is light enough to let them read) */
-	--shadow-color: #0a0b0c;
+	--plum: #c8a06a;
+	--plum-soft: rgba(200, 160, 106, 0.12);
+	--plum-contrast: #0e0d0c;
+	--forest: #94a584;
+	--forest-soft: rgba(148, 165, 132, 0.12);
+	--rust: #c07a5b;
+	--rust-soft: rgba(192, 122, 91, 0.12);
+	--butter: #d3b06c;
+	--butter-soft: rgba(211, 176, 108, 0.12);
 }
 
-/* Expose the raw tokens as Tailwind v4 color utilities (bg-paper, text-plum, border-ink, …).
+/* Expose the raw tokens as Tailwind v4 color utilities (bg-paper, text-accent, border-hair, …).
    `inline` keeps them referencing the runtime vars so class-based dark mode re-colors everything. */
 @theme inline {
-	--font-display: 'Archivo', system-ui, sans-serif;
-	--font-sans: 'Archivo', system-ui, sans-serif;
+	--font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+	--font-sans: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
 	--color-paper: var(--paper);
 	--color-surface: var(--surface);
 	--color-surface-2: var(--surface-2);
 	--color-ink: var(--ink);
 	--color-edge: var(--edge);
+	--color-hair: var(--hair);
 	--color-muted: var(--muted);
+	--color-faint: var(--faint);
+	--color-accent: var(--accent);
+	--color-accent-dim: var(--accent-dim);
 
 	--color-plum: var(--plum);
 	--color-plum-soft: var(--plum-soft);
@@ -98,16 +104,18 @@ html.dark {
 	--color-butter: var(--butter);
 	--color-butter-soft: var(--butter-soft);
 
-	/* hard offset shadows — the neobrutalist signature */
-	--shadow-brutal-sm: 2px 2px 0 0 var(--shadow-color);
-	--shadow-brutal: 4px 4px 0 0 var(--shadow-color);
-	--shadow-brutal-lg: 6px 6px 0 0 var(--shadow-color);
+	/* editorial = flat: the offset shadows are gone */
+	--shadow-brutal-sm: 0 0 0 0 transparent;
+	--shadow-brutal: 0 0 0 0 transparent;
+	--shadow-brutal-lg: 0 0 0 0 transparent;
 }
 
 body {
 	background-color: var(--paper);
 	color: var(--ink);
-	font-family: 'Archivo', system-ui, sans-serif;
+	font-family: "Archivo", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+	font-size: 14.5px;
+	line-height: 1.6;
 	min-height: 100vh;
 	-webkit-font-smoothing: antialiased;
 }
@@ -118,34 +126,32 @@ h3 {
 	letter-spacing: -0.01em;
 }
 
-/* Animated neobrutal shadows: every card/banner/pill "pops" its offset shadow into place on mount. */
-@keyframes shadow-pop {
+/* Entrance motion: a quiet rise + fade (replaces the neobrutal shadow pop). */
+@keyframes rise-in {
 	from {
-		box-shadow: 0 0 0 0 var(--shadow-color);
+		opacity: 0;
+		transform: translateY(6px);
 	}
 	to {
-		box-shadow: var(--shadow-brutal);
-	}
-}
-
-@keyframes shadow-pop-sm {
-	from {
-		box-shadow: 0 0 0 0 var(--shadow-color);
-	}
-	to {
-		box-shadow: var(--shadow-brutal-sm);
+		opacity: 1;
+		transform: translateY(0);
 	}
 }
 
 .card-pop {
-	animation: shadow-pop 0.6s cubic-bezier(0.25, 1.2, 0.4, 1) both;
+	animation: rise-in 0.5s ease both;
 }
 
 .card-pop-sm {
-	animation: shadow-pop-sm 0.45s cubic-bezier(0.25, 1.2, 0.4, 1) both;
+	animation: rise-in 0.35s ease both;
 }
 
 ::selection {
-	background: var(--plum);
+	background: var(--accent);
 	color: var(--paper);
+}
+
+/* native option lists pick up the theme's text color */
+select option {
+	color: var(--ink);
 }

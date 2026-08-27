@@ -5,7 +5,6 @@
 	import Banner from '$lib/components/ui/Banner.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
 	import CoverImage from '$lib/components/ui/CoverImage.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import { draftFromRow } from '$lib/draft';
@@ -89,7 +88,7 @@
 	}
 
 	function fmtPrice(cents: number | null): string {
-		return cents === null ? '—' : `$${(cents / 100).toFixed(2)}`;
+		return cents === null ? '' : `$${(cents / 100).toFixed(2)}`;
 	}
 
 	const flash = page.url.searchParams.get('imported') || page.url.searchParams.get('added_copy');
@@ -100,146 +99,181 @@
 		traded_away: 'muted'
 	};
 
-	// Flat label/value pairs for the metadata grid (nulls skipped).
+	// Flat label/value pairs for the spec sheet (nulls skipped).
 	const meta = $derived(
 		(
 			[
 				['Year', data.record.year ?? ''],
-				['Genre', data.record.genre ?? ''],
-				['Style', data.record.style ?? ''],
+				['Genre', [data.record.genre, data.record.style].filter(Boolean).join(' — ')],
 				['Label', data.record.label ?? ''],
 				['Format', data.record.format ?? ''],
 				['Barcode', data.record.barcode ?? ''],
-				['Cond. media', data.record.condition_media ?? ''],
-				['Cond. sleeve', data.record.condition_sleeve ?? ''],
+				['Condition', [data.record.condition_media && `media ${data.record.condition_media}`, data.record.condition_sleeve && `sleeve ${data.record.condition_sleeve}`].filter(Boolean).join(' · ')],
 				['Price paid', fmtPrice(data.record.price_paid)],
 				['Acquired', data.record.acquired_at ?? ''],
 				['Source', data.record.source ?? ''],
 			] as [string, string][]
-		).filter(([, v]) => v !== '' && v !== '—')
+		).filter(([, v]) => v !== '')
 	);
 </script>
 
 <svelte:head><title>{data.record.artist} — {data.record.title} · mynyl</title></svelte:head>
 
-<div class="space-y-6">
-	<a href="/" class="inline-flex items-center gap-1 text-sm font-semibold text-muted hover:text-plum">
-		← All records
-	</a>
+<a href="/" class="text-[11.5px] uppercase tracking-[.2em] text-faint transition-colors hover:text-ink">
+	← Return to the index
+</a>
 
-	{#if flash === 'imported'}
-		<Banner variant="success">Record saved. 🎉</Banner>
-	{:else if flash === 'added_copy'}
-		<Banner variant="success">Added another copy.</Banner>
-	{/if}
+{#if flash === 'imported'}
+	<div class="mt-6"><Banner variant="success">Record saved.</Banner></div>
+{:else if flash === 'added_copy'}
+	<div class="mt-6"><Banner variant="success">Added another copy.</Banner></div>
+{/if}
 
-	<!-- header: cover + identity -->
-	<div class="flex flex-col gap-6 sm:flex-row">
-		<div class="w-full shrink-0 sm:w-64">
-			<Card shadow class="p-2">
-				<CoverImage src={coverSrc()} alt="Cover" class="aspect-square w-full rounded-xl" loading="eager" />
-			</Card>
-			{#if data.record.cover_remote_url && !data.record.cover_filename}
-				<p class="mt-2 text-xs text-muted">Cover is remote (not yet downloaded locally).</p>
-			{/if}
+<!-- detail — a full catalogue spread -->
+<div class="mt-8 grid gap-14 lg:grid-cols-[minmax(300px,420px)_1fr]">
+	<div>
+		<div class="w-full">
+			<CoverImage src={coverSrc()} alt={`Cover — ${data.record.artist}, ${data.record.title}`} class="aspect-square w-full" loading="eager" />
 		</div>
-
-		<div class="min-w-0 flex-1 space-y-3">
-			<h1 class="font-display text-3xl font-black leading-tight tracking-tight sm:text-4xl">{data.record.artist}</h1>
-			<h2 class="text-xl font-bold text-muted">{data.record.title}</h2>
-
-			<div class="flex flex-wrap gap-2">
-				<Badge tone={statusTone[data.record.status]}>{STATUS_LABELS[data.record.status]}</Badge>
-				{#if data.record.limited_edition}<Badge tone="plum">limited edition</Badge>{/if}
-				{#if data.record.copies > 1}<Badge tone="butter">{data.record.copies} copies</Badge>{/if}
-			</div>
-
-			<dl class="grid grid-cols-2 gap-x-6 gap-y-2 pt-2 text-sm sm:grid-cols-3">
-				{#each meta as [k, v] (k)}
-					<div>
-						<dt class="text-[11px] font-bold uppercase tracking-wider text-muted">{k}</dt>
-						<dd class={k === 'Barcode' ? 'font-mono' : ''}>{v}</dd>
-					</div>
-				{/each}
-			</dl>
-
-			{#if data.record.notes}
-				<p class="whitespace-pre-wrap rounded-xl border-2 border-edge bg-surface p-3 text-sm">{data.record.notes}</p>
+		<p class="mt-3.5 font-display text-[13.5px] italic text-faint">
+			{#if data.record.cover_remote_url && !data.record.cover_filename}
+				Cover is remote — not yet downloaded locally.
+			{:else}
+				Front cover, as stored locally.
 			{/if}
+		</p>
 
+		<div class="mt-5 flex flex-wrap gap-2.5">
+			{#if data.record.limited_edition}<Badge tone="plum">Limited edition</Badge>{/if}
+			{#if data.record.copies > 1}<span class="font-display text-[13px] italic text-faint">{data.record.copies} copies</span>{/if}
+		</div>
+	</div>
+
+	<div class="min-w-0">
+		<p class="mb-4 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">
+			Entry No. {String(data.record.id).padStart(2, '0')} — {data.record.artist}
+		</p>
+		<h1 class="font-display text-5xl font-normal leading-[1.02] tracking-[-.01em] sm:text-[56px]">{data.record.title}</h1>
+		{#if data.record.artist}<h2 class="mt-2.5 font-display text-2xl font-normal italic text-muted">{data.record.artist}</h2>{/if}
+
+		<div class="my-7 h-px w-14 bg-accent"></div>
+
+		<dl class="flex flex-col">
+			{#each meta as [k, v] (k)}
+				<div class="grid grid-cols-[150px_1fr] gap-6 border-b border-hair py-2.5">
+					<dt class="pt-0.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">{k}</dt>
+					<dd class={`text-[15px] ${['Format', 'Barcode', 'Acquired', 'Source'].includes(k) ? 'text-muted' : ''}`}>
+						{v}
+					</dd>
+				</div>
+			{/each}
+			<div class="grid grid-cols-[150px_1fr] gap-6 border-b border-hair py-2.5">
+				<dt class="pt-0.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Status</dt>
+				<dd class="text-[15px] font-normal text-accent">{STATUS_LABELS[data.record.status]}</dd>
+			</div>
+		</dl>
+
+		{#if data.record.notes}
+			<div class="mt-7 border-l-2 border-l-edge bg-surface px-5 py-4">
+				<p class="mb-1.5 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">Notes</p>
+				<p class="whitespace-pre-wrap font-display text-[15px] italic leading-relaxed text-muted">{data.record.notes}</p>
+			</div>
+		{/if}
+
+		<div class="mt-9 flex flex-wrap items-center gap-4">
+			<Button
+				variant="primary"
+				onclick={() => {
+					editing = !editing;
+					if (!editing) draft = draftFromRow(data.record); // discard unsaved changes
+				}}
+			>
+				{editing ? 'Cancel editing' : 'Edit entry'}
+			</Button>
+			<form method="POST" action="?/add_copy" class="inline">
+				<Button type="submit" variant="secondary">Add a copy</Button>
+			</form>
 			{#if data.record.discogs_id}
 				<a
 					href="https://www.discogs.com/release/{data.record.discogs_id}"
 					target="_blank"
 					rel="noopener noreferrer"
-					class="inline-block text-sm font-semibold text-muted underline underline-offset-4 hover:text-plum"
+					class="text-[11.5px] uppercase tracking-[.2em] text-faint underline underline-offset-4 transition-colors hover:text-accent"
 				>
 					View on Discogs ↗
 				</a>
 			{/if}
-
-			<div class="flex flex-wrap gap-2 pt-2">
-				<Button
-					variant="secondary"
-					onclick={() => {
-						editing = !editing;
-						if (!editing) draft = draftFromRow(data.record); // discard unsaved changes
-					}}
-				>
-					{editing ? '✕ Cancel editing' : '✏️ Edit'}
-				</Button>
-				<form method="POST" action="?/add_copy" class="inline">
-					<Button type="submit" variant="secondary">+ Add a copy</Button>
-				</form>
-				<form method="POST" action="?/delete" class="inline" onsubmit={(e) => { if (!confirm('Delete this record? Its photos will be removed too.')) e.preventDefault(); }}>
-					<Button type="submit" variant="danger">Delete</Button>
-				</form>
-			</div>
 		</div>
-	</div>
 
-	<!-- edit form -->
-	{#if editing}
-		<Card shadow class="space-y-4 p-4 sm:p-6">
-			<h3 class="font-display text-lg font-black tracking-tight">Edit details</h3>
-			{#if form?.error}<Banner variant="error">{form.error}</Banner>{/if}
-			<form method="POST" action="?/edit" use:enhance>
-				<RecordForm bind:draft submitLabel="Save changes" />
+		<form method="POST" action="?/delete" class="mt-10 inline" onsubmit={(e) => { if (!confirm('Delete this record? Its photos will be removed too.')) e.preventDefault(); }}>
+			<Button type="submit" variant="danger" size="sm">Delete entry</Button>
+		</form>
+	</div>
+</div>
+
+<!-- edit form -->
+{#if editing}
+	<section class="mt-16 border-t border-edge pt-10">
+		<h3 class="mb-8 font-display text-3xl font-normal">Edit details</h3>
+		{#if form?.error}<div class="mb-6"><Banner variant="error">{form.error}</Banner></div>{/if}
+		<form method="POST" action="?/edit" use:enhance>
+			<RecordForm bind:draft submitLabel="Save changes" />
+		</form>
+	</section>
+{/if}
+
+<!-- photos — a quiet strip -->
+<section class="mt-16">
+	<h3 class="mb-5 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">
+		Photographs — {photos.length}
+	</h3>
+
+	{#if photos.length > 0}
+		<div class="flex flex-wrap gap-4">
+			{#each photos as p (p.id)}
+				<figure class="group relative w-[180px]">
+					<img src="/media/{p.filename}" alt={p.caption ?? 'Record photograph'} loading="lazy" class="aspect-square w-full rounded-xs border border-hair object-cover" />
+					{#if p.caption}<figcaption class="mt-2 font-display text-[12.5px] italic text-faint">{p.caption}</figcaption>{/if}
+					<button
+						aria-label="Delete photo"
+						class="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full border border-edge bg-paper text-[10px] text-muted transition-colors hover:border-rust hover:text-rust group-hover:flex"
+						onclick={() => void removePhoto(p.id)}
+					>✕</button>
+				</figure>
+			{/each}
+
+			<form method="POST" onsubmit={(e) => void addPhotos(e)} class="flex w-[180px] flex-col items-center justify-center gap-3">
+				<label
+					class={`flex aspect-square w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xs border border-dashed border-edge text-center transition-colors hover:border-accent hover:text-accent ${uploading ? 'pointer-events-none opacity-50' : 'text-faint'}`}
+				>
+					<span class="text-xl leading-none" aria-hidden="true">+</span>
+					<span class="px-4 text-[10px] font-semibold uppercase tracking-[.2em]">{uploading ? 'Uploading…' : 'Add photographs'}</span>
+					<input type="file" name="files" multiple accept="image/*" bind:files={newPhotoFile} class="hidden" />
+				</label>
+				{#if newPhotoFile?.length}
+					<Input bind:value={caption} placeholder="optional caption" class="w-full text-center text-xs" />
+					<button type="submit" disabled={uploading} class="text-[10px] font-semibold uppercase tracking-[.2em] text-accent disabled:opacity-50">
+						Upload {newPhotoFile.length === 1 ? 'photo' : `${newPhotoFile.length} photos`} →
+					</button>
+				{/if}
 			</form>
-		</Card>
+		</div>
+	{:else}
+		<div class="flex flex-wrap items-center gap-5">
+			<form method="POST" onsubmit={(e) => void addPhotos(e)}>
+				<label
+					class={`flex h-40 w-[180px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xs border border-dashed border-edge text-center transition-colors hover:border-accent hover:text-accent ${uploading ? 'pointer-events-none opacity-50' : 'text-faint'}`}
+				>
+					<span class="text-xl leading-none" aria-hidden="true">+</span>
+					<span class="px-4 text-[10px] font-semibold uppercase tracking-[.2em]">{uploading ? 'Uploading…' : 'Add photographs'}</span>
+					<input type="file" name="files" multiple accept="image/*" bind:files={newPhotoFile} class="hidden" />
+				</label>
+			</form>
+			<p class="max-w-xs font-display text-[13.5px] italic text-faint">
+				No photographs yet — add images of your physical record.
+			</p>
+		</div>
 	{/if}
 
-	<!-- photos -->
-	<Card shadow class="space-y-4 p-4 sm:p-6">
-		<h3 class="font-display text-lg font-black tracking-tight">Photos ({photos.length})</h3>
-
-		{#if photos.length > 0}
-			<div class="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5">
-				{#each photos as p (p.id)}
-					<figure class="group relative overflow-hidden rounded-xl border-2 border-edge bg-surface-2">
-						<img src="/media/{p.filename}" alt={p.caption ?? ''} loading="lazy" class="aspect-square w-full object-cover" />
-						{#if p.caption}<figcaption class="absolute inset-x-0 bottom-0 border-t-2 border-edge bg-paper px-2 py-1 text-xs font-medium">{p.caption}</figcaption>{/if}
-						<button
-							aria-label="Delete photo"
-							class="absolute right-1.5 top-1.5 hidden h-7 w-7 items-center justify-center rounded-full border-2 border-edge bg-paper text-xs font-black shadow-brutal-sm hover:bg-rust hover:text-white group-hover:flex"
-							onclick={() => void removePhoto(p.id)}
-						>✕</button>
-					</figure>
-				{/each}
-			</div>
-		{:else}
-			<p class="rounded-xl border-2 border-dashed border-muted/50 p-4 text-sm text-muted">
-				No photos yet — add images of your physical record below.
-			</p>
-		{/if}
-
-		<form method="POST" onsubmit={(e) => void addPhotos(e)} class="flex flex-wrap items-center gap-2">
-			<input type="file" name="files" multiple accept="image/*" bind:files={newPhotoFile} class="text-sm file:mr-2 file:cursor-pointer file:rounded-full file:border-2 file:border-edge file:bg-surface file:px-3 file:py-1.5 file:text-xs file:font-bold file:text-ink hover:file:bg-surface-2" />
-			<Input bind:value={caption} placeholder="optional caption" class="min-w-[140px] flex-1 py-1.5" />
-			<Button type="button" size="md" disabled={uploading}>
-				{uploading ? 'Uploading…' : 'Add photo'}
-			</Button>
-		</form>
-		{#if uploadError}<p class="text-sm font-semibold text-rust">{uploadError}</p>{/if}
-	</Card>
-</div>
+	{#if uploadError}<p class="mt-4 text-sm text-rust">{uploadError}</p>{/if}
+</section>

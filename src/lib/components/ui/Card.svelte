@@ -7,23 +7,17 @@
 		class: className = '',
 		children
 	}: {
-		/** Hard offset shadow (the signature brutal look) + pop-in animation. */
+		/** @deprecated the editorial layout is flat; kept for API compatibility. */
 		shadow?: boolean;
-		/** Hover lift + grown shadow for interactive cards. */
+		/** @deprecated the editorial layout has no lift; kept for API compatibility. */
 		lift?: boolean;
 		class?: string;
 		children: Snippet;
 	} = $props();
 
-	const classes = `rounded-2xl border-2 border-edge bg-surface ${
-		shadow ? 'shadow-brutal card-pop' : ''
-	} ${
-		lift
-			? 'transition-[transform,box-shadow] duration-300 hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-brutal-lg'
-			: ''
-	} ${className}`;
 </script>
 
-<div class={classes}>
+<!-- A printed catalogue has no boxes — Card is now a neutral container. -->
+<div class={className}>
 	{@render children()}
 </div>

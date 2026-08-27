@@ -21,11 +21,14 @@
 		children: Snippet;
 	} = $props();
 
-	const fieldClass = `w-full rounded-xl border-2 border-edge bg-surface-2 px-3 py-2.5 text-sm text-ink focus:border-plum focus:shadow-brutal-sm focus:outline-none ${className}`;
+	/* Editorial field: a single hairline underline, no box. */
+	const fieldClass = $derived(
+		`w-full cursor-pointer rounded-none border-0 border-b border-edge bg-transparent px-0 py-1.5 text-sm text-muted focus:border-accent focus:outline-none ${className}`
+	);
 </script>
 
 {#if label}
-	<label for={id ?? name} class="mb-1 block text-[11px] font-bold uppercase tracking-wider text-muted">
+	<label for={id ?? name} class="mb-1 block text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">
 		{label}{#if required}<span class="text-rust" aria-hidden="true"> *</span>{/if}
 	</label>
 {/if}

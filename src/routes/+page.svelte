@@ -3,9 +3,7 @@
 	import type { PageData } from './$types';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Card from '$lib/components/ui/Card.svelte';
 	import CoverImage from '$lib/components/ui/CoverImage.svelte';
-	import Input from '$lib/components/ui/Input.svelte';
 	import Segmented from '$lib/components/ui/Segmented.svelte';
 	import Select from '$lib/components/ui/Select.svelte';
 	import { STATUS_LABELS } from '$lib/types';
@@ -13,9 +11,9 @@
 	let { data }: { data: PageData } = $props();
 
 	const views = [
-		{ id: 'cards', label: 'Cards', icon: '▦' },
-		{ id: 'table', label: 'Table', icon: '☰' },
-		{ id: 'list', label: 'List', icon: '≣' }
+		{ id: 'cards', label: 'Cards' },
+		{ id: 'index', label: 'Index' },
+		{ id: 'table', label: 'Table' }
 	] as const;
 	type ViewId = (typeof views)[number]['id'];
 
@@ -81,189 +79,201 @@
 
 <svelte:head><title>mynyl — your vinyl collection</title></svelte:head>
 
-<div class="space-y-6">
-	<header class="flex flex-wrap items-end justify-between gap-3 pt-2">
-		<div class="space-y-1">
-			<h1 class="font-display text-3xl font-black tracking-tight sm:text-4xl">Your collection</h1>
-			<p class="text-sm text-muted">
-				{data.total} {data.total === 1 ? 'record' : 'records'} — scanned, bought, loved.
-			</p>
-		</div>
-	</header>
+<!-- page head — editorial, big and quiet -->
+<header class="flex flex-wrap items-end justify-between gap-6 border-b border-edge pb-7">
+	<div>
+		<p class="mb-3.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">The Collection — No. 01</p>
+		<h1 class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em] sm:text-[52px]">
+			Your records,<br />catalogued.
+		</h1>
+		<p class="mt-3 font-display text-[15px] italic text-muted">
+			{data.total} {data.total === 1 ? 'album' : 'albums'}, scanned and shelved.
+		</p>
+	</div>
+	<div class="shrink-0 text-right">
+		<div class="font-display text-[44px] leading-none">{data.total}</div>
+		<div class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">records in index</div>
+	</div>
+</header>
 
-	<!-- toolbar: search (row 1) + filters (row 2) -->
-	<Card class="space-y-3 p-3 sm:p-4">
-		<form method="GET" class="flex flex-col gap-3">
-			<Input
-				type="search"
-				name="q"
-				value={active.search}
-				placeholder="Search artist, title, genre, label…"
-				class="py-2.5"
-			/>
-			<div class="flex flex-wrap items-center gap-2">
-				<div class="w-40 max-w-full">
-					<Select name="genre" value={active.genre} onchange={(e) => updateParam('genre', (e.target as HTMLSelectElement).value)}>
-						<option value="">All genres</option>
-						{#each data.filters.genres as g}<option value={g}>{g}</option>{/each}
-					</Select>
-				</div>
-				<div class="w-40 max-w-full">
-					<Select name="label" value={active.label} onchange={(e) => updateParam('label', (e.target as HTMLSelectElement).value)}>
-						<option value="">All labels</option>
-						{#each data.filters.labels as l}<option value={l}>{l}</option>{/each}
-					</Select>
-				</div>
-				<div class="w-40 max-w-full">
-					<Select name="status" value={active.status ?? ''} onchange={(e) => updateParam('status', (e.target as HTMLSelectElement).value)}>
-						<option value="">Any status</option>
-						{#each Object.entries(STATUS_LABELS) as [value, label]}<option value={value}>{label}</option>{/each}
-					</Select>
-				</div>
-				<Button type="submit" variant="primary" size="sm">Apply</Button>
-				{#if hasActiveFilters}
-					<a href="/?view={view}" class="text-sm font-semibold text-muted underline underline-offset-4 hover:text-rust">
-						clear
-					</a>
-				{/if}
+<!-- search — a single elegant line -->
+<form method="GET" class="border-b border-hair py-6">
+	<div class="flex flex-col gap-5 lg:flex-row lg:items-end">
+		<input
+			type="search"
+			name="q"
+			value={active.search}
+			placeholder="Search the index — artist, title, genre…"
+			class="min-w-0 flex-1 border-0 bg-transparent p-0 font-display text-[19px] italic text-ink placeholder:text-faint focus:outline-none"
+		/>
+
+		<div class="flex flex-wrap items-end gap-x-6 gap-y-4">
+			<label class="flex flex-col gap-1.5">
+				<span class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Genre</span>
+				<Select name="genre" value={active.genre} onchange={(e) => updateParam('genre', (e.target as HTMLSelectElement).value)} class="w-32 py-1.5">
+					<option value="">All</option>
+					{#each data.filters.genres as g}<option value={g}>{g}</option>{/each}
+				</Select>
+			</label>
+			<label class="flex flex-col gap-1.5">
+				<span class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Label</span>
+				<Select name="label" value={active.label} onchange={(e) => updateParam('label', (e.target as HTMLSelectElement).value)} class="w-32 py-1.5">
+					<option value="">All</option>
+					{#each data.filters.labels as l}<option value={l}>{l}</option>{/each}
+				</Select>
+			</label>
+			<label class="flex flex-col gap-1.5">
+				<span class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Status</span>
+				<Select name="status" value={active.status ?? ''} onchange={(e) => updateParam('status', (e.target as HTMLSelectElement).value)} class="w-36 py-1.5">
+					<option value="">Any</option>
+					{#each Object.entries(STATUS_LABELS) as [value, label]}<option value={value}>{label}</option>{/each}
+				</Select>
+			</label>
+
+			<div class="flex items-center gap-5 border-l border-hair pb-1.5 pl-6">
+				<Segmented options={views} bind:value={view} />
+				<span class="hidden text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint md:inline">
+					{data.records.length} of {data.total} shown
+				</span>
 			</div>
-		</form>
-	</Card>
-
-	<!-- view toggle + count -->
-	<div class="flex flex-wrap items-center gap-3">
-		<Segmented options={views} bind:value={view} />
-		<Badge tone="plum" class="ml-auto">{data.records.length} of {data.total} shown</Badge>
+		</div>
 	</div>
 
-	<!-- empty state -->
-	{#if data.records.length === 0}
-		<div class="rounded-2xl border-2 border-dashed border-muted/60 bg-surface/50 p-10 text-center">
-			<div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full border-2 border-edge bg-surface-2">
-				<!-- vinyl placeholder -->
-				<svg viewBox="0 0 96 96" class="h-12 w-12 text-muted" aria-hidden="true" fill="none">
-					<circle cx="48" cy="48" r="44" stroke="currentColor" stroke-width="3" />
-					<circle cx="48" cy="48" r="30" stroke="currentColor" stroke-width="1.5" opacity="0.5" />
-					<circle cx="48" cy="48" r="14" fill="var(--plum)" stroke="var(--edge)" stroke-width="3" />
-					<circle cx="48" cy="48" r="3.5" fill="var(--paper)" />
-				</svg>
-			</div>
-			<p class="mb-2 font-display text-xl font-black tracking-tight">
-				{data.total === 0 ? 'No records yet' : 'Nothing matches those filters'}
-			</p>
-			<p class="mb-5 text-sm text-muted">
-				{data.total === 0
-					? 'Scan a barcode or add one manually to start your collection.'
-					: 'Try adjusting or clearing the search and filters.'}
-			</p>
-			{#if data.total === 0}
-				<div class="flex flex-wrap justify-center gap-3">
-					<Button href="/scan">📷 Scan a record</Button>
-					<Button href="/import/manual" variant="secondary">+ Add manually</Button>
-				</div>
-			{/if}
+	{#if hasActiveFilters}
+		<div class="mt-4">
+			<a href="/?view={view}" class="text-[11px] font-medium uppercase tracking-[.2em] text-faint underline underline-offset-4 transition-colors hover:text-accent">
+				Clear filters
+			</a>
 		</div>
-	{:else if view === 'cards'}
-		<!-- CARDS -->
-		<div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-			{#each data.records as rec, i (rec.id)}
-				<a href="/records/{rec.id}" class="group block" style="animation-delay: {Math.min(i * 30, 300)}ms" aria-label={`${rec.artist} — ${rec.title}`}>
-					<Card lift class="h-full overflow-hidden p-0">
-						<div class="relative aspect-square w-full border-b-2 border-edge bg-surface-2">
-							<CoverImage src={coverSrc(rec)} class="rounded-none border-0" loading="lazy" />
-							{#if rec.copies > 1}
-								<span class="card-pop-sm absolute right-2 top-2 rounded-full border-2 border-edge bg-paper px-2 py-0.5 text-xs font-black shadow-brutal-sm">
-									{rec.copies}×
-								</span>
-							{/if}
-						</div>
-						<div class="space-y-1 p-3">
-							<p class="truncate font-display text-base font-black tracking-tight group-hover:text-plum">{rec.artist}</p>
-							<p class="truncate text-sm text-muted">{rec.title}</p>
-							<div class="flex flex-wrap items-center gap-1 pt-1">
-								{#if rec.year || rec.genre}
-									<span class="text-xs font-semibold text-muted">
-										{[rec.year, rec.genre].filter(Boolean).join(' · ')}
-									</span>
-								{/if}
-								<Badge tone={statusTone[rec.status]} class="ml-auto">{STATUS_LABELS[rec.status]}</Badge>
-							</div>
-						</div>
-					</Card>
-				</a>
-			{/each}
-		</div>
-	{:else if view === 'table'}
-		<!-- TABLE -->
-		<Card shadow class="overflow-hidden p-0">
-			<div class="overflow-x-auto">
-				<table class="w-full text-sm">
-					<thead class="border-b-2 border-edge bg-surface-2 text-left">
-						<tr>
-							{#each sortableColumns as [col, colLabel] (col)}
-								<th class="p-3">
-									<button type="button" onclick={() => toggleSort(col)} class="text-xs font-black uppercase tracking-wider hover:text-plum">
-										{colLabel}{sortIndicator(col)}
-									</button>
-								</th>
-							{/each}
-							<th class="p-3 text-xs font-black uppercase tracking-wider">Cond.</th>
-							<th class="p-3 text-right text-xs font-black uppercase tracking-wider">Price</th>
-							<th class="p-3 text-xs font-black uppercase tracking-wider">Status</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each data.records as rec (rec.id)}
-							<tr class="border-b border-edge/10 last:border-b-0 hover:bg-surface-2/60">
-								<td class="p-3 font-bold">
-									<a href="/records/{rec.id}" class="hover:text-plum hover:underline underline-offset-4">{rec.artist}</a>
-									{#if rec.copies > 1}<span class="ml-1 text-xs font-black text-muted">×{rec.copies}</span>{/if}
-								</td>
-								<td class="p-3">{rec.title}</td>
-								<td class="p-3 text-muted">{rec.year ?? ''}</td>
-								<td class="p-3 text-muted">{rec.genre ?? ''}</td>
-								<td class="p-3 text-muted">{rec.label ?? ''}</td>
-								<td class="p-3 font-mono text-xs">
-									{[rec.condition_media && `M:${rec.condition_media}`, rec.condition_sleeve && `S:${rec.condition_sleeve}`].filter(Boolean).join(' ') || '—'}
-								</td>
-								<td class="p-3 text-right font-mono">{fmtPrice(rec.price_paid)}</td>
-								<td class="p-3"><Badge tone={statusTone[rec.status]}>{STATUS_LABELS[rec.status]}</Badge></td>
-							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
-		</Card>
-	{:else}
-		<!-- LIST -->
-		<Card shadow class="divide-y-2 divide-edge/10 overflow-hidden p-0">
-			<ul>
-				{#each data.records as rec (rec.id)}
-					<li>
-						<a href="/records/{rec.id}" class="group flex items-center gap-3 p-3 transition-colors hover:bg-surface-2/60">
-							<CoverImage src={coverSrc(rec)} alt="" class="h-14 w-14 shrink-0 rounded-xl" loading="lazy" />
-							<div class="min-w-0 flex-1">
-								<p class="truncate font-bold group-hover:text-plum">{rec.artist} — {rec.title}</p>
-								<p class="truncate text-xs text-muted">
-									{[rec.year, rec.genre, rec.label, rec.format].filter(Boolean).join(' · ')}
-								</p>
-							</div>
-							<div class="flex shrink-0 items-center gap-2">
-								{#if rec.copies > 1}<span class="font-mono text-xs font-black text-muted">{rec.copies}×</span>{/if}
-								<span class="hidden font-mono text-sm sm:inline">{fmtPrice(rec.price_paid)}</span>
-								<Badge tone={statusTone[rec.status]} class="hidden sm:inline-flex">{STATUS_LABELS[rec.status]}</Badge>
-							</div>
-						</a>
-					</li>
-				{/each}
-			</ul>
-		</Card>
 	{/if}
-</div>
+</form>
+
+<!-- empty state -->
+{#if data.records.length === 0}
+	<div class="flex flex-col items-center border-b border-hair py-20 text-center">
+		<div class="mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-edge">
+			<!-- vinyl placeholder -->
+			<svg viewBox="0 0 96 96" class="h-14 w-14 text-faint" aria-hidden="true" fill="none">
+				<circle cx="48" cy="48" r="44" stroke="currentColor" stroke-width="2" />
+				<circle cx="48" cy="48" r="30" stroke="currentColor" stroke-width="1" opacity="0.5" />
+				<circle cx="48" cy="48" r="14" fill="var(--accent-dim)" stroke="currentColor" stroke-width="2" />
+				<circle cx="48" cy="48" r="3.5" fill="var(--paper)" stroke="currentColor" stroke-width="1" />
+			</svg>
+		</div>
+		<p class="mb-2 font-display text-2xl font-normal">
+			{data.total === 0 ? 'No records yet' : 'Nothing matches those filters'}
+		</p>
+		<p class="mb-7 max-w-sm font-display text-[15px] italic text-muted">
+			{data.total === 0
+				? 'Scan a barcode or add one manually to start your collection.'
+				: 'Try adjusting or clearing the search and filters.'}
+		</p>
+		{#if data.total === 0}
+			<div class="flex flex-wrap justify-center gap-4">
+				<Button href="/scan" variant="primary">Scan a record</Button>
+				<Button href="/import/manual" variant="secondary">Add manually</Button>
+			</div>
+		{/if}
+	</div>
+{:else if view === 'index'}
+	<!-- the catalogue: numbered entries, no cards -->
+	<div class="mt-2 flex flex-col">
+		{#each data.records as rec, i (rec.id)}
+			<a
+				href="/records/{rec.id}"
+				class="entry group grid grid-cols-[40px_56px_1fr_auto] items-center gap-4 border-b border-hair py-5 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[56px_72px_1fr_auto] sm:gap-6"
+				style="animation-delay: {Math.min(i * 30, 300)}ms"
+			>
+				<span class="font-display text-[15px] italic text-faint">{String(i + 1).padStart(2, '0')}</span>
+				<span class="block h-14 w-14 shrink-0 sm:h-[72px] sm:w-[72px]">
+					<CoverImage src={coverSrc(rec)} alt="" loading="lazy" />
+				</span>
+				<span class="min-w-0">
+					<span class="block truncate font-display text-[19px] tracking-[.005em] transition-colors group-hover:text-accent sm:text-[21px]">{rec.artist}</span>
+					<span class="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-muted">
+						<span class="truncate">{rec.title}</span>
+						{#if rec.year || rec.genre}<span class="text-faint">{[rec.year, rec.genre].filter(Boolean).join(' · ')}</span>{/if}
+					</span>
+				</span>
+				<span class="flex shrink-0 flex-col items-end gap-1.5 text-right">
+					<Badge tone={statusTone[rec.status]}>{STATUS_LABELS[rec.status]}</Badge>
+					{#if rec.copies > 1}<span class="font-display text-[13px] italic text-faint">{rec.copies} copies</span>{/if}
+				</span>
+			</a>
+		{/each}
+	</div>
+{:else if view === 'table'}
+	<!-- TABLE — hairlines only, no box -->
+	<div class="mt-6 overflow-x-auto">
+		<table class="w-full text-sm">
+			<thead>
+				<tr class="border-b border-edge text-left">
+					{#each sortableColumns as [col, colLabel] (col)}
+						<th class="pb-3 pr-4">
+							<button
+								type="button"
+								onclick={() => toggleSort(col)}
+								class="text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint transition-colors hover:text-ink"
+							>
+								{colLabel}{sortIndicator(col)}
+							</button>
+						</th>
+					{/each}
+					<th class="pb-3 pr-4 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">Cond.</th>
+					<th class="pb-3 pr-4 text-right text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">Price</th>
+					<th class="pb-3 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">Status</th>
+				</tr>
+			</thead>
+			<tbody>
+				{#each data.records as rec (rec.id)}
+					<tr class="border-b border-hair transition-colors hover:bg-surface">
+						<td class="py-3 pr-4">
+							<a href="/records/{rec.id}" class="font-display text-[15px] transition-colors hover:text-accent">{rec.artist}</a>
+							{#if rec.copies > 1}<span class="ml-1.5 font-display text-xs italic text-faint">×{rec.copies}</span>{/if}
+						</td>
+						<td class="py-3 pr-4 text-muted">{rec.title}</td>
+						<td class="py-3 pr-4 text-muted">{rec.year ?? ''}</td>
+						<td class="py-3 pr-4 text-muted">{rec.genre ?? ''}</td>
+						<td class="py-3 pr-4 text-muted">{rec.label ?? ''}</td>
+						<td class="py-3 pr-4 font-mono text-xs text-faint">
+							{[rec.condition_media && `M:${rec.condition_media}`, rec.condition_sleeve && `S:${rec.condition_sleeve}`].filter(Boolean).join(' ') || '—'}
+						</td>
+						<td class="py-3 pr-4 text-right font-mono text-xs text-muted">{fmtPrice(rec.price_paid)}</td>
+						<td class="py-3"><Badge tone={statusTone[rec.status]}>{STATUS_LABELS[rec.status]}</Badge></td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
+{:else}
+	<!-- CARDS — quiet cover tiles, no boxes -->
+	<div class="mt-8 grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
+		{#each data.records as rec, i (rec.id)}
+			<a href="/records/{rec.id}" class="group block" style="animation-delay: {Math.min(i * 30, 300)}ms" aria-label={`${rec.artist} — ${rec.title}`}>
+				<div class="relative">
+					<CoverImage src={coverSrc(rec)} class="aspect-square w-full transition-colors duration-300 group-hover:border-accent" loading="lazy" />
+					{#if rec.copies > 1}
+						<span class="absolute right-2 top-2 border border-hair bg-paper/90 px-2 py-0.5 font-display text-xs italic text-muted backdrop-blur-sm">
+							{rec.copies}×
+						</span>
+					{/if}
+				</div>
+				<div class="mt-3.5 flex items-baseline justify-between gap-3">
+					<p class="min-w-0 truncate font-display text-[17px] transition-colors group-hover:text-accent">{rec.artist}</p>
+					<Badge tone={statusTone[rec.status]} class="shrink-0">{STATUS_LABELS[rec.status]}</Badge>
+				</div>
+				<p class="mt-0.5 truncate text-[13px] text-muted">{rec.title}</p>
+				{#if rec.year || rec.genre}
+					<p class="mt-0.5 text-[11px] uppercase tracking-[.16em] text-faint">{[rec.year, rec.genre].filter(Boolean).join(' · ')}</p>
+				{/if}
+			</a>
+		{/each}
+	</div>
+{/if}
 
 <style>
-	/* staggered pop-in for the card grid (delay comes from the inline style attr) */
-	.group {
-		animation: shadow-pop 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+	/* staggered rise-in for the catalogue rows (delay comes from the inline style attr) */
+	.entry {
+		animation: rise-in 0.4s ease both;
 	}
 </style>
