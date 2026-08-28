@@ -10,12 +10,22 @@
 
 	let { data, form }: { data: PageData; form: ActionData | null } = $props();
 
-	let draft: RecordDraft = $state(data.seed ? draftFromSeed(data.seed) : emptyDraft());
+	let draft: RecordDraft = $state(emptyDraft());
 	let expandingId = $state<number | null>(null);
 	let expandError = $state<string | null>(null);
-	let duplicate = $state<{ id: number; artist: string; title: string } | null>(
-		form?.duplicate ?? null
-	); // non-enhanced (no-JS) submissions land here with the dedupe result
+	let duplicate = $state<{ id: number; artist: string; title: string } | null>(null);
+
+	// Keep the form in sync with server-provided state (initial seed, and a fresh
+	// dedupe result that lands via `form` after non-enhanced submissions).
+	let seededFor: DiscogsSeed | undefined;
+	$effect(() => {
+		const seed = data.seed; // reactive read
+		if (seed && seed !== seededFor) {
+			draft = draftFromSeed(seed);
+			seededFor = seed;
+		}
+		if (form?.duplicate) duplicate = form.duplicate;
+	});
 	let createAnyway = $state(false);
 
 	async function pickCandidate(id: number): Promise<void> {

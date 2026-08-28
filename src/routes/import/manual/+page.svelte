@@ -12,7 +12,10 @@
 	let duplicate = $state<{ id: number; artist: string; title: string } | null>(null);
 	let createAnyway = $state(false);
 
-	if (form?.error) duplicate = null; // fresh error state resets the banner
+	// A fresh action result (error from a new submit) dismisses the stale duplicate banner.
+	$effect(() => {
+		if (form?.error) duplicate = null;
+	});
 </script>
 
 <svelte:head><title>Add record manually · mynyl</title></svelte:head>

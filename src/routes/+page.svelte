@@ -67,8 +67,8 @@
 		return rec.cover_remote_url;
 	}
 
-	const active = data.filters.active;
-	const hasActiveFilters = Boolean(active.search || active.genre || active.label || active.status);
+	const active = $derived(data.filters.active);
+	const hasActiveFilters = $derived(Boolean(active.search || active.genre || active.label || active.status));
 
 	const statusTone: Record<string, 'forest' | 'butter' | 'muted'> = {
 		in_collection: 'forest',

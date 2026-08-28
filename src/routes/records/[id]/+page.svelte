@@ -7,14 +7,14 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import CoverImage from '$lib/components/ui/CoverImage.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
-	import { draftFromRow } from '$lib/draft';
+	import { draftFromRow, emptyDraft } from '$lib/draft';
 	import { STATUS_LABELS } from '$lib/types';
 	import type { PhotoRow, RecordDraft } from '$lib/types';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData | null } = $props();
 
-	let draft: RecordDraft = $state(draftFromRow(data.record));
+	let draft: RecordDraft = $state(emptyDraft());
 	let editing = $state(false);
 
 	// After a successful save, server data is revalidated — resync the form from it.
@@ -22,7 +22,12 @@
 		const record = data.record; // reactive read
 		if (record) draft = draftFromRow(record);
 	});
-	let photos: PhotoRow[] = $state(data.photos);
+	// The photo API is fetch-based, so uploads/deletes update `photosOverride`
+	// locally instead of revalidating page data. The server list stays the source
+	// of truth until an API response overrides it (the edit action never touches
+	// photos, so a stale override cannot desync from revalidation).
+	let photosOverride = $state<PhotoRow[] | null>(null);
+	const photos = $derived(photosOverride ?? data.photos);
 	let uploading = $state(false);
 	let uploadError = $state<string | null>(null);
 	let newPhotoFile = $state<FileList | null>(null);
@@ -60,7 +65,7 @@
 			const res = await fetch(`/api/records/${data.record.id}/photos`, { method: 'POST', body: fd });
 			const json = (await res.json()) as { ok?: boolean; photos?: PhotoRow[]; message?: string };
 			if (!res.ok || !json.ok) throw new Error(json.message ?? `HTTP ${res.status}`);
-			photos = json.photos ?? photos;
+			photosOverride = json.photos ?? photos;
 			newPhotoFile = null;
 			caption = '';
 		} catch (err) {
@@ -78,7 +83,7 @@
 		);
 		const json = (await res.json()) as { ok?: boolean; photos?: PhotoRow[] };
 		if (res.ok) {
-			photos = json.photos ?? photos.filter((p) => p.id !== photoId);
+			photosOverride = json.photos ?? photos.filter((p) => p.id !== photoId);
 		}
 	}
 
