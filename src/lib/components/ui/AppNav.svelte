@@ -10,6 +10,7 @@
 	const links = [
 		{ href: "/", label: "Collection" },
 		{ href: "/scan", label: "Scan" },
+		{ href: "/stats", label: "Stats" },
 	] as const;
 
 	function isActive(href: string): boolean {
