@@ -8,6 +8,7 @@
 	import CoverImage from "$lib/components/ui/CoverImage.svelte";
 	import Input from "$lib/components/ui/Input.svelte";
 	import { draftFromRow, emptyDraft } from "$lib/draft";
+	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from "$lib/discogs";
 	import { STATUS_LABELS } from "$lib/types";
 	import type { PhotoRow, RecordDraft } from "$lib/types";
 	import type { ActionData, PageData } from "./$types";
@@ -318,14 +319,16 @@
 				<Button type="submit" variant="secondary">Add a copy</Button>
 			</form>
 			{#if data.record.discogs_id}
-				<a
-					href="https://www.discogs.com/release/{data.record.discogs_id}"
-					target="_blank"
-					rel="noopener noreferrer"
-					class="text-[11.5px] uppercase tracking-[.2em] text-faint underline underline-offset-4 transition-colors hover:text-accent"
-				>
-					View on Discogs ↗
-				</a>
+				{@const discogsUrl = discogsReleaseUrl(data.record.discogs_id)}
+				{#if discogsUrl}
+					<a
+						href={discogsUrl}
+						{...DISCOGS_LINK_ATTRS}
+						class="text-[11.5px] uppercase tracking-[.2em] text-faint underline underline-offset-4 transition-colors hover:text-accent"
+					>
+						View on Discogs ↗
+					</a>
+				{/if}
 			{/if}
 		</div>
 

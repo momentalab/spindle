@@ -4,6 +4,7 @@
 	import Badge from "$lib/components/ui/Badge.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import CoverImage from "$lib/components/ui/CoverImage.svelte";
+	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from "$lib/discogs";
 	import Segmented from "$lib/components/ui/Segmented.svelte";
 	import Select from "$lib/components/ui/Select.svelte";
 	import { STATUS_LABELS } from "$lib/types";
@@ -85,6 +86,26 @@
 </script>
 
 <svelte:head><title>mynyl: your vinyl collection</title></svelte:head>
+
+<!-- Hover-reveal micro-link for the table view only (index/cards are whole-row anchors). -->
+{#snippet discogsMicroLink(rec: {
+	discogs_id: number | string | null;
+	artist: string | null;
+	title: string;
+})}
+	{@const du = discogsReleaseUrl(rec.discogs_id)}
+	{#if du}
+		<a
+			href={du}
+			{...DISCOGS_LINK_ATTRS}
+			title="View on Discogs"
+			aria-label={`View ${rec.artist ?? rec.title} — ${rec.title} on Discogs`}
+			class="text-[11px] leading-none text-faint opacity-0 transition-opacity hover:text-accent focus-visible:opacity-100 group-hover:opacity-100"
+		>
+			↗
+		</a>
+	{/if}
+{/snippet}
 
 <!-- page head — editorial, big and quiet -->
 <header
@@ -306,8 +327,8 @@
 		<table class="w-full text-sm">
 			<thead>
 				<tr class="border-b border-edge text-left">
-					{#each sortableColumns as [col, colLabel] (col)}
-						<th class="pb-3 pr-4">
+					{#each sortableColumns as [col, colLabel], ci (col)}
+						<th class={`pb-3 pr-4 ${ci === 0 ? "pl-3" : ""}`}>
 							<button
 								type="button"
 								onclick={() => toggleSort(col)}
@@ -326,15 +347,18 @@
 						>Price</th
 					>
 					<th
-						class="pb-3 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"
+						class="pb-3 pr-1 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"
 						>Status</th
 					>
+					<th class="w-8 pr-3 pb-3" aria-hidden="true"></th>
 				</tr>
 			</thead>
 			<tbody>
 				{#each data.records as rec (rec.id)}
-					<tr class="border-b border-hair transition-colors hover:bg-surface">
-						<td class="py-3 pr-4">
+					<tr
+						class="group border-b border-hair transition-colors hover:bg-surface"
+					>
+						<td class="py-3 pl-3 pr-4">
 							<a
 								href="/records/{rec.id}"
 								class="font-display text-[15px] transition-colors hover:text-accent"
@@ -360,10 +384,14 @@
 						<td class="py-3 pr-4 text-right font-mono text-xs text-muted"
 							>{fmtPrice(rec.price_paid)}</td
 						>
-						<td class="py-3"
+						<td class="py-3 pr-4"
 							><Badge tone={statusTone[rec.status]}
 								>{STATUS_LABELS[rec.status]}</Badge
 							></td
+						>
+						<!-- end-of-row slot: hover-reveal Discogs link, kept in its own gutter -->
+						<td class="w-8 pr-3 py-3 text-right"
+							>{@render discogsMicroLink(rec)}</td
 						>
 					</tr>
 				{/each}
