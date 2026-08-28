@@ -6,6 +6,7 @@
  *   delete    — remove record (cascades photos + media files)
  */
 import { error, fail, redirect } from '@sveltejs/kit';
+import { repairCover } from '$lib/server/covers';
 import {
 	addCopy,
 	deleteRecord,
@@ -49,6 +50,19 @@ export const actions: Actions = {
 		if (!findRecordById(id)) error(404, 'Record not found');
 		addCopy(id);
 		redirect(303, `/records/${id}?added_copy=1`);
+	},
+
+	repair_cover: async ({ params }) => {
+		const id = Number.parseInt(params.id, 10);
+		if (!findRecordById(id)) error(404, 'Record not found');
+		try {
+			await repairCover(id);
+		} catch (e) {
+			return fail(502, {
+				error: e instanceof Error ? e.message : 'Cover download failed.'
+			});
+		}
+		// Success: return nothing so SvelteKit revalidates the page data.
 	},
 
 	delete: async ({ params }) => {

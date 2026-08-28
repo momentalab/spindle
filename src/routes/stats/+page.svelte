@@ -181,8 +181,15 @@
       <p
         class="mt-6 border-l-2 border-l-edge pl-4 font-display text-[13.5px] italic leading-relaxed text-faint"
       >
-        {s.covers_local} of {s.total} covers stored locally — the rest still lean
-        on remote images.{s.sold || s.traded_away
+        {s.covers_local} of {s.total} covers stored locally
+        {#if s.covers_missing > 0}
+          — {s.covers_missing} still lean
+          <a
+            href="/covers"
+            class="text-muted underline underline-offset-4 transition-colors hover:text-accent"
+            >on the network; repair them</a
+          >
+          .{/if}{s.sold || s.traded_away
           ? ` The shelves have released ${s.sold + s.traded_away}.`
           : ""}
       </p>

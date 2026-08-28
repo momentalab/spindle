@@ -24,6 +24,7 @@ export interface CollectionStats {
 	copies_total: number;
 	limited_editions: number; // in-collection rows flagged limited
 	covers_local: number; // rows with a locally stored cover file
+	covers_missing: number; // rows without a local cover (repairable if a source exists)
 	value_cents: number; // current collection value: Σ price_paid × copies (in_collection)
 	avg_price_cents: number | null; // mean price_paid across priced entries
 	priced_entries: number;
@@ -66,6 +67,7 @@ export function collectionStats(): CollectionStats {
 			SUM(copies) AS copies_total,
 			SUM(CASE WHEN status = 'in_collection' AND limited_edition = 1 THEN 1 ELSE 0 END) AS limited_editions,
 			SUM(cover_filename IS NOT NULL) AS covers_local,
+			SUM(cover_filename IS NULL) AS covers_missing,
 			SUM(CASE WHEN status = 'in_collection' THEN COALESCE(price_paid, 0) * copies ELSE 0 END) AS value_cents,
 			COUNT(price_paid) AS priced_entries,
 			AVG(price_paid) AS avg_price
@@ -114,6 +116,7 @@ export function collectionStats(): CollectionStats {
 		copies_total: n(headline.copies_total),
 		limited_editions: n(headline.limited_editions),
 		covers_local: n(headline.covers_local),
+		covers_missing: n(headline.covers_missing),
 		value_cents: n(headline.value_cents),
 		avg_price_cents: typeof headline.avg_price === 'number' ? Math.round(headline.avg_price) : null,
 		priced_entries: n(headline.priced_entries),
