@@ -40,7 +40,7 @@
 	} as const;
 
 	const classes = $derived(
-		`inline-flex select-none items-center justify-center gap-2 font-medium uppercase tracking-[.18em] transition-colors duration-300 disabled:pointer-events-none disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`
+		`inline-flex select-none items-center justify-center gap-2 whitespace-nowrap font-medium uppercase tracking-[.18em] transition-colors duration-300 disabled:pointer-events-none disabled:opacity-50 ${variants[variant]} ${sizes[size]} ${className}`
 	);
 </script>
 

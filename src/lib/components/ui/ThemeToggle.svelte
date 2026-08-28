@@ -23,7 +23,7 @@
 <button
 	type="button"
 	onclick={toggle}
-	class="group relative shrink-0 px-0 text-[11px] font-medium uppercase tracking-[.2em] text-faint transition-colors duration-300 hover:text-ink"
+	class="group relative shrink-0 whitespace-nowrap px-0 text-[11px] font-medium uppercase tracking-[.2em] text-faint transition-colors duration-300 hover:text-ink"
 >
 	{#if isDark}
 		<span class="mr-1.5 inline-block align-middle transition-colors group-hover:text-accent">☀</span>

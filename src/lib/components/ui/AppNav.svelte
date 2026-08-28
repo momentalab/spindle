@@ -18,16 +18,17 @@
 <nav class="sticky top-0 z-50 border-b border-edge bg-paper/90 backdrop-blur-sm">
 	<div class="mx-auto flex max-w-260 items-center px-7 py-5">
 		<a href="/" class="mr-2 flex shrink-0 items-baseline" aria-label="mynyl — collection home">
-			<span class="font-display text-2xl font-normal tracking-[.02em]">mynyl</span>
-			<span class="ml-3 text-[10px] uppercase tracking-[.2em] text-faint">est. 2026 · a vinyl index</span>
+			<span class="font-display text-xl font-normal tracking-[.02em] sm:text-2xl">mynyl</span>
+			<!-- tagline drops below lg so the masthead fits narrow viewports -->
+			<span class="ml-3 hidden text-[10px] uppercase tracking-[.2em] text-faint lg:inline">est. 2026 · a vinyl index</span>
 		</a>
 
-		<div class="ml-auto flex items-center gap-8">
+		<div class="ml-auto flex flex-wrap items-center justify-end gap-x-5 gap-y-2.5 sm:gap-x-8">
 			{#each links as link (link.href)}
 				<a
 					href={link.href}
 					aria-current={isActive(link.href) ? 'page' : undefined}
-					class={`relative text-[12px] font-medium uppercase tracking-[.18em] transition-colors duration-300 ${
+					class={`relative whitespace-nowrap text-[11px] font-medium uppercase tracking-[.14em] transition-colors duration-300 sm:text-[12px] sm:tracking-[.18em] ${
 						isActive(link.href)
 							? 'text-ink after:absolute after:inset-x-0 after:-bottom-1.5 after:h-px after:bg-accent'
 							: 'text-muted hover:text-ink'
