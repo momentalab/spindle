@@ -49,11 +49,6 @@
   class="flex flex-wrap items-end justify-between gap-6 border-b border-edge pb-7"
 >
   <div>
-    <p
-      class="mb-3.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
-    >
-      The Collection — Annex
-    </p>
     <h1
       class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em] sm:text-[52px]"
     >
@@ -181,13 +176,13 @@
       <p
         class="mt-6 border-l-2 border-l-edge pl-4 font-display text-[13.5px] italic leading-relaxed text-faint"
       >
-        {s.covers_local} of {s.total} covers stored locally
+        {s.covers_local} of {s.total} covers on file
         {#if s.covers_missing > 0}
-          — {s.covers_missing} still lean
+          — {s.covers_missing} missing,
           <a
             href="/covers"
             class="text-muted underline underline-offset-4 transition-colors hover:text-accent"
-            >on the network; repair them</a
+            >repair them</a
           >
           .{/if}{s.sold || s.traded_away
           ? ` The shelves have released ${s.sold + s.traded_away}.`

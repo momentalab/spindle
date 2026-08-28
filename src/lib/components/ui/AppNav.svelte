@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { base } from "$app/paths";
 	import { page } from "$app/state";
-	import Button from "./Button.svelte";
 	import ThemeToggle from "./ThemeToggle.svelte";
 
 	// Served verbatim from static/ (copied to the build output root).
@@ -9,7 +8,6 @@
 
 	const links = [
 		{ href: "/", label: "Collection" },
-		{ href: "/scan", label: "Scan" },
 		{ href: "/stats", label: "Stats" },
 	] as const;
 
@@ -66,22 +64,26 @@
 				</a>
 			{/each}
 
-			<Button
-				href="/import/manual"
-				variant="primary"
-				size="sm"
-				class="hidden sm:inline-flex"
+			<!-- Scan is an action, not a destination — styled as one (mirrors how
+			     "Add manually" links read on the Scan page itself). -->
+			<a
+				href="/scan"
+				class="group inline-flex items-center gap-2 whitespace-nowrap text-[11px] font-medium uppercase tracking-[.18em] text-muted transition-colors duration-300 hover:text-accent sm:text-[11.5px]"
 			>
-				Add record
-			</Button>
+				<svg
+					viewBox="0 0 16 16"
+					class="h-3.5 w-3.5 shrink-0 transition-transform duration-300 group-hover:scale-110"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="1.25"
+					aria-hidden="true"
+				>
+					<path d="M2.5 4V2.5h1.5M12 2.5h1.5V4M13.5 12v1.5H12M4 13.5H2.5V12" />
+					<path d="M6.5 5.5v5M8.5 5.5v5M10.5 6.5v3" stroke-linecap="square" />
+				</svg>
+				Scan
+			</a>
 			<ThemeToggle />
 		</div>
-	</div>
-
-	<!-- mobile: Add button below the bar (kept tappable, no cramped row) -->
-	<div class="mx-auto max-w-260 px-7 pb-4 sm:hidden">
-		<Button href="/import/manual" variant="primary" size="md" class="w-full">
-			Add a record manually
-		</Button>
 	</div>
 </nav>

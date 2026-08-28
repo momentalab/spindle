@@ -1,15 +1,17 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-	import RecordForm from '$lib/components/RecordForm.svelte';
-	import Banner from '$lib/components/ui/Banner.svelte';
-	import Button from '$lib/components/ui/Button.svelte';
-	import { emptyDraft } from '$lib/draft';
-	import type { RecordDraft } from '$lib/types';
-	import type { ActionData, PageData } from './$types';
+	import { enhance } from "$app/forms";
+	import RecordForm from "$lib/components/RecordForm.svelte";
+	import Banner from "$lib/components/ui/Banner.svelte";
+	import Button from "$lib/components/ui/Button.svelte";
+	import { emptyDraft } from "$lib/draft";
+	import type { RecordDraft } from "$lib/types";
+	import type { ActionData, PageData } from "./$types";
 
 	let { data, form }: { data: PageData; form: ActionData | null } = $props();
 	let draft: RecordDraft = $state(emptyDraft());
-	let duplicate = $state<{ id: number; artist: string; title: string } | null>(null);
+	let duplicate = $state<{ id: number; artist: string; title: string } | null>(
+		null,
+	);
 	let createAnyway = $state(false);
 
 	// A fresh action result (error from a new submit) dismisses the stale duplicate banner.
@@ -22,10 +24,13 @@
 
 <!-- page head -->
 <header class="border-b border-edge pb-7">
-	<p class="mb-3.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">The Collection — Intake</p>
-	<h1 class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em]">Add a record.</h1>
+	<h1
+		class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em]"
+	>
+		Add a record.
+	</h1>
 	<p class="mt-3 max-w-xl font-display text-[15px] italic text-muted">
-		No barcode or Discogs needed — type whatever you know. Everything is stored locally.
+		No barcode or Discogs needed — type whatever you know.
 	</p>
 </header>
 
@@ -54,7 +59,8 @@
 					Create anyway
 				</Button>
 			{/snippet}
-			Already saved as <strong>{duplicate.artist} — {duplicate.title}</strong> (same barcode).
+			Already saved as <strong>{duplicate.artist} — {duplicate.title}</strong> (same
+			barcode).
 		</Banner>
 	</div>
 {/if}
@@ -64,15 +70,18 @@
 		method="POST"
 		use:enhance={() =>
 			async ({ result, update }) => {
-				if (result && 'data' in result && result.data?.duplicate) {
+				if (result && "data" in result && result.data?.duplicate) {
 					duplicate = result.data.duplicate as typeof duplicate;
 					return; // stay on the page, show the dedupe banner
 				}
 				update();
-			}
-		}
+			}}
 	>
-		<input type="hidden" name="op" value={createAnyway ? 'create_anyway' : 'save'} />
+		<input
+			type="hidden"
+			name="op"
+			value={createAnyway ? "create_anyway" : "save"}
+		/>
 		<RecordForm bind:draft submitLabel="Save to my collection" />
 	</form>
 </div>

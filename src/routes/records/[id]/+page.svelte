@@ -173,7 +173,7 @@
 	<div class="mt-6"><Banner variant="success">Added another copy.</Banner></div>
 {:else if flash === "cover_saved"}
 	<div class="mt-6">
-		<Banner variant="success">Cover recovered and stored locally.</Banner>
+		<Banner variant="success">Cover saved.</Banner>
 	</div>
 {/if}
 
@@ -190,11 +190,11 @@
 		</div>
 		<p class="mt-3.5 font-display text-[13.5px] italic text-faint">
 			{#if data.record.cover_remote_url && !data.record.cover_filename}
-				Cover is remote — not yet downloaded locally.
+				Cover is remote — not yet saved.
 			{:else if !data.record.cover_filename}
 				No cover on file.
 			{:else}
-				Front cover, as stored locally.
+				Front cover.
 			{/if}
 		</p>
 		{#if !data.record.cover_filename && (data.record.cover_remote_url || data.record.discogs_id)}
@@ -205,7 +205,7 @@
 				<form
 					method="POST"
 					action="?/repair_cover"
-					class="inline"
+					class="inline-flex"
 					use:enhance={() =>
 						async ({ result, update }) => {
 							repairingCover = true;
@@ -243,11 +243,6 @@
 	</div>
 
 	<div class="min-w-0">
-		<p
-			class="mb-4 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
-		>
-			Entry No. {String(data.record.id).padStart(2, "0")} — {data.record.artist}
-		</p>
 		<h1
 			class="font-display text-5xl font-normal leading-[1.02] tracking-[-.01em] sm:text-[56px]"
 		>
@@ -313,14 +308,31 @@
 					if (!editing) draft = draftFromRow(data.record); // discard unsaved changes
 				}}
 			>
-				{editing ? "Cancel editing" : "Edit entry"}
+				{editing ? "Cancel editing" : "Edit record"}
 			</Button>
-			<form method="POST" action="?/add_copy" class="inline">
+			<!-- inline-flex, not inline: a display:inline wrapper form ignores
+			     margins and collapses its height, which is what made rows of
+			     buttons stack with no vertical spacing. -->
+			<form method="POST" action="?/add_copy" class="inline-flex">
 				<Button type="submit" variant="secondary">Add a copy</Button>
 			</form>
-			{#if data.record.discogs_id}
-				{@const discogsUrl = discogsReleaseUrl(data.record.discogs_id)}
-				{#if discogsUrl}
+			<form
+				method="POST"
+				action="?/delete"
+				class="inline-flex"
+				onsubmit={(e) => {
+					if (!confirm("Delete this record? Its photos will be removed too."))
+						e.preventDefault();
+				}}
+			>
+				<Button type="submit" variant="danger">Delete record</Button>
+			</form>
+		</div>
+
+		{#if data.record.discogs_id}
+			{@const discogsUrl = discogsReleaseUrl(data.record.discogs_id)}
+			{#if discogsUrl}
+				<div class="mt-5">
 					<a
 						href={discogsUrl}
 						{...DISCOGS_LINK_ATTRS}
@@ -328,21 +340,9 @@
 					>
 						View on Discogs ↗
 					</a>
-				{/if}
+				</div>
 			{/if}
-		</div>
-
-		<form
-			method="POST"
-			action="?/delete"
-			class="mt-10 inline"
-			onsubmit={(e) => {
-				if (!confirm("Delete this record? Its photos will be removed too."))
-					e.preventDefault();
-			}}
-		>
-			<Button type="submit" variant="danger" size="sm">Delete entry</Button>
-		</form>
+		{/if}
 	</div>
 </div>
 
@@ -431,7 +431,11 @@
 		</div>
 	{:else}
 		<div class="flex flex-wrap items-center gap-5">
-			<form method="POST" onsubmit={(e) => void addPhotos(e)}>
+			<form
+				method="POST"
+				onsubmit={(e) => void addPhotos(e)}
+				class="inline-flex"
+			>
 				<label
 					class={`flex h-40 w-[180px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xs border border-dashed border-edge text-center transition-colors hover:border-accent hover:text-accent ${uploading ? "pointer-events-none opacity-50" : "text-faint"}`}
 				>

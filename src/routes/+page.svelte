@@ -112,11 +112,6 @@
 	class="flex flex-wrap items-end justify-between gap-6 border-b border-edge pb-7"
 >
 	<div>
-		<p
-			class="mb-3.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
-		>
-			The Collection — No. 01
-		</p>
 		<h1
 			class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em] sm:text-[52px]"
 		>

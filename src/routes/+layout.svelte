@@ -23,6 +23,6 @@
 
 <footer class="border-t border-hair py-10 text-center">
 	<p class="text-[11px] uppercase tracking-[.22em] text-faint">
-		mynyl — your records, on your machine.
+		mynyl — a vinyl index
 	</p>
 </footer>

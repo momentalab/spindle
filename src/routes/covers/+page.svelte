@@ -36,19 +36,13 @@
   class="flex flex-wrap items-end justify-between gap-6 border-b border-edge pb-7"
 >
   <div>
-    <p
-      class="mb-3.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
-    >
-      The Collection — Maintenance
-    </p>
     <h1
       class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em]"
     >
       Missing covers.
     </h1>
     <p class="mt-3 max-w-xl font-display text-[15px] italic text-muted">
-      Entries whose artwork never made it to disk — a retry re-pulls it from
-      Discogs and files it locally, the offline guarantee restored.
+      Records missing cover artwork — a retry re-pulls it from Discogs.
     </p>
   </div>
   {#if data.rows.length > 0}
@@ -77,8 +71,7 @@
   >
     <p class="mb-2 font-display text-2xl font-normal">Nothing missing</p>
     <p class="max-w-sm font-display text-[15px] italic text-muted">
-      Every entry has its artwork stored locally — the shelves read fine with
-      the lights off.
+      Every record in the index has its cover on file.
     </p>
   </div>
 {:else}
