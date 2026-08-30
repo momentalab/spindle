@@ -2,9 +2,9 @@
 #
 #   docker compose up --build -d
 #
-# Listens on the host at 127.0.0.1:3737 by default (override with MYNYL_PORT).
+# Listens on the host at 3737 by default (override with MYNYL_PORT), bound to all interfaces.
 # Point your existing reverse proxy (e.g. Caddy) at that port:
-#     reverse_proxy 127.0.0.1:3737
+#     reverse_proxy <server-ip>:3737
 # The app derives its origin from the forwarded Host header and assumes https,
 # so no extra env is needed behind a TLS-terminating proxy (see README).
 #
@@ -16,10 +16,7 @@ services:
     build: .
     image: mynyl
     ports:
-      # Bind to localhost only — Caddy (or your proxy) is the public edge.
-      # Change the 127.0.0.1 prefix to "" (e.g. "3737:3000") to expose on all
-      # interfaces if you have no fronting proxy.
-      - "127.0.0.1:${MYNYL_PORT:-3737}:3000"
+      - "${MYNYL_PORT:-3737}:3000"
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
