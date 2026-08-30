@@ -5,6 +5,7 @@
 	import Badge from "$lib/components/ui/Badge.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import Input from "$lib/components/ui/Input.svelte";
+	import { appTitle } from "$lib/index";
 
 	type NativeDetector = {
 		detect: (source: CanvasImageSource) => Promise<{ rawValue: string }[]>;
@@ -145,7 +146,7 @@
 	});
 </script>
 
-<svelte:head><title>Scan a barcode · mynyl</title></svelte:head>
+<svelte:head><title>{appTitle("Scan")}</title></svelte:head>
 
 <div class="mx-auto max-w-2xl">
 	<!-- page head -->

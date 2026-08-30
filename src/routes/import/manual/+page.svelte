@@ -4,6 +4,7 @@
 	import Banner from "$lib/components/ui/Banner.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import { emptyDraft } from "$lib/draft";
+	import { appTitle } from "$lib/index";
 	import type { RecordDraft } from "$lib/types";
 	import type { ActionData, PageData } from "./$types";
 
@@ -20,7 +21,7 @@
 	});
 </script>
 
-<svelte:head><title>Add record manually · mynyl</title></svelte:head>
+<svelte:head><title>{appTitle("Add record")}</title></svelte:head>
 
 <!-- page head -->
 <header class="border-b border-edge pb-7">

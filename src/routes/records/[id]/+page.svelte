@@ -8,6 +8,7 @@
 	import CoverImage from "$lib/components/ui/CoverImage.svelte";
 	import Input from "$lib/components/ui/Input.svelte";
 	import { draftFromRow, emptyDraft } from "$lib/draft";
+	import { appTitle } from "$lib/index";
 	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from "$lib/discogs";
 	import { STATUS_LABELS } from "$lib/types";
 	import type { PhotoRow, RecordDraft } from "$lib/types";
@@ -254,7 +255,7 @@
 </script>
 
 <svelte:head
-	><title>{data.record.artist} — {data.record.title} · mynyl</title
+	><title>{appTitle(`${data.record.artist} · ${data.record.title}`)}</title
 	></svelte:head
 >
 

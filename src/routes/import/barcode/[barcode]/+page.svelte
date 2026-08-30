@@ -5,6 +5,7 @@
 	import Button from "$lib/components/ui/Button.svelte";
 	import CoverImage from "$lib/components/ui/CoverImage.svelte";
 	import { draftFromSeed, emptyDraft } from "$lib/draft";
+	import { appTitle } from "$lib/index";
 	import type { DiscogsSeed, RecordDraft } from "$lib/types";
 	import type { ActionData, PageData } from "./$types";
 
@@ -59,7 +60,7 @@
 	}
 </script>
 
-<svelte:head><title>Add record · mynyl</title></svelte:head>
+<svelte:head><title>{appTitle("Add record")}</title></svelte:head>
 
 <!-- page head -->
 <header

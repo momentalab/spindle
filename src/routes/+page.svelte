@@ -4,6 +4,7 @@
 	import Badge from "$lib/components/ui/Badge.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import CoverImage from "$lib/components/ui/CoverImage.svelte";
+	import { appTitle } from "$lib/index";
 	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from "$lib/discogs";
 	import Segmented from "$lib/components/ui/Segmented.svelte";
 	import Select from "$lib/components/ui/Select.svelte";
@@ -184,7 +185,7 @@
 	</div>
 {/snippet}
 
-<svelte:head><title>mynyl: your vinyl collection</title></svelte:head>
+<svelte:head><title>{appTitle("Collection")}</title></svelte:head>
 
 <!-- Hover-reveal micro-link for the table view only (index/cards are whole-row anchors). -->
 {#snippet discogsMicroLink(rec: {

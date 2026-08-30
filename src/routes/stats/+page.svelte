@@ -3,6 +3,7 @@
   import type { StatsMetric, StatsWindow } from "$lib/server/stats";
   import Button from "$lib/components/ui/Button.svelte";
   import CoverImage from "$lib/components/ui/CoverImage.svelte";
+  import { appTitle } from "$lib/index";
   import { STATUS_LABELS } from "$lib/types";
 
   let { data }: { data: PageData } = $props();
@@ -299,7 +300,7 @@
   });
 </script>
 
-<svelte:head><title>mynyl — by the numbers</title></svelte:head>
+<svelte:head><title>{appTitle("Stats")}</title></svelte:head>
 
 <!-- Vertical bar chart: value above, bar rising from a baseline rule, label below. -->
 {#snippet barChart(

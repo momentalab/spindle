@@ -4,6 +4,7 @@
   import Banner from "$lib/components/ui/Banner.svelte";
   import Button from "$lib/components/ui/Button.svelte";
   import CoverImage from "$lib/components/ui/CoverImage.svelte";
+  import { appTitle } from "$lib/index";
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -29,7 +30,7 @@
   );
 </script>
 
-<svelte:head><title>mynyl — missing covers</title></svelte:head>
+<svelte:head><title>{appTitle("Missing covers")}</title></svelte:head>
 
 <!-- page head -->
 <header
