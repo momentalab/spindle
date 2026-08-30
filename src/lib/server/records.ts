@@ -5,7 +5,7 @@
  */
 import { getDb } from '$lib/server/db';
 import { MEDIA_DIR, ensureDataDirs } from '$lib/server/paths';
-import type { ListOptions, PhotoRow, RecordRow, RecordStatus } from '$lib/types';
+import type { ListOptions, PlayRow, PhotoRow, RecordRow, RecordStatus } from '$lib/types';
 import { readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
@@ -288,6 +288,64 @@ export function deletePhoto(id: number): boolean {
 	db.prepare('DELETE FROM photos WHERE id = ?').run(id);
 	rmMediaFile(row.filename);
 	return true;
+}
+
+/* ------------------------------------------------------------------ */
+/* Plays — one row per logged spin (undo = delete the latest row)      */
+/* ------------------------------------------------------------------ */
+
+/** Log a play. Returns the new play row. Throws if the record does not exist. */
+export function logPlay(recordId: number): PlayRow {
+	const db = getDb();
+	if (!findRecordById(recordId)) throw new Error('Record not found');
+	const now = new Date().toISOString();
+	const info = db
+		.prepare('INSERT INTO plays (record_id, played_at) VALUES (?, ?)')
+		.run(recordId, now);
+	return db.prepare('SELECT * FROM plays WHERE id = ?').get(Number(info.lastInsertRowid)) as PlayRow;
+}
+
+/** Undo the most recent play for a record. Returns true if a row was removed. */
+export function undoLatestPlay(recordId: number): boolean {
+	const info = getDb()
+		.prepare('DELETE FROM plays WHERE id = (SELECT id FROM plays WHERE record_id = ? ORDER BY id DESC LIMIT 1)')
+		.run(recordId);
+	return info.changes > 0;
+}
+
+/** Total plays for one record. */
+export function playCount(recordId: number): number {
+	return (
+		getDb()
+			.prepare('SELECT COUNT(*) AS c FROM plays WHERE record_id = ?')
+			.get(recordId) as { c: number }
+	).c;
+}
+
+/** ISO datetime of the most recent play, or null. */
+export function latestPlayedAt(recordId: number): string | null {
+	const row = getDb()
+		.prepare('SELECT MAX(played_at) AS t FROM plays WHERE record_id = ?')
+		.get(recordId) as { t: string | null };
+	return row.t;
+}
+
+/**
+ * Play counts for many records in one pass (record_id → count). Records with
+ * no plays are absent from the map — callers treat a missing key as 0.
+ */
+export function playCounts(recordIds?: number[]): Record<number, number> {
+	const db = getDb();
+	let rows: { record_id: number; c: number }[];
+	if (recordIds && recordIds.length > 0) {
+		const sql = `SELECT record_id, COUNT(*) AS c FROM plays WHERE record_id IN (${recordIds.map(() => '?').join(',')}) GROUP BY record_id`;
+		rows = db.prepare(sql).all(...recordIds) as { record_id: number; c: number }[];
+	} else {
+		rows = db
+			.prepare('SELECT record_id, COUNT(*) AS c FROM plays GROUP BY record_id')
+			.all() as { record_id: number; c: number }[];
+	}
+	return Object.fromEntries(rows.map((r) => [r.record_id, r.c]));
 }
 
 /** Safely delete a media file by its (relative, non-traversal) filename. */

@@ -76,6 +76,21 @@ const migrations: Migration[] = [
 				CREATE INDEX IF NOT EXISTS idx_photos_record_id ON photos(record_id);
 			`);
 		}
+	},
+	{
+		version: 2,
+		description: 'plays log: one row per spin (record_id FK + played_at)',
+		up(db) {
+			db.exec(`
+				CREATE TABLE IF NOT EXISTS plays (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE,
+					played_at TEXT NOT NULL DEFAULT (datetime('now'))
+				);
+
+				CREATE INDEX IF NOT EXISTS idx_plays_record_id ON plays(record_id);
+			`);
+		}
 	}
 ];
 

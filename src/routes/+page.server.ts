@@ -1,7 +1,7 @@
 /**
  * Collection home: server-side list with search / sort / filter.
  */
-import { listRecords, distinctValues, countRecords } from '$lib/server/records';
+import { listRecords, distinctValues, countRecords, playCounts } from '$lib/server/records';
 import type { ListOptions, RecordStatus } from '$lib/types';
 import type { PageServerLoad } from './$types';
 
@@ -28,6 +28,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	return {
 		records,
 		total: countRecords(),
+		play_counts: playCounts(records.map((r) => r.id)),
 		filters: {
 			genres: distinctValues('genre'),
 			labels: distinctValues('label'),

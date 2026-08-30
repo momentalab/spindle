@@ -83,7 +83,106 @@
 		sold: "butter",
 		traded_away: "muted",
 	};
+
+	// Play log from the index: quick +1 (and −) on every row without leaving
+	// the page. Optimistic local increment, reconciled from the server's
+	// authoritative count; a failed request reverts.
+	let playCountOverrides = $state<Record<number, number>>({});
+	const playCount = (rec: { id: number }): number =>
+		playCountOverrides[rec.id] ?? data.play_counts[rec.id] ?? 0;
+
+	let busyPlays = $state<Record<number, boolean>>({});
+
+	interface PlayResponse {
+		ok?: boolean;
+		play_count?: number;
+		message?: string;
+	}
+
+	async function quickLog(rec: { id: number }): Promise<void> {
+		if (busyPlays[rec.id]) return;
+		busyPlays[rec.id] = true;
+		const prev = playCountOverrides[rec.id];
+		playCountOverrides[rec.id] = playCount(rec) + 1;
+		try {
+			const res = await fetch(`/api/records/${rec.id}/plays`, {
+				method: "POST",
+			});
+			const json = (await res.json().catch(() => null)) as PlayResponse | null;
+			if (!res.ok || !json?.ok)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
+			playCountOverrides[rec.id] = json.play_count ?? 0;
+		} catch {
+			if (prev === undefined) delete playCountOverrides[rec.id];
+			else playCountOverrides[rec.id] = prev;
+		} finally {
+			const b = { ...busyPlays };
+			delete b[rec.id];
+			busyPlays = b;
+		}
+	}
+
+	async function quickUndo(rec: { id: number }): Promise<void> {
+		if (busyPlays[rec.id] || playCount(rec) <= 0) return;
+		busyPlays[rec.id] = true;
+		const prev = playCountOverrides[rec.id];
+		playCountOverrides[rec.id] = Math.max(0, playCount(rec) - 1);
+		try {
+			const res = await fetch(`/api/records/${rec.id}/plays`, {
+				method: "DELETE",
+			});
+			const json = (await res.json().catch(() => null)) as PlayResponse | null;
+			if (!res.ok || !json?.ok)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
+			playCountOverrides[rec.id] = json.play_count ?? 0;
+		} catch {
+			if (prev === undefined) delete playCountOverrides[rec.id];
+			else playCountOverrides[rec.id] = prev;
+		} finally {
+			const b = { ...busyPlays };
+			delete b[rec.id];
+			busyPlays = b;
+		}
+	}
 </script>
+
+<!-- One-tap play log per row: − (undo latest) + count + +1. Rendered as a
+     SIBLING of the row anchor in every view (never nested inside it). Quiet
+     chip: hidden until row hover on desktop, always visible on touch. -->
+{#snippet playControl(rec: { id: number; artist: string; title: string })}
+	<div
+		class="pointer-events-auto inline-flex items-center gap-1 rounded-xs border border-hair bg-paper/90 px-2 py-1 opacity-0 shadow-sm backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100 hover:opacity-100 pointer-coarse:opacity-100"
+	>
+		{#if playCount(rec) > 0}
+			<button
+				type="button"
+				class="min-w-5 text-center text-sm leading-none text-faint transition-colors hover:text-rust disabled:pointer-events-none disabled:opacity-40"
+				disabled={!!busyPlays[rec.id]}
+				title="Undo last play"
+				aria-label={`Undo last play of ${rec.artist} — ${rec.title}`}
+				onclick={() => void quickUndo(rec)}
+			>
+				−
+			</button>
+		{/if}
+		<span
+			class={`min-w-5 text-center font-display text-[13px] italic leading-none ${playCount(rec) > 0 ? "text-muted" : "text-faint"}`}
+			aria-label={`${playCount(rec)} plays`}
+		>
+			{playCount(rec)}
+		</span>
+		<button
+			type="button"
+			class="min-w-5 text-center text-sm leading-none text-faint transition-colors hover:text-accent disabled:pointer-events-none disabled:opacity-40"
+			disabled={!!busyPlays[rec.id]}
+			title="Log a play"
+			aria-label={`Log a play of ${rec.artist} — ${rec.title}`}
+			onclick={() => void quickLog(rec)}
+		>
+			+
+		</button>
+	</div>
+{/snippet}
 
 <svelte:head><title>mynyl: your vinyl collection</title></svelte:head>
 
@@ -299,44 +398,53 @@
 		{/if}
 	</div>
 {:else if view === "index"}
-	<!-- the catalogue: numbered entries, no cards -->
+	<!-- the catalogue: numbered entries, no cards. Each row is a flex wrapper:
+	     the whole line is the anchor; the play chip sits beside it as a sibling
+	     (a <button> may not live inside an <a>). -->
 	<div class="mt-2 flex flex-col">
 		{#each data.records as rec, i (rec.id)}
-			<a
-				href="/records/{rec.id}"
-				class="entry group grid grid-cols-[40px_56px_1fr_auto] items-center gap-4 border-b border-hair py-5 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[56px_72px_1fr_auto] sm:gap-6"
+			<div
+				class="entry group relative flex items-center border-b border-hair"
 				style="animation-delay: {Math.min(i * 30, 300)}ms"
 			>
-				<span class="font-display text-[15px] italic text-faint"
-					>{String(i + 1).padStart(2, "0")}</span
+				<a
+					href="/records/{rec.id}"
+					class="grid min-w-0 flex-1 grid-cols-[40px_56px_1fr_auto] items-center gap-4 py-5 transition-[padding] duration-200 group-hover:pl-2 sm:grid-cols-[56px_72px_1fr_auto] sm:gap-6"
 				>
-				<span class="block h-14 w-14 shrink-0 sm:h-[72px] sm:w-[72px]">
-					<CoverImage src={coverSrc(rec)} alt="" loading="lazy" />
-				</span>
-				<span class="min-w-0">
-					<span
-						class="block truncate font-display text-[19px] tracking-[.005em] transition-colors group-hover:text-accent sm:text-[21px]"
-						>{rec.artist}</span
+					<span class="font-display text-[15px] italic text-faint"
+						>{String(i + 1).padStart(2, "0")}</span
 					>
-					<span
-						class="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-muted"
-					>
-						<span class="truncate">{rec.title}</span>
-						{#if rec.year || rec.genre}<span class="text-faint"
-								>{[rec.year, rec.genre].filter(Boolean).join(" · ")}</span
+					<span class="block h-14 w-14 shrink-0 sm:h-[72px] sm:w-[72px]">
+						<CoverImage src={coverSrc(rec)} alt="" loading="lazy" />
+					</span>
+					<span class="min-w-0">
+						<span
+							class="block truncate font-display text-[19px] tracking-[.005em] transition-colors group-hover:text-accent sm:text-[21px]"
+							>{rec.artist}</span
+						>
+						<span
+							class="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-muted"
+						>
+							<span class="truncate">{rec.title}</span>
+							{#if rec.year || rec.genre}<span class="text-faint"
+									>{[rec.year, rec.genre].filter(Boolean).join(" · ")}</span
+								>{/if}
+						</span>
+					</span>
+					<span class="flex shrink-0 flex-col items-end gap-1.5 text-right">
+						<Badge tone={statusTone[rec.status]}
+							>{STATUS_LABELS[rec.status]}</Badge
+						>
+						{#if rec.copies > 1}<span
+								class="font-display text-[13px] italic text-faint"
+								>{rec.copies} copies</span
 							>{/if}
 					</span>
-				</span>
-				<span class="flex shrink-0 flex-col items-end gap-1.5 text-right">
-					<Badge tone={statusTone[rec.status]}
-						>{STATUS_LABELS[rec.status]}</Badge
-					>
-					{#if rec.copies > 1}<span
-							class="font-display text-[13px] italic text-faint"
-							>{rec.copies} copies</span
-						>{/if}
-				</span>
-			</a>
+				</a>
+				<span class="shrink-0 py-5 pl-2 pr-4 sm:pr-6"
+					>{@render playControl(rec)}</span
+				>
+			</div>
 		{/each}
 	</div>
 {:else if view === "table"}
@@ -368,6 +476,11 @@
 						class="pb-3 pr-1 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"
 						>Status</th
 					>
+					<th
+						class="pb-3 pr-4 text-right text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"
+					>
+						Plays
+					</th>
 					<th class="w-8 pr-3 pb-3" aria-hidden="true"></th>
 				</tr>
 			</thead>
@@ -407,6 +520,10 @@
 								>{STATUS_LABELS[rec.status]}</Badge
 							></td
 						>
+						<!-- play log: quiet inline controls, always usable on touch -->
+						<td class="py-3 pr-4">
+							{@render playControl(rec)}
+						</td>
 						<!-- end-of-row slot: hover-reveal Discogs link, kept in its own gutter -->
 						<td class="w-8 pr-3 py-3 text-right"
 							>{@render discogsMicroLink(rec)}</td
@@ -422,43 +539,45 @@
 		class="mt-8 grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4"
 	>
 		{#each data.records as rec, i (rec.id)}
-			<a
-				href="/records/{rec.id}"
-				class="group block"
-				style="animation-delay: {Math.min(i * 30, 300)}ms"
-				aria-label={`${rec.artist} — ${rec.title}`}
-			>
-				<div class="relative">
-					<CoverImage
-						src={coverSrc(rec)}
-						class="aspect-square w-full transition-colors duration-300 group-hover:border-accent"
-						loading="lazy"
-					/>
-					{#if rec.copies > 1}
-						<span
-							class="absolute right-2 top-2 border border-hair bg-paper/90 px-2 py-0.5 font-display text-xs italic text-muted backdrop-blur-sm"
+			<div class="group" style="animation-delay: {Math.min(i * 30, 300)}ms">
+				<a
+					href="/records/{rec.id}"
+					class="block"
+					aria-label={`${rec.artist} — ${rec.title}`}
+				>
+					<div class="relative">
+						<CoverImage
+							src={coverSrc(rec)}
+							class="aspect-square w-full transition-colors duration-300 group-hover:border-accent"
+							loading="lazy"
+						/>
+						{#if rec.copies > 1}
+							<span
+								class="absolute right-2 top-2 border border-hair bg-paper/90 px-2 py-0.5 font-display text-xs italic text-muted backdrop-blur-sm"
+							>
+								{rec.copies}×
+							</span>
+						{/if}
+					</div>
+					<div class="mt-3.5 flex items-baseline justify-between gap-3">
+						<p
+							class="min-w-0 truncate font-display text-[17px] transition-colors group-hover:text-accent"
 						>
-							{rec.copies}×
-						</span>
+							{rec.artist}
+						</p>
+						<Badge tone={statusTone[rec.status]} class="shrink-0"
+							>{STATUS_LABELS[rec.status]}</Badge
+						>
+					</div>
+					<p class="mt-0.5 truncate text-[13px] text-muted">{rec.title}</p>
+					{#if rec.year || rec.genre}
+						<p class="mt-0.5 text-[11px] uppercase tracking-[.16em] text-faint">
+							{[rec.year, rec.genre].filter(Boolean).join(" · ")}
+						</p>
 					{/if}
-				</div>
-				<div class="mt-3.5 flex items-baseline justify-between gap-3">
-					<p
-						class="min-w-0 truncate font-display text-[17px] transition-colors group-hover:text-accent"
-					>
-						{rec.artist}
-					</p>
-					<Badge tone={statusTone[rec.status]} class="shrink-0"
-						>{STATUS_LABELS[rec.status]}</Badge
-					>
-				</div>
-				<p class="mt-0.5 truncate text-[13px] text-muted">{rec.title}</p>
-				{#if rec.year || rec.genre}
-					<p class="mt-0.5 text-[11px] uppercase tracking-[.16em] text-faint">
-						{[rec.year, rec.genre].filter(Boolean).join(" · ")}
-					</p>
-				{/if}
-			</a>
+				</a>
+				<div class="mt-2 flex justify-end">{@render playControl(rec)}</div>
+			</div>
 		{/each}
 	</div>
 {/if}

@@ -9,17 +9,17 @@
  *  - JSON  full fidelity — every field, raw values (price in cents, flags as
  *          integers) — for round-trips and tooling.
  *
- * Tables: both exports cover `records` and `photos`; pass table= to limit to
- * one (CSV defaults to records).
+ * Tables: both exports cover `records`, `photos` and `plays`; pass table= to
+ * limit to one (CSV defaults to records).
  */
 import { getDb } from '$lib/server/db';
-import type { PhotoRow, RecordRow } from '$lib/types';
+import type { PlayRow, PhotoRow, RecordRow } from '$lib/types';
 
 export type ExportFormat = 'csv' | 'json';
 export const EXPORT_FORMATS: ExportFormat[] = ['csv', 'json'];
 
-export type ExportTable = 'records' | 'photos';
-export const EXPORT_TABLES: ExportTable[] = ['records', 'photos'];
+export type ExportTable = 'records' | 'photos' | 'plays';
+export const EXPORT_TABLES: ExportTable[] = ['records', 'photos', 'plays'];
 
 /** Column order for the CSV (and the key order for the JSON records array). */
 export const RECORD_COLUMNS: (keyof RecordRow)[] = [
@@ -65,6 +65,8 @@ const PHOTO_COLUMNS: (keyof PhotoRow)[] = [
 	'created_at'
 ];
 
+const PLAY_COLUMNS: (keyof PlayRow)[] = ['id', 'record_id', 'played_at'];
+
 /** RFC 4180 field quoting: quote when the value holds a comma, quote, or newline. */
 function csvField(value: unknown): string {
 	if (value === null || value === undefined) return '';
@@ -92,7 +94,7 @@ function recordToCsvRow(rec: RecordRow): string {
 
 /**
  * Strict CSV dump: header row + data rows only (RFC 4180, CRLF line endings).
- * `table` selects the dataset — "records" (default) or "photos".
+ * `table` selects the dataset — "records" (default), "photos" or "plays".
  */
 export function exportAsCsv(table: ExportTable = 'records'): string {
 	const db = getDb();
@@ -104,27 +106,41 @@ export function exportAsCsv(table: ExportTable = 'records'): string {
 			.all() as RecordRow[];
 		lines.push(RECORD_COLUMNS.map((c) => csvField(CSV_HEADERS[c] ?? c)).join(','));
 		for (const rec of records) lines.push(recordToCsvRow(rec));
-	} else {
+	} else if (table === 'photos') {
 		const photos = db
 			.prepare('SELECT * FROM photos ORDER BY record_id ASC, id ASC')
 			.all() as PhotoRow[];
 		lines.push(PHOTO_COLUMNS.join(','));
 		for (const p of photos) lines.push(PHOTO_COLUMNS.map((c) => csvField(p[c])).join(','));
+	} else {
+		const plays = db
+			.prepare('SELECT * FROM plays ORDER BY record_id ASC, id ASC')
+			.all() as PlayRow[];
+		lines.push(PLAY_COLUMNS.join(','));
+		for (const p of plays) lines.push(PLAY_COLUMNS.map((c) => csvField(p[c])).join(','));
 	}
 
 	return lines.join('\r\n') + '\r\n';
 }
 
 /**
- * Full JSON dump. `table` defaults to "all" (records + photos + summary counts);
- * pass a table name to limit the export to that one dataset.
+ * Full JSON dump. `table` defaults to "all" (records + photos + plays +
+ * summary counts); pass a table name to limit the export to that dataset.
  */
 export function exportAsJson(table: 'all' | ExportTable = 'all'): string {
 	const db = getDb();
 	const records =
-		table === 'photos' ? [] : (db.prepare('SELECT * FROM records ORDER BY artist ASC, title ASC').all() as RecordRow[]);
+		table === 'photos' || table === 'plays'
+			? []
+			: (db.prepare('SELECT * FROM records ORDER BY artist ASC, title ASC').all() as RecordRow[]);
 	const photos =
-		table === 'records' ? [] : (db.prepare('SELECT * FROM photos ORDER BY record_id ASC, id ASC').all() as PhotoRow[]);
+		table === 'records' || table === 'plays'
+			? []
+			: (db.prepare('SELECT * FROM photos ORDER BY record_id ASC, id ASC').all() as PhotoRow[]);
+	const plays =
+		table === 'records' || table === 'photos'
+			? []
+			: (db.prepare('SELECT * FROM plays ORDER BY record_id ASC, id ASC').all() as PlayRow[]);
 	return JSON.stringify(
 		{
 			app: 'mynyl',
@@ -132,8 +148,10 @@ export function exportAsJson(table: 'all' | ExportTable = 'all'): string {
 			schema_version: 1,
 			record_count: records.length,
 			photo_count: photos.length,
+			play_count: plays.length,
 			records,
-			photos
+			photos,
+			plays
 		},
 		null,
 		'\t'
@@ -149,7 +167,7 @@ export function renderExport(
 	switch (format) {
 		case 'csv':
 			// CSV is single-table: "all" (JSON default) falls back to records.
-			body = exportAsCsv(opts.table === 'photos' ? 'photos' : 'records');
+			body = exportAsCsv(opts.table && opts.table !== 'all' ? opts.table : 'records');
 			break;
 		case 'json':
 			body = exportAsJson(opts.table ?? 'all') + '\n';

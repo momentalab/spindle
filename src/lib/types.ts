@@ -48,6 +48,13 @@ export interface PhotoRow {
 	created_at: string;
 }
 
+/** A single logged spin of a record (plays table, one row per play). */
+export interface PlayRow {
+	id: number;
+	record_id: number;
+	played_at: string; // ISO datetime
+}
+
 /** Fields that the Discogs import seeds (before user edits). */
 export interface DiscogsSeed {
 	discogs_id: number;

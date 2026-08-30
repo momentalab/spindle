@@ -93,6 +93,16 @@ export interface FreshRecord {
 	cover: string | null;
 }
 
+/** Most-played ranking row (plays table, one row per logged spin). */
+export interface MostPlayedRecord {
+	id: number;
+	artist: string;
+	title: string;
+	cover: string | null;
+	plays: number;
+	last_played_at: string | null;
+}
+
 export interface CollectionStats {
 	/* headline counters */
 	total: number;
@@ -141,6 +151,10 @@ export interface CollectionStats {
 	photos_total: number; // C7
 	records_with_photos: number; // C7
 	extremes: Extremes; // D2 — oldest / freshest parsed year
+	/* play log */
+	plays_total: number; // total spins logged
+	records_played: number; // distinct records with ≥ 1 spin
+	most_played: MostPlayedRecord[]; // top 5 by count, then most recent
 }
 
 const TOP_N = 8;
@@ -633,6 +647,25 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	const photoRecords = (db.prepare('SELECT COUNT(DISTINCT record_id) AS n FROM photos').get() as { n: number })
 		.n;
 
+	/* Play log — total spins, distinct records spun, and the most-played five. */
+	const playsTotal = (db.prepare('SELECT COUNT(*) AS n FROM plays').get() as { n: number }).n;
+	const recordsPlayed = (db.prepare('SELECT COUNT(DISTINCT record_id) AS n FROM plays').get() as {
+		n: number;
+	}).n;
+	const most_played = (
+		db.prepare(`
+			SELECT r.id, r.artist, r.title,
+			       CASE WHEN r.cover_filename IS NOT NULL THEN '/media/' || r.cover_filename ELSE r.cover_remote_url END AS cover,
+			       COUNT(p.id) AS plays,
+			       MAX(p.played_at) AS last_played_at
+			FROM plays p
+			JOIN records r ON r.id = p.record_id
+			GROUP BY p.record_id
+			ORDER BY plays DESC, last_played_at DESC
+			LIMIT 5
+		`).all() as MostPlayedRecord[]
+	);
+
 	const windowTopGenreRows = [...windowedGenre.entries()].map(([label, count]) => ({ label, count }));
 	const window_top_genre: StatBarRow | null = windowTopGenreRows.length
 		? windowTopGenreRows.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))[0]
@@ -692,6 +725,9 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		duplicates,
 		photos_total: photoTotal,
 		records_with_photos: photoRecords,
-		extremes
+		extremes,
+		plays_total: playsTotal,
+		records_played: recordsPlayed,
+		most_played
 	};
 }

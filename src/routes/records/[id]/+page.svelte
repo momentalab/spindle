@@ -103,6 +103,98 @@
 		}
 	}
 
+	// Play log: one row per spin. Same override pattern as photos — the API is
+	// fetch-based, so taps update local state optimistically and reconcile from
+	// the server's authoritative count; a failed request reverts.
+	let playCountOverride = $state<number | null>(null);
+	let lastPlayedAtOverride = $state<string | null | undefined>(undefined);
+	const playCount = $derived(playCountOverride ?? data.play_count);
+	const lastPlayedAt = $derived(
+		lastPlayedAtOverride === undefined
+			? data.last_played_at
+			: lastPlayedAtOverride,
+	);
+	let loggingPlay = $state(false);
+	let undoingPlay = $state(false);
+
+	const PLAY_MONTHS = [
+		"Jan",
+		"Feb",
+		"Mar",
+		"Apr",
+		"May",
+		"Jun",
+		"Jul",
+		"Aug",
+		"Sep",
+		"Oct",
+		"Nov",
+		"Dec",
+	] as const;
+
+	/** Deterministic 'Aug 30, 2026' — no toLocaleDateString (SSR/locale drift). */
+	function fmtPlayDate(iso: string | null): string {
+		if (!iso) return "";
+		const d = new Date(iso);
+		if (Number.isNaN(d.getTime())) return "";
+		return `${PLAY_MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+	}
+
+	async function logPlay(): Promise<void> {
+		loggingPlay = true;
+		const prevCount = playCountOverride;
+		const prevLast = lastPlayedAtOverride;
+		playCountOverride = playCount + 1;
+		lastPlayedAtOverride = new Date().toISOString();
+		try {
+			const res = await fetch(`/api/records/${data.record.id}/plays`, {
+				method: "POST",
+			});
+			const json = (await res.json().catch(() => null)) as {
+				ok?: boolean;
+				play_count: number;
+				last_played_at: string | null;
+				message?: string;
+			} | null;
+			if (!res.ok || !json?.ok)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
+			playCountOverride = json.play_count;
+			lastPlayedAtOverride = json.last_played_at;
+		} catch {
+			playCountOverride = prevCount;
+			lastPlayedAtOverride = prevLast;
+		} finally {
+			loggingPlay = false;
+		}
+	}
+
+	async function undoPlay(): Promise<void> {
+		undoingPlay = true;
+		const prevCount = playCountOverride;
+		const prevLast = lastPlayedAtOverride;
+		playCountOverride = Math.max(0, playCount - 1);
+		try {
+			const res = await fetch(`/api/records/${data.record.id}/plays`, {
+				method: "DELETE",
+			});
+			const json = (await res.json().catch(() => null)) as {
+				ok?: boolean;
+				play_count: number;
+				last_played_at: string | null;
+				message?: string;
+			} | null;
+			if (!res.ok || !json?.ok)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
+			playCountOverride = json.play_count;
+			lastPlayedAtOverride = json.last_played_at;
+		} catch {
+			playCountOverride = prevCount;
+			lastPlayedAtOverride = prevLast;
+		} finally {
+			undoingPlay = false;
+		}
+	}
+
 	function coverSrc(): string | null {
 		if (data.record.cover_filename)
 			return `/media/${data.record.cover_filename}`;
@@ -128,6 +220,12 @@
 	const meta = $derived(
 		(
 			[
+				[
+					"Plays",
+					playCount > 0
+						? `${playCount} · spun ${fmtPlayDate(lastPlayedAt)}`
+						: "—",
+				],
 				["Year", data.record.year ?? ""],
 				[
 					"Genre",
@@ -303,6 +401,23 @@
 		<div class="mt-9 flex flex-wrap items-center gap-4">
 			<Button
 				variant="primary"
+				disabled={loggingPlay}
+				onclick={() => void logPlay()}
+			>
+				{loggingPlay ? "Logging…" : "Log a play"}
+			</Button>
+			{#if playCount > 0}
+				<Button
+					variant="ghost"
+					size="sm"
+					disabled={undoingPlay}
+					onclick={() => void undoPlay()}
+				>
+					Undo last
+				</Button>
+			{/if}
+			<Button
+				variant="secondary"
 				onclick={() => {
 					editing = !editing;
 					if (!editing) draft = draftFromRow(data.record); // discard unsaved changes

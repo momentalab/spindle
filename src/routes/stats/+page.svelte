@@ -23,6 +23,27 @@
     return `$${(cents / 100).toFixed(2)}`;
   }
 
+  const MONTHS_SHORT = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ] as const;
+  /** Deterministic 'Aug 30, 2026' from an ISO datetime (no locale drift). */
+  function fmtPlayedAt(iso: string): string {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "";
+    return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+  }
+
   /** Metric-aware rows for the toggleable distributions (B4). */
   const metricRows = (
     rows: { label: string; count: number; value_cents: number }[],
@@ -116,6 +137,18 @@
         seg(`Over ${s.pace.label}, new arrivals leaned `),
         seg(s.window_top_genre.label, true),
         seg("."),
+      ]);
+    }
+
+    // line five — the record that keeps coming back
+    if (s.most_played[0]) {
+      const top = s.most_played[0];
+      lines.push([
+        seg("Most spun on the shelf: "),
+        seg(`${top.artist} — ${top.title}`, true),
+        seg(
+          `, with ${top.plays} ${top.plays === 1 ? "spin" : "spins"} logged.`,
+        ),
       ]);
     }
     return lines;
@@ -459,6 +492,67 @@
     </div>
   </section>
 
+  <!-- ══════════════ the spin log — what actually gets played ══════════════ -->
+  {#if s.plays_total > 0}
+    <section class="border-b border-hair py-10">
+      <div
+        class="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4"
+      >
+        <h2 class="font-display text-[26px] font-normal leading-tight">
+          The spin log
+        </h2>
+        <p
+          class="max-w-md text-right font-display text-[13.5px] italic leading-relaxed text-faint"
+        >
+          {s.plays_total}
+          {s.plays_total === 1 ? "spin" : "spins"} logged across
+          {s.records_played}
+          {s.records_played === 1 ? "record" : "records"} — what actually gets played.
+        </p>
+      </div>
+
+      <!-- the most-played five: ranked ledger rows, quiet and clickable -->
+      <div class="flex flex-col">
+        {#each s.most_played as p, i (p.id)}
+          <a
+            href="/records/{p.id}"
+            class="group grid grid-cols-[24px_56px_1fr_auto] items-center gap-4 border-b border-hair py-4 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[28px_64px_1fr_auto] sm:gap-5"
+          >
+            <span class="font-display text-[15px] italic text-faint">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+            <span class="block h-14 w-14 shrink-0 sm:h-16 sm:w-16">
+              <CoverImage src={p.cover} alt="" loading="lazy" />
+            </span>
+            <span class="min-w-0">
+              <span
+                class="block truncate font-display text-[18px] tracking-[.005em] transition-colors group-hover:text-accent sm:text-[20px]"
+              >
+                {p.artist}
+              </span>
+              <span class="mt-0.5 block truncate text-[13.5px] text-muted">
+                {p.title}
+              </span>
+            </span>
+            <span class="flex shrink-0 flex-col items-end gap-1 text-right">
+              <span class="font-display text-[21px] leading-none">
+                {p.plays}
+              </span>
+              <span
+                class="text-[10px] font-semibold uppercase tracking-[.2em] text-faint"
+              >
+                {p.plays === 1 ? "spin" : "spins"}
+                {#if p.last_played_at}
+                  · last {fmtPlayedAt(p.last_played_at)}
+                {/if}
+              </span>
+            </span>
+          </a>
+        {/each}
+      </div>
+    </section>
+  {/if}
+
   <!-- ══════════════ A1 + A2 + A3 — the rhythm of the shelves ══════════════ -->
   <section class="border-b border-hair py-10">
     <div class="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
@@ -681,9 +775,7 @@
     <div class="grid gap-x-14 gap-y-12 md:grid-cols-2">
       <!-- B1 — spend histogram, five readable bands -->
       <section>
-        <h3 class="stat-section-title">
-          Where the money goes
-        </h3>
+        <h3 class="stat-section-title">Where the money goes</h3>
         {#if s.price_bands.length}
           {@render barChart(
             s.price_bands.map((b) => ({
@@ -706,9 +798,7 @@
 
       <!-- B2 — the priciest ten: a wall of fame in ledger rows -->
       <section>
-        <h3 class="stat-section-title">
-          The priciest ten
-        </h3>
+        <h3 class="stat-section-title">The priciest ten</h3>
         {#if s.priciest_ten.length}
           <ul class="flex flex-col">
             {#each s.priciest_ten as r, i (r.id)}
@@ -754,9 +844,7 @@
 
       <!-- B3 — spend by source -->
       <section>
-        <h3 class="stat-section-title">
-          Where from
-        </h3>
+        <h3 class="stat-section-title">Where from</h3>
         {#if s.by_source.length}
           {@render barChart(sourceRows)}
         {:else}
@@ -769,9 +857,7 @@
       <!-- B5 — condition vs. price (hidden unless ≥15 graded + priced) -->
       {#if scatterGeom}
         <section>
-          <h3 class="stat-section-title">
-            Condition against price
-          </h3>
+          <h3 class="stat-section-title">Condition against price</h3>
           <svg viewBox={`0 0 ${scatterGeom.W} ${scatterGeom.H}`} class="w-full">
             <!-- hairline axes -->
             <line
@@ -822,9 +908,7 @@
 
     <div class="grid gap-x-14 gap-y-12 md:grid-cols-2">
       <section>
-        <h3 class="stat-section-title">
-          Most collected
-        </h3>
+        <h3 class="stat-section-title">Most collected</h3>
         {#if s.top_artists.length}
           {@render barChart(
             s.top_artists.map((r) => ({
@@ -887,9 +971,7 @@
 
       <!-- C2 — the format spectrum: one segmented rule, 7s vs LPs at a glance -->
       <section class="md:col-span-2">
-        <h3 class="stat-section-title">
-          The format spectrum
-        </h3>
+        <h3 class="stat-section-title">The format spectrum</h3>
         {#if s.formats.length}
           {@render barChart(
             s.formats.map((f) => ({
@@ -907,9 +989,7 @@
 
       <!-- C3 — the condition report: media & sleeve over the Goldmine scale -->
       <section>
-        <h3 class="stat-section-title">
-          Condition report
-        </h3>
+        <h3 class="stat-section-title">Condition report</h3>
         {#if s.condition_media.length || s.condition_sleeve.length}
           {#each [{ title: "Media", rows: s.condition_media }, { title: "Sleeve", rows: s.condition_sleeve }] as c (c.title)}
             <div class="mb-8">
@@ -943,9 +1023,7 @@
 
       <!-- C4 — styles under genres -->
       <section>
-        <h3 class="stat-section-title">
-          Styles
-        </h3>
+        <h3 class="stat-section-title">Styles</h3>
         {#if s.by_style.length}
           {@render barChart(
             s.by_style.map((r) => ({
@@ -962,9 +1040,7 @@
       </section>
 
       <section>
-        <h3 class="stat-section-title">
-          Status
-        </h3>
+        <h3 class="stat-section-title">Status</h3>
         {@render barChart(statusRows)}
         <!-- C7 — the covers footnote, grown into documentation coverage -->
         <p
@@ -1066,9 +1142,7 @@
     <div class="grid gap-x-14 gap-y-12 md:grid-cols-2">
       <!-- C5 — how taste moved: one spectrum row per decade -->
       <section>
-        <h3 class="stat-section-title">
-          How taste moved
-        </h3>
+        <h3 class="stat-section-title">How taste moved</h3>
         {#if s.cross_tab.length}
           <ul class="flex flex-col gap-4">
             {#each s.cross_tab as row (row.decade)}
@@ -1116,9 +1190,7 @@
 
       <!-- C6 — duplicate watch -->
       <section>
-        <h3 class="stat-section-title">
-          Duplicate watch
-        </h3>
+        <h3 class="stat-section-title">Duplicate watch</h3>
         {#if s.duplicates}
           <ul class="flex flex-col">
             {#each s.duplicates.rows as r (r.id)}

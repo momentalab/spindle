@@ -1,10 +1,10 @@
 /**
  * Collection export endpoint.
  *
- * GET /api/export?format=csv|json[&table=records|photos]
+ * GET /api/export?format=csv|json[&table=records|photos|plays]
  *   format  csv (default) or json
- *   table   records | photos. CSV defaults to records; JSON defaults to all
- *           (both tables). For CSV the default filename reflects the table.
+ *   table   records | photos | plays. CSV defaults to records; JSON defaults
+ *           to all tables. For CSV the default filename reflects the table.
  *
  * Streams the local database as a download. Unknown format/table → 400 with
  * the list of supported values in the body, so curl/fetch users self-correct.

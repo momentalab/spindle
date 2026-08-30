@@ -11,8 +11,10 @@ import {
 	addCopy,
 	deleteRecord,
 	findRecordById,
+	latestPlayedAt,
 	listPhotos,
 	parseRecordForm,
+	playCount,
 	updateRecord
 } from '$lib/server/records';
 import type { Actions, PageServerLoad } from './$types';
@@ -22,7 +24,12 @@ export const load: PageServerLoad = async ({ params }) => {
 	if (!Number.isFinite(id) || id <= 0) error(400, 'Bad record id');
 	const record = findRecordById(id);
 	if (!record) error(404, 'Record not found');
-	return { record, photos: listPhotos(id) };
+	return {
+		record,
+		photos: listPhotos(id),
+		play_count: playCount(id),
+		last_played_at: latestPlayedAt(id)
+	};
 };
 
 export const actions: Actions = {
