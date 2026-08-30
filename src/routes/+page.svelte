@@ -129,6 +129,29 @@
 		>
 			records in index
 		</div>
+		{#if data.total > 0}
+			<!-- export: a quiet utility, not a CTA — the data is the user's to take out -->
+			<div class="mt-4 flex items-center justify-end gap-4">
+				<span
+					class="text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint"
+					>export</span
+				>
+				<a
+					href="/api/export?format=csv"
+					title="Download the whole index as CSV (records + photos)"
+					class="text-[10.5px] font-semibold uppercase tracking-[.18em] text-muted underline decoration-hair underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
+				>
+					CSV
+				</a>
+				<a
+					href="/api/export?format=json"
+					title="Download the whole index as JSON (full fidelity)"
+					class="text-[10.5px] font-semibold uppercase tracking-[.18em] text-muted underline decoration-hair underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
+				>
+					JSON
+				</a>
+			</div>
+		{/if}
 	</div>
 </header>
 

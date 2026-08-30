@@ -1,0 +1,46 @@
+# mynyl — single-container deployment.
+#
+#   docker compose up --build -d
+#
+# Listens on the host at 127.0.0.1:3737 by default (override with MYNYL_PORT).
+# Point your existing reverse proxy (e.g. Caddy) at that port:
+#     reverse_proxy 127.0.0.1:3737
+# The app derives its origin from the forwarded Host header and assumes https,
+# so no extra env is needed behind a TLS-terminating proxy (see README).
+#
+# Env vars are interpolated from the repo-root .env (compose-native substitution,
+# same file dev already uses) — there is deliberately no env_file. On a Linux x64
+# server build with:  docker buildx build --platform linux/amd64 -t mynyl .
+services:
+  mynyl:
+    build: .
+    image: mynyl
+    ports:
+      # Bind to localhost only — Caddy (or your proxy) is the public edge.
+      # Change the 127.0.0.1 prefix to "" (e.g. "3737:3000") to expose on all
+      # interfaces if you have no fronting proxy.
+      - "127.0.0.1:${MYNYL_PORT:-3737}:3000"
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3000"
+      DATA_DIR: /data
+      BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-10M}
+      DISCOGS_CONSUMER_KEY: ${DISCOGS_CONSUMER_KEY:-}
+      DISCOGS_CONSUMER_SECRET: ${DISCOGS_CONSUMER_SECRET:-}
+    volumes:
+      # SQLite DB + media persist across up/down/rebuild (gitignored on the host).
+      - ./data:/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
