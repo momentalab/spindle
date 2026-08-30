@@ -55,55 +55,106 @@
     return qs ? `/stats?${qs}` : "/stats";
   }
 
-  /* ---- D1 — the auto-generated abstract (one sentence, built clause by clause) ---- */
-  const abstract = $derived.by(() => {
-    if (!s.total) return "";
-    const bits: string[] = [`A shelf of ${s.in_collection} records`];
+  /* ---- D1 — the abstract: one line per idea. The key figures break out of
+     the muted italic voice (upright, heavier, a touch larger) so the data leads. ---- */
+  type Part = { t: string; h: boolean };
+  const seg = (t: string, h = false): Part => ({ t, h });
+  const abstractLines = $derived.by((): Part[][] => {
+    if (!s.total) return [];
+    const lines: Part[][] = [];
     const genre = s.by_genre[0];
-    if (genre) bits.push(`mostly ${genre.label}`);
     const artist = s.top_artists[0];
-    if (artist)
-      bits.push(
-        artist.count > 1
-          ? `leaning on ${artist.label}`
-          : `anchored by ${artist.label}`,
-      );
-    if (s.median_year) bits.push(`with a median year of ${s.median_year}`);
-    let line = bits.join(", ");
+
+    // line one — what the shelf holds
+    const l1: Part[] = [
+      seg(String(s.in_collection), true),
+      seg(" records on the shelf"),
+    ];
+    if (genre) l1.push(seg(", mostly "), seg(genre.label, true));
+    l1.push(seg("."));
+    lines.push(l1);
+
+    // line two — the artist it leans on, and the median pressing year
+    if (artist) {
+      const l2: Part[] = [
+        seg(
+          artist.count > 1
+            ? "The shelf leans on "
+            : "The shelf is anchored by ",
+        ),
+        seg(artist.label, true),
+      ];
+      if (s.median_year)
+        l2.push(
+          seg(", with a median pressing year of "),
+          seg(String(s.median_year), true),
+        );
+      l2.push(seg("."));
+      lines.push(l2);
+    } else if (s.median_year) {
+      lines.push([
+        seg("Median pressing year "),
+        seg(String(s.median_year), true),
+        seg("."),
+      ]);
+    }
+
+    // line three — the priciest pressing
     if (s.priciest) {
-      line += `. The priciest pressing still on the shelf: ${s.priciest.artist} — ${s.priciest.title}, at ${money(s.priciest.price_cents)}`;
+      lines.push([
+        seg("The priciest pressing on the shelf is "),
+        seg(`${s.priciest.artist} — ${s.priciest.title}`, true),
+        seg(", at "),
+        seg(money(s.priciest.price_cents), true),
+        seg("."),
+      ]);
     }
-    line += ".";
+
+    // line four — where the new arrivals leaned (windowed view only)
     if (window !== "all" && s.window_top_genre && s.pace.windowed > 0) {
-      line += ` Over ${s.pace.label}, the new arrivals leaned ${s.window_top_genre.label}.`;
+      lines.push([
+        seg(`Over ${s.pace.label}, new arrivals leaned `),
+        seg(s.window_top_genre.label, true),
+        seg("."),
+      ]);
     }
-    return line;
+    return lines;
   });
 
-  /* ---- A4 — the pace sentence, ledger voice ("1.9 / month over the last year · …"),
-     closed by the D5 milestone, which always has a number. ---- */
-  const paceClauses = $derived.by(() => {
+  /* ---- A4 — the pace strip, ledger voice: one number per stat, each with
+     its own label so nothing smears into a dense run-on sentence. ---- */
+  const paceStats = $derived.by((): { value: string; label: string }[] => {
     const p = s.pace;
-    const clauses: string[] = [];
     if (p.windowed > 0) {
       const pm =
         p.per_month % 1 === 0 ? String(p.per_month) : p.per_month.toFixed(1);
-      clauses.push(`${pm} / month over ${p.label}`);
+      const stats: { value: string; label: string }[] = [
+        { value: pm, label: `per month · ${p.label}` },
+      ];
       if (p.biggest) {
         const unit = timeline[0]?.key.length === 4 ? "year" : "month";
-        clauses.push(
-          `biggest ${unit}: ${p.biggest.label} (${p.biggest.count})`,
-        );
+        stats.push({
+          value: String(p.biggest.count),
+          label: `in ${p.biggest.label} · biggest ${unit}`,
+        });
       }
       if (p.drought_weeks > 0)
-        clauses.push(`longest drought: ${p.drought_weeks} weeks`);
+        stats.push({
+          value: String(p.drought_weeks),
+          label:
+            p.drought_weeks === 1
+              ? "week, longest drought"
+              : "weeks, longest drought",
+        });
       if (p.oldest_acquired)
-        clauses.push(`oldest on the shelf: picked up ${p.oldest_acquired}`);
+        stats.push({
+          value: p.oldest_acquired,
+          label: "oldest on the shelf",
+        });
+      return stats;
     }
-    clauses.push(`${s.milestone.remaining} to ${s.milestone.next}`);
-    return clauses;
+    return [];
   });
-
   /* ---- A1 / A2 — rhythm chart scale ---- */
   const timeline = $derived(s.timeline);
   const maxCount = $derived(timeline.reduce((m, b) => Math.max(m, b.count), 0));
@@ -217,39 +268,43 @@
 
 <svelte:head><title>mynyl — by the numbers</title></svelte:head>
 
-<!-- Hairline bar row: label left, italic serif number right (count or money). -->
-{#snippet barRows(
+<!-- Vertical bar chart: value above, bar rising from a baseline rule, label below. -->
+{#snippet barChart(
   rows: { label: string; num: number; display: string }[],
   hrefFor: (label: string) => string | null = () => null,
 )}
   {@const max = rows.reduce((m, r) => Math.max(m, r.num), 0)}
-  <ul class="flex flex-col gap-3.5">
+  <div class="flex items-end gap-x-3 sm:gap-x-4">
     {#each rows as r (r.label)}
       {@const href = hrefFor(r.label)}
-      <li
-        class="grid grid-cols-[88px_1fr_auto] items-center gap-4 sm:grid-cols-[110px_1fr_auto]"
+      <div
+        class="flex min-w-0 flex-1 basis-0 flex-col"
+        title={`${r.label} — ${r.display}`}
       >
-        {#if href}
-          <a
-            {href}
-            class="truncate text-[13px] transition-colors duration-300 hover:text-accent"
-            >{r.label}</a
-          >
-        {:else}
-          <span class="truncate text-[13px]">{r.label}</span>
-        {/if}
-        <span class="relative block h-[3px] w-full bg-surface-2">
-          <span
-            class="absolute inset-y-0 left-0 bg-accent transition-[width] duration-500"
-            style={`width: ${max ? Math.max((r.num / max) * 100, 2) : 0}%`}
-          ></span>
-        </span>
-        <span class="font-display text-[14px] italic text-muted"
+        <span
+          class="mb-1.5 truncate text-center font-display text-[13px] italic leading-none text-muted"
           >{r.display}</span
         >
-      </li>
+        <div class="flex h-28 items-end justify-center border-b border-edge">
+          <span
+            class="w-full max-w-[22px] bg-accent transition-[height] duration-500"
+            style={`height: ${max ? Math.max((r.num / max) * 100, 3) : 0}%`}
+          ></span>
+        </div>
+        <div
+          class="truncate pt-2 text-center text-[10.5px] uppercase tracking-[.08em]"
+        >
+          {#if href}
+            <a {href} class="transition-colors duration-300 hover:text-accent"
+              >{r.label}</a
+            >
+          {:else}
+            <span class="text-muted">{r.label}</span>
+          {/if}
+        </div>
+      </div>
     {/each}
-  </ul>
+  </div>
 {/snippet}
 
 <!-- page head — editorial, mirrors home -->
@@ -262,12 +317,25 @@
     >
       By the numbers.
     </h1>
-    {#if abstract}
-      <p
-        class="mt-3 font-display text-[15px] italic leading-relaxed text-muted"
-      >
-        {abstract}
-      </p>
+    {#if abstractLines.length}
+      <div class="mt-5 flex max-w-3xl flex-col gap-1.5">
+        {#each abstractLines as line, i (i)}
+          <p
+            class="font-display text-[17px] italic leading-relaxed text-muted sm:text-[18px]"
+          >
+            {#each line as part, j (j)}
+              {#if part.h}
+                <span
+                  class="not-italic font-semibold tracking-normal text-ink sm:text-[20px]"
+                  >{part.t}</span
+                >
+              {:else}
+                {part.t}
+              {/if}
+            {/each}
+          </p>
+        {/each}
+      </div>
     {:else}
       <p class="mt-3 font-display text-[15px] italic text-muted">
         The index, audited — what the shelves hold, and what they cost.
@@ -297,7 +365,7 @@
     <Button href="/scan" variant="primary">Scan a record</Button>
   </div>
 {:else}
-  <!-- headline counters — a quiet ledger strip, closed by the pace sentence (A4) -->
+  <!-- headline counters — a quiet ledger strip, closed by the pace stats (A4) -->
   <section
     class="grid grid-cols-2 gap-x-6 gap-y-8 border-b border-hair py-9 md:grid-cols-3 lg:grid-cols-5"
   >
@@ -350,13 +418,45 @@
       </div>
     </div>
 
-    {#if paceClauses.length}
-      <p
-        class="col-span-2 mt-2 border-t border-hair pt-5 font-display text-[15px] italic leading-relaxed text-muted md:col-span-3 lg:col-span-5"
+    <!-- A4 — the pace: quiet mini stats across the strip's full width -->
+    <div
+      class="col-span-2 mt-7 border-t border-hair pt-6 md:col-span-3 lg:col-span-5"
+    >
+      {#if paceStats.length}
+        <div class="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+          {#each paceStats as st, i (i)}
+            <div>
+              <div
+                class="font-display text-[21px] leading-none tracking-[-.01em] sm:text-[23px]"
+              >
+                {st.value}
+              </div>
+              <div
+                class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"
+              >
+                {st.label}
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+      <!-- D5 — the next milestone, on its own row so it reads as a goal,
+           not another acquisition stat -->
+      <div
+        class="mt-6 flex flex-wrap items-baseline gap-x-4 gap-y-1 border-t border-hair pt-5"
       >
-        {paceClauses.join(" · ")}
-      </p>
-    {/if}
+        <span
+          class="shrink-0 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"
+          >Next milestone</span
+        >
+        <span class="font-display text-[16px] italic leading-snug text-muted">
+          <span class="not-italic font-semibold text-ink"
+            >{s.milestone.remaining}</span
+          >
+          records to {s.milestone.next}
+        </span>
+      </div>
+    </div>
   </section>
 
   <!-- ══════════════ A1 + A2 + A3 — the rhythm of the shelves ══════════════ -->
@@ -365,7 +465,13 @@
       <h2 class="font-display text-[26px] font-normal leading-tight">
         The rhythm of the shelves
       </h2>
-      <nav aria-label="Rhythm window" class="flex flex-wrap items-center gap-6">
+      <!-- data-sveltekit-noscroll: toggling the window re-fetches in place;
+           keep the reader where they are instead of jumping to the top. -->
+      <nav
+        aria-label="Rhythm window"
+        data-sveltekit-noscroll
+        class="flex flex-wrap items-center gap-6"
+      >
         {#each windows as w (w.id)}
           {@const active = window === w.id}
           <a
@@ -507,9 +613,6 @@
                 </div>
               {/each}
             </div>
-            <p class="mt-3 font-display text-[12.5px] italic text-faint">
-              quiet days in hairline · a week of hunting in gold.
-            </p>
           </div>
         </div>
       </div>
@@ -552,7 +655,12 @@
       <h2 class="font-display text-[26px] font-normal leading-tight">
         What it cost
       </h2>
-      <nav aria-label="Money metric" class="flex items-center gap-6">
+      <!-- data-sveltekit-noscroll: same as above for the metric toggle. -->
+      <nav
+        aria-label="Money metric"
+        data-sveltekit-noscroll
+        class="flex items-center gap-6"
+      >
         {#each [{ id: "count", label: "Counts" }, { id: "value", label: "Spend" }] as m (m.id)}
           {@const active = metric === m.id}
           <a
@@ -573,39 +681,17 @@
     <div class="grid gap-x-14 gap-y-12 md:grid-cols-2">
       <!-- B1 — spend histogram, five readable bands -->
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           Where the money goes
         </h3>
         {#if s.price_bands.length}
-          {@const maxBand = Math.max(...s.price_bands.map((b) => b.count), 1)}
-          <div class="flex h-40 items-end gap-5 border-b border-edge pb-0">
-            {#each s.price_bands as b (b.label)}
-              <div
-                class="flex h-full flex-1 flex-col justify-end"
-                title={`${b.label} — ${b.count}`}
-              >
-                <span
-                  class="mb-1.5 text-center font-display text-[13px] italic text-muted"
-                  >{b.count}</span
-                >
-                <span
-                  class="mx-auto w-full max-w-[26px] bg-accent transition-[height] duration-500"
-                  style={`height: ${Math.max((b.count / maxBand) * 100, 3)}%`}
-                ></span>
-              </div>
-            {/each}
-          </div>
-          <div class="flex gap-5 pt-2">
-            {#each s.price_bands as b (b.label)}
-              <span
-                class="flex-1 text-center text-[10px] uppercase tracking-[.1em] text-faint"
-              >
-                {b.label}
-              </span>
-            {/each}
-          </div>
+          {@render barChart(
+            s.price_bands.map((b) => ({
+              label: b.label,
+              num: b.count,
+              display: String(b.count),
+            })),
+          )}
           {#if s.unpriced_entries > 0}
             <p class="mt-4 font-display text-[13px] italic text-faint">
               · {s.unpriced_entries} unpriced on the shelf
@@ -620,25 +706,23 @@
 
       <!-- B2 — the priciest ten: a wall of fame in ledger rows -->
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           The priciest ten
         </h3>
         {#if s.priciest_ten.length}
           <ul class="flex flex-col">
             {#each s.priciest_ten as r, i (r.id)}
               <li
-                class="grid grid-cols-[40px_20px_1fr_auto] items-center gap-3 border-b border-hair py-2.5"
+                class="grid grid-cols-[40px_32px_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-hair py-2.5"
               >
                 <span class="font-display text-[13px] italic text-faint">
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <a href={`/records/${r.id}`} class="block h-9 w-9 shrink-0">
+                <a href={`/records/${r.id}`} class="block h-8 w-8 shrink-0">
                   <CoverImage
                     src={r.cover ? `/media/${r.cover}` : null}
                     alt=""
-                    class="h-9 w-9"
+                    class="h-8 w-8"
                   />
                 </a>
                 <a
@@ -650,11 +734,12 @@
                   >
                     {r.artist} — {r.title}
                   </span>
-                  <span class="block text-[11px] text-faint">
+                  <span class="block truncate text-[11px] text-faint">
                     {r.year ?? "undated"}
                   </span>
                 </a>
-                <span class="font-display text-[15px] italic"
+                <span
+                  class="shrink-0 whitespace-nowrap font-display text-[15px] italic"
                   >{money(r.price_cents)}</span
                 >
               </li>
@@ -669,18 +754,11 @@
 
       <!-- B3 — spend by source -->
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           Where from
         </h3>
         {#if s.by_source.length}
-          {@render barRows(sourceRows)}
-          <p
-            class="mt-6 font-display text-[13px] italic leading-relaxed text-faint"
-          >
-            name your record shops as the source and this becomes a leaderboard.
-          </p>
+          {@render barChart(sourceRows)}
         {:else}
           <p class="font-display text-[14px] italic text-muted">
             No sources recorded yet.
@@ -691,9 +769,7 @@
       <!-- B5 — condition vs. price (hidden unless ≥15 graded + priced) -->
       {#if scatterGeom}
         <section>
-          <h3
-            class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-          >
+          <h3 class="stat-section-title">
             Condition against price
           </h3>
           <svg viewBox={`0 0 ${scatterGeom.W} ${scatterGeom.H}`} class="w-full">
@@ -733,9 +809,6 @@
               <span>{t}</span>
             {/each}
           </div>
-          <p class="mt-3 font-display text-[12.5px] italic text-faint">
-            most shelves pay a mint premium — check yours.
-          </p>
         </section>
       {/if}
     </div>
@@ -749,35 +822,18 @@
 
     <div class="grid gap-x-14 gap-y-12 md:grid-cols-2">
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           Most collected
         </h3>
         {#if s.top_artists.length}
-          {@const maxArtist = Math.max(...s.top_artists.map((a) => a.count), 1)}
-          <ul class="flex flex-col gap-3.5">
-            {#each s.top_artists as r (r.label)}
-              <li
-                class="grid grid-cols-[88px_1fr_auto] items-center gap-4 sm:grid-cols-[110px_1fr_auto]"
-              >
-                <a
-                  href={`/?q=${encodeURIComponent(r.label)}`}
-                  class="truncate text-[13px] transition-colors duration-300 hover:text-accent"
-                  >{r.label}</a
-                >
-                <span class="relative block h-[3px] w-full bg-surface-2">
-                  <span
-                    class="absolute inset-y-0 left-0 bg-accent transition-[width] duration-500"
-                    style={`width: ${Math.max((r.count / maxArtist) * 100, 2)}%`}
-                  ></span>
-                </span>
-                <span class="font-display text-[14px] italic text-muted"
-                  >{r.count}</span
-                >
-              </li>
-            {/each}
-          </ul>
+          {@render barChart(
+            s.top_artists.map((r) => ({
+              label: r.label,
+              num: r.count,
+              display: String(r.count),
+            })),
+            (label) => `/?q=${encodeURIComponent(label)}`,
+          )}
           {@const top = s.top_artists[0]}
           <p
             class="mt-6 border-l-2 border-l-edge pl-4 font-display text-[13.5px] italic leading-relaxed text-faint"
@@ -797,13 +853,11 @@
       </section>
 
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           By genre · {metric === "value" ? "spend" : "counts"}
         </h3>
         {#if s.by_genre.length}
-          {@render barRows(genreRows)}
+          {@render barChart(genreRows)}
         {:else}
           <p class="font-display text-[14px] italic text-muted">
             No genres catalogued yet.
@@ -812,13 +866,11 @@
       </section>
 
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           By label · {metric === "value" ? "spend" : "counts"}
         </h3>
         {#if s.by_label.length}
-          {@render barRows(labelRows)}
+          {@render barChart(labelRows)}
         {:else}
           <p class="font-display text-[14px] italic text-muted">
             No labels catalogued yet.
@@ -827,47 +879,25 @@
       </section>
 
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           By decade · {metric === "value" ? "spend" : "counts"}
         </h3>
-        {@render barRows(decadeRows)}
+        {@render barChart(decadeRows)}
       </section>
 
       <!-- C2 — the format spectrum: one segmented rule, 7s vs LPs at a glance -->
       <section class="md:col-span-2">
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           The format spectrum
         </h3>
         {#if s.formats.length}
-          {@const totalFormats = s.formats.reduce((t, f) => t + f.count, 0)}
-          <div class="flex h-[6px] w-full overflow-hidden bg-surface-2">
-            {#each s.formats as f (f.label)}
-              <span
-                class={f === s.formats[0] ? "bg-accent" : "bg-faint/40"}
-                style={`width: ${(f.count / totalFormats) * 100}%`}
-              ></span>
-            {/each}
-          </div>
-          <div class="mt-3 flex flex-wrap gap-x-8 gap-y-2">
-            {#each s.formats as f (f.label)}
-              <span class="flex items-baseline gap-2">
-                <span
-                  class={f === s.formats[0]
-                    ? "text-[10.5px] font-semibold uppercase tracking-[.18em] text-accent"
-                    : "text-[10.5px] font-semibold uppercase tracking-[.18em] text-faint"}
-                >
-                  {f.label}
-                </span>
-                <span class="font-display text-[14px] italic text-muted"
-                  >{f.count}</span
-                >
-              </span>
-            {/each}
-          </div>
+          {@render barChart(
+            s.formats.map((f) => ({
+              label: f.label,
+              num: f.count,
+              display: String(f.count),
+            })),
+          )}
         {:else}
           <p class="font-display text-[14px] italic text-muted">
             No formats recorded yet.
@@ -877,42 +907,24 @@
 
       <!-- C3 — the condition report: media & sleeve over the Goldmine scale -->
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           Condition report
         </h3>
         {#if s.condition_media.length || s.condition_sleeve.length}
-          {@const condMax = Math.max(
-            ...s.condition_media.map((c) => c.count),
-            ...s.condition_sleeve.map((c) => c.count),
-            1,
-          )}
           {#each [{ title: "Media", rows: s.condition_media }, { title: "Sleeve", rows: s.condition_sleeve }] as c (c.title)}
-            <div class="mb-6">
+            <div class="mb-8">
               <div
                 class="mb-3 text-[10px] font-semibold uppercase tracking-[.2em] text-muted"
               >
                 {c.title}
               </div>
-              <ul class="flex flex-col gap-2.5">
-                {#each c.rows as r (r.label)}
-                  <li class="grid grid-cols-[44px_1fr_auto] items-center gap-3">
-                    <span class="text-[11px] uppercase tracking-wide"
-                      >{r.label}</span
-                    >
-                    <span class="relative block h-[2px] w-full bg-surface-2">
-                      <span
-                        class="absolute inset-y-0 left-0 bg-accent"
-                        style={`width: ${Math.max((r.count / condMax) * 100, 3)}%`}
-                      ></span>
-                    </span>
-                    <span class="font-display text-[13px] italic text-muted"
-                      >{r.count}</span
-                    >
-                  </li>
-                {/each}
-              </ul>
+              {@render barChart(
+                c.rows.map((r) => ({
+                  label: r.label,
+                  num: r.count,
+                  display: String(r.count),
+                })),
+              )}
             </div>
           {/each}
           {#if s.condition_report.nm_or_better_pct !== null}
@@ -931,24 +943,17 @@
 
       <!-- C4 — styles under genres -->
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           Styles
         </h3>
         {#if s.by_style.length}
-          {@render barRows(
+          {@render barChart(
             s.by_style.map((r) => ({
               label: r.label,
               num: r.count,
               display: String(r.count),
             })),
           )}
-          <p
-            class="mt-6 font-display text-[13px] italic leading-relaxed text-faint"
-          >
-            the fine print under each genre — where the taste actually lives.
-          </p>
         {:else}
           <p class="font-display text-[14px] italic text-muted">
             No styles recorded yet.
@@ -957,12 +962,10 @@
       </section>
 
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           Status
         </h3>
-        {@render barRows(statusRows)}
+        {@render barChart(statusRows)}
         <!-- C7 — the covers footnote, grown into documentation coverage -->
         <p
           class="mt-6 border-l-2 border-l-edge pl-4 font-display text-[13.5px] italic leading-relaxed text-faint"
@@ -1063,9 +1066,7 @@
     <div class="grid gap-x-14 gap-y-12 md:grid-cols-2">
       <!-- C5 — how taste moved: one spectrum row per decade -->
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           How taste moved
         </h3>
         {#if s.cross_tab.length}
@@ -1115,9 +1116,7 @@
 
       <!-- C6 — duplicate watch -->
       <section>
-        <h3
-          class="mb-6 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-        >
+        <h3 class="stat-section-title">
           Duplicate watch
         </h3>
         {#if s.duplicates}
@@ -1162,8 +1161,7 @@
     >
       Audited {s.total} records · {s.priced_entries} priced · {s.formats.length
         ? `${s.formats[0].label.toLowerCase()}s lead the format mix`
-        : "formats unrecorded"}
-      {#if s.hero_decade}· the {s.hero_decade.label} own this room{/if}.
+        : "formats unrecorded"}.
     </p>
   </section>
 {/if}
