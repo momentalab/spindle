@@ -19,6 +19,25 @@ export function getDb(): Database.Database {
 	return db;
 }
 
+/**
+ * Checkpoint the WAL (flushing it into mynyl.db) and close the connection,
+ * releasing every file handle on the DB. Call this only right before
+ * replacing the DB files on disk (restore, F8) — until the next getDb()
+ * call the app has no live connection, which is acceptable for a
+ * single-user local tool.
+ */
+export function checkpointAndClose(): void {
+	if (!_db) return;
+	const db = _db;
+	_db = null; // no new statement can land on a closing connection
+	try {
+		db.pragma('wal_checkpoint(TRUNCATE)');
+	} catch {
+		// A failed checkpoint must not leak the handle: close either way.
+	}
+	db.close();
+}
+
 interface Migration {
 	version: number;
 	description: string;

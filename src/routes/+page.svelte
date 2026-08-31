@@ -2,6 +2,7 @@
 	import { page } from "$app/state";
 	import type { PageData } from "./$types";
 	import Badge from "$lib/components/ui/Badge.svelte";
+	import BackupSection from "$lib/components/BackupSection.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import CoverImage from "$lib/components/ui/CoverImage.svelte";
 	import { appTitle } from "$lib/index";
@@ -582,6 +583,10 @@
 		{/each}
 	</div>
 {/if}
+
+<!-- Backup & restore: shown even on an empty collection — restoring into a
+	    wiped state is exactly the recovery moment it exists for. -->
+<BackupSection />
 
 <style>
 	/* staggered rise-in for the catalogue rows (delay comes from the inline style attr) */

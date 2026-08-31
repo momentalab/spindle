@@ -11,6 +11,7 @@ A **local-first** vinyl record collection tracker. Scan a barcode, pull metadata
 - **Three views** — cards, table (sortable columns), and list, with search + genre/label/status filters
 - **Photos** — upload images of your actual records (client-side downscale to ~1600px JPEG before storage)
 - **Export** — take the whole collection out as CSV or JSON, from the home page or `GET /api/export`
+- **Backup & restore** — download the entire collection (SQLite DB + every cover and photo) as a single zip, and restore it from that zip on any machine; restores validate before touching anything and keep the previous generation in `data/.pre-restore`
 
 ## Requirements
 
@@ -74,15 +75,34 @@ curl -OJ "http://localhost:3737/api/export?format=json"       # full fidelity (r
 - **CSV** is strictly RFC 4180 (header + rows, CRLF, UTF-8 BOM for Excel), prices in dollars — it opens cleanly in Excel/LibreOffice/pandas.
 - **JSON** carries every raw column plus `exported_at`/counts, for backups and tooling.
 
+## Backup & restore
+
+CSV/JSON exports are a snapshot of the *data*; a backup is the whole *thing* — the SQLite database plus every cover and photo file, in one zip you can drop anywhere.
+
+- **Download** — from the "Backup" section at the bottom of the home page (or `curl -X POST`), producing e.g. `mynyl-backup-2026-08-30T23-00-00.zip`. The WAL is checkpointed first, so the db file inside is a consistent, self-contained snapshot.
+- **Restore** — upload that zip from the same section (the browser confirms before it's sent). The server parses and path-checks the archive, opens the candidate database out-of-band and runs `PRAGMA integrity_check` — and only once that passes does it shut the live connection down, preserve the current DB + media in `data/.pre-restore/`, and swap the new generation in. A bad or partial archive aborts with the existing collection byte-for-byte untouched.
+- **Safety net** — `.pre-restore/` keeps exactly one previous generation (the files from before the last restore), so a mistaken restore can be put back by restoring *that* set of files.
+
+```sh
+curl -X POST -OJ "http://localhost:3737/api/backup"                  # download the zip
+# Production builds assume https for origin checks (behind-TLS deployment), so a
+# terminal form-POST needs a matching Origin header, like photo uploads:
+curl -X POST -H "Origin: https://localhost:3737" \
+     -F "file=@mynyl-backup-….zip" "http://localhost:3737/api/restore"
+# (Under `npm run dev` the origin check is disabled — plain curl works.)
+```
+
+`BODY_SIZE_LIMIT` is 512M by default so media-heavy backup zips can be restored in-app (individual photo uploads are still capped at 8MB per file server-side). The UI needs no special handling — the browser sends a same-origin `Origin` automatically.
+
 ## Environment
 
-| Variable                  | Default                                                    | Purpose                                           |
-| ------------------------- | ---------------------------------------------------------- | ------------------------------------------------- |
-| `DISCOGS_CONSUMER_KEY`    | *(empty → unauthenticated tier, manual entry still works)* | Discogs API consumer key                          |
-| `DISCOGS_CONSUMER_SECRET` | *(empty)*                                                  | Discogs API secret                                |
-| `DATA_DIR`                | `./data`                                                   | Where the SQLite DB and media files live          |
-| `BODY_SIZE_LIMIT`         | `10M` (compose)                                            | Max request body for adapter-node (photo uploads) |
-| `MYNYL_PORT`              | `3737` (compose)                                           | Host port for the Docker deployment               |
+| Variable                  | Default                                                    | Purpose                                                                                |
+| ------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `DISCOGS_CONSUMER_KEY`    | *(empty → unauthenticated tier, manual entry still works)* | Discogs API consumer key                                                               |
+| `DISCOGS_CONSUMER_SECRET` | *(empty)*                                                  | Discogs API secret                                                                     |
+| `DATA_DIR`                | `./data`                                                   | Where the SQLite DB and media files live                                               |
+| `BODY_SIZE_LIMIT`         | `512M` (compose)                                           | Max request body for adapter-node (restore uploads; photos are capped per-file at 8MB) |
+| `MYNYL_PORT`              | `3737` (compose)                                           | Host port for the Docker deployment                                                    |
 
 Create a (free) key/secret pair at https://www.discogs.com/settings/developers — one per project, no OAuth dance needed for local use.
 
@@ -100,6 +120,7 @@ src/
       discogs.ts             # Discogs API client (search by barcode, release detail)
       records.ts             # all record SQL: list/search/sort/filter, CRUD, photos
       importer.ts            # importRecord(): local cover download + insert
+      backup.ts              # backup zip (archiver) + validated restore (.pre-restore snapshot)
   routes/
     +page.*                  # collection home: cards/table/list, search & filters
     scan/+page.svelte        # barcode scanner (camera) + manual entry fallback
@@ -108,6 +129,8 @@ src/
     records/[id]/+page.*     # detail: edit form, photos, add copy, delete
     api/import/+server.ts    # JSON lookup endpoint (candidate expansion)
     api/export/+server.ts    # GET collection export (csv|json, table=records|photos)
+    api/backup/+server.ts    # POST whole-collection zip download (db checkpointed + media/)
+    api/restore/+server.ts   # POST backup zip restore (validated, .pre-restore snapshot)
     api/records/[id]/photos/+server.ts  # photo upload/delete (multipart)
     media/[...file]/+server.ts           # local media serving (traversal-guarded)
 plans/mynyl-plan.md          # the full architecture plan
