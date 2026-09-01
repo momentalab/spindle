@@ -8,9 +8,12 @@
 	let {
 		draft = $bindable(null),
 		submitLabel = "Save",
+		sources = [],
 	}: {
 		draft: RecordDraft | null;
 		submitLabel?: string;
+		/** Existing purchase sources — offered as dropdown suggestions (typing new values stays allowed). */
+		sources?: readonly string[];
 	} = $props();
 </script>
 
@@ -130,8 +133,15 @@
 					id="f-source"
 					name="source"
 					label="Source / where from"
+					list="f-source-options"
 					bind:value={draft.source}
 				/>
+				<!-- Existing sources as dropdown suggestions; free entry is still allowed. -->
+				<datalist id="f-source-options">
+					{#each sources as s (s)}
+						<option value={s}></option>
+					{/each}
+				</datalist>
 			</div>
 		</section>
 

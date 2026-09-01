@@ -343,7 +343,7 @@
 
 	<div class="min-w-0">
 		<h1
-			class="font-display text-5xl font-normal leading-[1.02] tracking-[-.01em] sm:text-[56px]"
+			class="break-words font-display text-5xl font-normal leading-[1.02] tracking-[-.01em] sm:text-[56px]"
 		>
 			{data.record.title}
 		</h1>
@@ -358,7 +358,7 @@
 		<dl class="flex flex-col">
 			{#each meta as [k, v] (k)}
 				<div
-					class="grid grid-cols-[150px_1fr] gap-6 border-b border-hair py-2.5"
+					class="grid grid-cols-[88px_minmax(0,1fr)] gap-x-4 border-b border-hair py-2.5 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-x-6"
 				>
 					<dt
 						class="pt-0.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
@@ -366,13 +366,15 @@
 						{k}
 					</dt>
 					<dd
-						class={`text-[15px] ${["Format", "Barcode", "Acquired", "Source"].includes(k) ? "text-muted" : ""}`}
+						class={`break-words text-[15px] ${["Format", "Barcode", "Acquired", "Source"].includes(k) ? "text-muted" : ""}`}
 					>
 						{v}
 					</dd>
 				</div>
 			{/each}
-			<div class="grid grid-cols-[150px_1fr] gap-6 border-b border-hair py-2.5">
+			<div
+				class="grid grid-cols-[88px_minmax(0,1fr)] gap-x-4 border-b border-hair py-2.5 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-x-6"
+			>
 				<dt
 					class="pt-0.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
 				>
@@ -469,8 +471,24 @@
 		{#if form?.error}<div class="mb-6">
 				<Banner variant="error">{form.error}</Banner>
 			</div>{/if}
-		<form method="POST" action="?/edit" use:enhance>
-			<RecordForm bind:draft submitLabel="Save changes" />
+		<form
+			method="POST"
+			action="?/edit"
+			use:enhance={() =>
+				async ({ result }) => {
+					// Success: dismiss the editor (SvelteKit then revalidates the spec
+					// sheet from the updated row). Failure: keep it open so the error
+					// banner and the filled-in fields stay put.
+					if (!result || !("type" in result) || result.type !== "failure") {
+						editing = false;
+					}
+				}}
+		>
+			<RecordForm
+				bind:draft
+				sources={data.sources}
+				submitLabel="Save changes"
+			/>
 		</form>
 	</section>
 {/if}

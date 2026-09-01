@@ -76,7 +76,7 @@ export function listRecords(opts: ListOptions): RecordRow[] {
 }
 
 /** Distinct values for filter dropdowns. */
-export function distinctValues(column: 'genre' | 'label'): string[] {
+export function distinctValues(column: 'genre' | 'label' | 'source'): string[] {
 	const rows = getDb()
 		.prepare(`SELECT DISTINCT ${column} AS v FROM records WHERE ${column} IS NOT NULL AND ${column} != '' ORDER BY v`)
 		.all() as { v: string }[];

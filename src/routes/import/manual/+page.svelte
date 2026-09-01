@@ -83,6 +83,10 @@
 			name="op"
 			value={createAnyway ? "create_anyway" : "save"}
 		/>
-		<RecordForm bind:draft submitLabel="Save to my collection" />
+		<RecordForm
+			bind:draft
+			sources={data.sources}
+			submitLabel="Save to my collection"
+		/>
 	</form>
 </div>

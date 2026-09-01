@@ -240,7 +240,9 @@
 				class="font-display text-[19px] italic"
 			/>
 		</label>
-		<Button type="button" variant="secondary">Look up</Button>
+		<!-- type="submit": the form's onsubmit performs the lookup (type="button"
+		     made this click dead, since a non-submit button never fires onsubmit). -->
+		<Button type="submit" variant="secondary">Look up</Button>
 	</form>
 
 	<p class="mt-8 text-center">
@@ -252,9 +254,3 @@
 		</a>
 	</p>
 </div>
-
-<style>
-	video {
-		transform: scaleX(-1);
-	}
-</style>

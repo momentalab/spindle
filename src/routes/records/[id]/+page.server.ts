@@ -15,7 +15,8 @@ import {
 	listPhotos,
 	parseRecordForm,
 	playCount,
-	updateRecord
+	updateRecord,
+	distinctValues
 } from '$lib/server/records';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -28,7 +29,9 @@ export const load: PageServerLoad = async ({ params }) => {
 		record,
 		photos: listPhotos(id),
 		play_count: playCount(id),
-		last_played_at: latestPlayedAt(id)
+		last_played_at: latestPlayedAt(id),
+		// Existing purchase sources — suggestions for the edit form's source field.
+		sources: distinctValues('source')
 	};
 };
 

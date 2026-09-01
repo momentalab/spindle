@@ -3,9 +3,14 @@
  * If the user fills in a barcode and it already exists locally, offer add-copy.
  */
 import { fail, redirect } from '@sveltejs/kit';
-import { findByBarcode, addCopy, parseRecordForm } from '$lib/server/records';
+import { findByBarcode, addCopy, parseRecordForm, distinctValues } from '$lib/server/records';
 import { importRecord } from '$lib/server/importer';
-import type { Actions } from './$types';
+import type { Actions, PageServerLoad } from './$types';
+
+/** Existing purchase sources, offered as suggestions in the form. */
+export const load: PageServerLoad = () => ({
+	sources: distinctValues('source')
+});
 
 export const actions: Actions = {
 	default: async ({ request }) => {

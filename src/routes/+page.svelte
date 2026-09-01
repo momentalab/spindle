@@ -411,12 +411,15 @@
 			>
 				<a
 					href="/records/{rec.id}"
-					class="grid min-w-0 flex-1 grid-cols-[40px_56px_1fr_auto] items-center gap-4 py-5 transition-[padding] duration-200 group-hover:pl-2 sm:grid-cols-[56px_72px_1fr_auto] sm:gap-6"
+					class="grid min-w-0 flex-1 grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 py-5 transition-[padding] duration-200 group-hover:pl-2 sm:grid-cols-[56px_72px_minmax(0,1fr)_auto] sm:gap-6"
 				>
-					<span class="font-display text-[15px] italic text-faint"
+					<!-- Number is dropped below sm so the row can never force a
+					     horizontal scroll on narrow phones. -->
+					<span
+						class="hidden font-display text-[15px] italic text-faint sm:inline"
 						>{String(i + 1).padStart(2, "0")}</span
 					>
-					<span class="block h-14 w-14 shrink-0 sm:h-[72px] sm:w-[72px]">
+					<span class="block h-11 w-11 shrink-0 sm:h-[72px] sm:w-[72px]">
 						<CoverImage src={coverSrc(rec)} alt="" loading="lazy" />
 					</span>
 					<span class="min-w-0">

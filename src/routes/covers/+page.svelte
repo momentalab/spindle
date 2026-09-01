@@ -83,13 +83,13 @@
           ? repairFail.message
           : null}
       <div
-        class="group grid grid-cols-[40px_56px_1fr_auto] items-center gap-4 border-b border-hair py-5 sm:grid-cols-[56px_72px_1fr_auto] sm:gap-6"
+        class="group grid grid-cols-[32px_48px_minmax(0,1fr)_auto] items-center gap-3 border-b border-hair py-5 sm:grid-cols-[56px_72px_minmax(0,1fr)_auto] sm:gap-6"
         style="animation-delay: {Math.min(i * 30, 300)}ms"
       >
         <span class="font-display text-[15px] italic text-faint"
           >{String(i + 1).padStart(2, "0")}</span
         >
-        <span class="block h-14 w-14 shrink-0 sm:h-[72px] sm:w-[72px]">
+        <span class="block h-12 w-12 shrink-0 sm:h-[72px] sm:w-[72px]">
           <CoverImage
             src={rec.cover_remote_url ?? null}
             alt=""

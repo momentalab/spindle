@@ -7,6 +7,7 @@
 		label,
 		placeholder,
 		inputmode,
+		list,
 		min,
 		step,
 		maxlength,
@@ -20,6 +21,7 @@
 		label?: string;
 		placeholder?: string;
 		inputmode?: 'text' | 'numeric' | 'decimal' | 'email' | 'tel' | 'url' | 'search';
+		list?: string;
 		min?: string | number;
 		step?: string | number;
 		maxlength?: number;
@@ -38,4 +40,4 @@
 		{label}{#if required}<span class="text-rust" aria-hidden="true"> *</span>{/if}
 	</label>
 {/if}
-<input {type} {name} {id} {placeholder} {inputmode} {min} {step} {maxlength} bind:value {required} class={fieldClass} />
+<input {type} {name} {id} {placeholder} {inputmode} {list} {min} {step} {maxlength} bind:value {required} class={fieldClass} />
