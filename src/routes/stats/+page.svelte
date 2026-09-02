@@ -302,42 +302,50 @@
 
 <svelte:head><title>{appTitle("Stats")}</title></svelte:head>
 
-<!-- Vertical bar chart: value above, bar rising from a baseline rule, label below. -->
+<!-- Vertical bar chart: value above, bar rising from a baseline rule, label
+below. Bars stay legible instead of crushing: the row keeps a per-column floor
+and scrolls sideways inside its own box (same pattern as the rhythm chart), so
+no chart can ever widen the page. -->
 {#snippet barChart(
   rows: { label: string; num: number; display: string }[],
   hrefFor: (label: string) => string | null = () => null,
 )}
   {@const max = rows.reduce((m, r) => Math.max(m, r.num), 0)}
-  <div class="flex items-end gap-x-3 sm:gap-x-4">
-    {#each rows as r (r.label)}
-      {@const href = hrefFor(r.label)}
-      <div
-        class="flex min-w-0 flex-1 basis-0 flex-col"
-        title={`${r.label} — ${r.display}`}
-      >
-        <span
-          class="mb-1.5 truncate text-center font-display text-[13px] italic leading-none text-muted"
-          >{r.display}</span
-        >
-        <div class="flex h-28 items-end justify-center border-b border-edge">
-          <span
-            class="w-full max-w-[22px] bg-accent transition-[height] duration-500"
-            style={`height: ${max ? Math.max((r.num / max) * 100, 3) : 0}%`}
-          ></span>
-        </div>
+  <div class="overflow-x-auto pb-1">
+    <div
+      class="flex items-end gap-x-3 sm:gap-x-4"
+      style={`min-width: ${Math.max(rows.length * 44, 240)}px`}
+    >
+      {#each rows as r (r.label)}
+        {@const href = hrefFor(r.label)}
         <div
-          class="truncate pt-2 text-center text-[10.5px] uppercase tracking-[.08em]"
+          class="flex min-w-0 flex-1 basis-0 flex-col"
+          title={`${r.label} — ${r.display}`}
         >
-          {#if href}
-            <a {href} class="transition-colors duration-300 hover:text-accent"
-              >{r.label}</a
-            >
-          {:else}
-            <span class="text-muted">{r.label}</span>
-          {/if}
+          <span
+            class="mb-1.5 truncate text-center font-display text-[13px] italic leading-none text-muted"
+            >{r.display}</span
+          >
+          <div class="flex h-28 items-end justify-center border-b border-edge">
+            <span
+              class="w-full max-w-[22px] bg-accent transition-[height] duration-500"
+              style={`height: ${max ? Math.max((r.num / max) * 100, 3) : 0}%`}
+            ></span>
+          </div>
+          <div
+            class="truncate pt-2 text-center text-[10.5px] uppercase tracking-[.08em]"
+          >
+            {#if href}
+              <a {href} class="transition-colors duration-300 hover:text-accent"
+                >{r.label}</a
+              >
+            {:else}
+              <span class="text-muted">{r.label}</span>
+            {/if}
+          </div>
         </div>
-      </div>
-    {/each}
+      {/each}
+    </div>
   </div>
 {/snippet}
 
@@ -773,7 +781,10 @@
       </nav>
     </div>
 
-    <div class="grid gap-x-14 gap-y-12 md:grid-cols-2">
+    <!-- grid-cols-1 (minmax(0,1fr)) gives the track a zero floor; without it
+         an implicit auto track sizes to a child's min-content and blows the
+         page width past the viewport. -->
+    <div class="grid grid-cols-1 gap-x-14 gap-y-12 md:grid-cols-2">
       <!-- B1 — spend histogram, five readable bands -->
       <section>
         <h3 class="stat-section-title">Where the money goes</h3>
@@ -907,7 +918,7 @@
       What the shelves hold
     </h2>
 
-    <div class="grid gap-x-14 gap-y-12 md:grid-cols-2">
+    <div class="grid grid-cols-1 gap-x-14 gap-y-12 md:grid-cols-2">
       <section>
         <h3 class="stat-section-title">Most collected</h3>
         {#if s.top_artists.length}
@@ -1094,7 +1105,7 @@
 
     <!-- D2 — oldest pressed / freshest wax: two display numbers -->
     {#if s.extremes.oldest || s.extremes.freshest}
-      <div class="mb-12 grid gap-x-6 gap-y-8 sm:grid-cols-2">
+      <div class="mb-12 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2">
         {#if s.extremes.oldest}
           <div>
             <a
@@ -1140,7 +1151,7 @@
       </div>
     {/if}
 
-    <div class="grid gap-x-14 gap-y-12 md:grid-cols-2">
+    <div class="grid grid-cols-1 gap-x-14 gap-y-12 md:grid-cols-2">
       <!-- C5 — how taste moved: one spectrum row per decade -->
       <section>
         <h3 class="stat-section-title">How taste moved</h3>

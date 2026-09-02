@@ -564,22 +564,24 @@
 							</span>
 						{/if}
 					</div>
-					<div class="mt-3.5 flex items-baseline justify-between gap-3">
-						<p
-							class="min-w-0 truncate font-display text-[17px] transition-colors group-hover:text-accent"
-						>
-							{rec.artist}
-						</p>
-						<Badge tone={statusTone[rec.status]} class="shrink-0"
-							>{STATUS_LABELS[rec.status]}</Badge
-						>
-					</div>
+					<!-- artist → title → year/genre → status: the badge gets its
+					     own line so it never competes with the artist name. -->
+					<p
+						class="mt-3.5 truncate font-display text-[17px] transition-colors group-hover:text-accent"
+					>
+						{rec.artist}
+					</p>
 					<p class="mt-0.5 truncate text-[13px] text-muted">{rec.title}</p>
 					{#if rec.year || rec.genre}
 						<p class="mt-0.5 text-[11px] uppercase tracking-[.16em] text-faint">
 							{[rec.year, rec.genre].filter(Boolean).join(" · ")}
 						</p>
 					{/if}
+					<p class="mt-1.5">
+						<Badge tone={statusTone[rec.status]}
+							>{STATUS_LABELS[rec.status]}</Badge
+						>
+					</p>
 				</a>
 				<div class="mt-2 flex justify-end">{@render playControl(rec)}</div>
 			</div>
