@@ -230,6 +230,11 @@
 		>
 			records in index
 		</div>
+		<!-- Scan: the primary way in — visible at every width so a new record
+		     is one tap away without hunting for it (empty shelf included). -->
+		<div class="mt-5">
+			<Button href="/scan" variant="primary" size="sm">Scan a record</Button>
+		</div>
 		{#if data.total > 0}
 			<!-- export: a quiet utility, not a CTA — the data is the user's to take out -->
 			<div class="mt-4 flex items-center justify-end gap-4">

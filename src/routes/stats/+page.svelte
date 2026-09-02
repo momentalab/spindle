@@ -3,8 +3,9 @@
   import type { StatsMetric, StatsWindow } from "$lib/server/stats";
   import Button from "$lib/components/ui/Button.svelte";
   import CoverImage from "$lib/components/ui/CoverImage.svelte";
+  import DecadeLabel from "$lib/components/ui/DecadeLabel.svelte";
   import { appTitle } from "$lib/index";
-  import { STATUS_LABELS } from "$lib/types";
+  import { CONDITIONS, STATUS_LABELS } from "$lib/types";
 
   let { data }: { data: PageData } = $props();
   const s = $derived(data.stats);
@@ -55,17 +56,46 @@
       display: metric === "value" ? fmtValue(r.value_cents) : String(r.count),
     }));
 
-  const genreRows = $derived(metricRows(s.by_genre));
-  const labelRows = $derived(metricRows(s.by_label));
-  const decadeRows = $derived(metricRows(s.by_decade));
-  const sourceRows = $derived(metricRows(s.by_source));
+  /* By-genre bars carry one stable hue per genre (rank order) — the same mapping
+     the C5 cross-tab uses, so a genre reads the same color in both places. */
+  const genreRows = $derived(
+    metricRows(s.by_genre).map((r) => ({ ...r, color: catColor(r.label) })),
+  );
+  /* One hue per chart family so neighbors in the grid never read the same color;
+     time (rhythm/decades) keeps the house gold. */
+  const labelRows = $derived(
+    metricRows(s.by_label).map((r) => ({ ...r, color: CATEGORICAL[2] })),
+  );
+  /* Decades step one gold hue light (oldest) → dark (newest); "Undated" stays
+     neutral so it doesn't read as part of the chronology. */
+  const decadeRows = $derived(
+    s.by_decade.map((r, i) => ({
+      label: r.label,
+      num: metric === "value" ? r.value_cents : r.count,
+      display: metric === "value" ? fmtValue(r.value_cents) : String(r.count),
+      color:
+        r.label === "Undated"
+          ? "var(--faint)"
+          : stepShade("var(--accent)", i, s.by_decade.length),
+    })),
+  );
+  const sourceRows = $derived(
+    metricRows(s.by_source).map((r) => ({ ...r, color: CATEGORICAL[3] })),
+  );
 
+  /* Status keeps its existing semantic tones (matches the collection badges). */
+  const STATUS_COLORS: Record<string, string> = {
+    in_collection: "var(--forest)",
+    sold: "var(--butter)",
+    traded_away: "var(--faint)",
+  };
   /** Statuses rendered on the same bar scale as the other distributions. */
   const statusRows = $derived(
     s.statuses.map((st) => ({
       label: STATUS_LABELS[st.status] ?? st.status,
       num: st.count,
       display: String(st.count),
+      color: STATUS_COLORS[st.status] ?? "var(--faint)",
     })),
   );
 
@@ -256,15 +286,74 @@
     return { year, cols, months };
   });
 
-  /** C5 — one hue, stepped by shade: the i-th legend genre gets the i-th opacity. */
-  const crossShade = (label: string): string => {
+  /* ---- Chart color system: one hue per chart family so neighboring charts
+     never read the same color. Time stays the house gold; ordinal charts
+     (price bands, conditions, decades) step a single hue light → dark. ---- */
+  const CATEGORICAL = [
+    "var(--accent)",
+    "var(--chart-moss)",
+    "var(--chart-clay)",
+    "var(--chart-slate)",
+    "var(--chart-mauve)",
+  ] as const;
+
+  /** Stable hue per legend genre (rank order) — shared by the genre bars and C5. */
+  const catColor = (label: string): string => {
     if (label === "Other") return "var(--hair)";
     const i = crossLegend.indexOf(label);
-    const opacities = [1, 0.82, 0.64, 0.48, 0.34, 0.22];
-    return `color-mix(in oklab, var(--accent) ${Math.round(
-      (opacities[i] ?? 0.15) * 100,
-    )}%, transparent)`;
+    return CATEGORICAL[i % CATEGORICAL.length] ?? "var(--hair)";
   };
+
+  /** Ordinal shade: rank i of total → 38% (lightest) up to full strength of the hue. */
+  const stepShade = (token: string, rank: number, total: number): string => {
+    const t = total <= 1 ? 1 : 0.38 + (rank / (total - 1)) * 0.62;
+    return `color-mix(in oklab, ${token} ${Math.round(t * 100)}%, transparent)`;
+  };
+
+  /* C3/B5 — Goldmine scale shared mapping: best grade (M) is the deepest moss,
+     worst (P) the lightest; fixed 8-step scale so a lone "P" still reads faint. */
+  const condColor = (label: string): string => {
+    const idx = (CONDITIONS as readonly string[]).indexOf(label);
+    if (idx === -1) return "var(--chart-moss)";
+    return stepShade(
+      "var(--chart-moss)",
+      CONDITIONS.length - 1 - idx,
+      CONDITIONS.length,
+    );
+  };
+
+  /** Content-aware bar column width: fits its uppercase label (~7.2px/char at
+      10.5px + tracking), clamped so one long name can't stretch the track. */
+  const barColWidth = (label: string): number =>
+    Math.min(150, Math.max(58, Math.round(label.length * 7.2) + 18));
+
+  /* Right-edge fade on the horizontally scrollable tracks, so a cut-off chart
+     announces that it continues. Re-runs when the sections owning the tracks
+     mount or unmount (data changes with window/metric/total). */
+  $effect(() => {
+    void s.total;
+    void window;
+    void metric;
+    const update = () => {
+      document
+        .querySelectorAll<HTMLElement>("[data-scroll-fade]")
+        .forEach((el) =>
+          el.toggleAttribute(
+            "data-fade",
+            el.scrollWidth - el.clientWidth - el.scrollLeft > 4,
+          ),
+        );
+    };
+    const els = document.querySelectorAll<HTMLElement>("[data-scroll-fade]");
+    els.forEach((el) =>
+      el.addEventListener("scroll", update, { passive: true }),
+    );
+    globalThis.addEventListener("resize", update);
+    return () => {
+      els.forEach((el) => el.removeEventListener("scroll", update));
+      globalThis.removeEventListener("resize", update);
+    };
+  });
 
   /* ---- B5 — condition × price scatter geometry ---- */
   const scatterGeom = $derived.by(() => {
@@ -303,49 +392,64 @@
 <svelte:head><title>{appTitle("Stats")}</title></svelte:head>
 
 <!-- Vertical bar chart: value above, bar rising from a baseline rule, label
-below. Bars stay legible instead of crushing: the row keeps a per-column floor
-and scrolls sideways inside its own box (same pattern as the rhythm chart), so
-no chart can ever widen the page. -->
+below. Bars stay legible instead of crushing: every column is at least as wide
+as its (uppercased) label — no truncation anywhere — and long rows scroll
+sideways inside their own box with an edge fade hinting at more content. -->
 {#snippet barChart(
-  rows: { label: string; num: number; display: string }[],
+  rows: {
+    label: string;
+    num: number;
+    display: string;
+    color?: string;
+  }[],
   hrefFor: (label: string) => string | null = () => null,
 )}
   {@const max = rows.reduce((m, r) => Math.max(m, r.num), 0)}
-  <div class="overflow-x-auto pb-1">
-    <div
-      class="flex items-end gap-x-3 sm:gap-x-4"
-      style={`min-width: ${Math.max(rows.length * 44, 240)}px`}
-    >
-      {#each rows as r (r.label)}
-        {@const href = hrefFor(r.label)}
-        <div
-          class="flex min-w-0 flex-1 basis-0 flex-col"
-          title={`${r.label} — ${r.display}`}
-        >
-          <span
-            class="mb-1.5 truncate text-center font-display text-[13px] italic leading-none text-muted"
-            >{r.display}</span
-          >
-          <div class="flex h-28 items-end justify-center border-b border-edge">
-            <span
-              class="w-full max-w-[22px] bg-accent transition-[height] duration-500"
-              style={`height: ${max ? Math.max((r.num / max) * 100, 3) : 0}%`}
-            ></span>
-          </div>
+  <div class="relative">
+    <div class="chart-scroll pb-1" data-scroll-fade>
+      <div class="flex items-end gap-x-3 sm:gap-x-4">
+        {#each rows as r (r.label)}
+          {@const href = hrefFor(r.label)}
+          <!-- grow to fill short rows, but never shrink below the label's width
+               — the track scrolls instead of crushing the label -->
           <div
-            class="truncate pt-2 text-center text-[10.5px] uppercase tracking-[.08em]"
+            class="flex flex-col grow shrink-0"
+            style={`width: ${barColWidth(r.label)}px`}
+            title={`${r.label} — ${r.display}`}
           >
-            {#if href}
-              <a {href} class="transition-colors duration-300 hover:text-accent"
-                >{r.label}</a
-              >
-            {:else}
-              <span class="text-muted">{r.label}</span>
-            {/if}
+            <span
+              class="mb-1.5 truncate text-center font-display text-[13px] italic leading-none text-muted"
+              >{r.display}</span
+            >
+            <div
+              class="flex h-28 items-end justify-center border-b border-edge"
+            >
+              <span
+                class="w-full max-w-[22px] transition-[height] duration-500"
+                style={`height: ${max ? Math.max((r.num / max) * 100, 3) : 0}%; background-color: ${r.color ?? "var(--accent)"}`}
+              ></span>
+            </div>
+            <div
+              class="pt-2 text-center text-[10.5px] uppercase leading-[1.5] tracking-[.08em]"
+            >
+              {#if href}
+                <a
+                  {href}
+                  class="transition-colors duration-300 hover:text-accent"
+                >
+                  <DecadeLabel label={r.label} />
+                </a>
+              {:else}
+                <span class="text-muted">
+                  <DecadeLabel label={r.label} />
+                </span>
+              {/if}
+            </div>
           </div>
-        </div>
-      {/each}
+        {/each}
+      </div>
     </div>
+    <div class="chart-fade" aria-hidden="true"></div>
   </div>
 {/snippet}
 
@@ -525,34 +629,48 @@ no chart can ever widen the page. -->
         {#each s.most_played as p, i (p.id)}
           <a
             href="/records/{p.id}"
-            class="group grid grid-cols-[24px_56px_1fr_auto] items-center gap-4 border-b border-hair py-4 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[28px_64px_1fr_auto] sm:gap-5"
+            class="group grid grid-cols-[20px_48px_minmax(0,1fr)_auto] items-center gap-3 border-b border-hair py-3.5 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[28px_64px_1fr_auto] sm:gap-5 sm:py-4"
           >
-            <span class="font-display text-[15px] italic text-faint">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <span class="block h-14 w-14 shrink-0 sm:h-16 sm:w-16">
+            <span
+              class="font-display text-[13px] italic text-faint sm:text-[15px]"
+              >{String(i + 1).padStart(2, "0")}</span
+            >
+            <span class="block h-12 w-12 shrink-0 sm:h-16 sm:w-16">
               <CoverImage src={p.cover} alt="" loading="lazy" />
             </span>
             <span class="min-w-0">
               <span
-                class="block truncate font-display text-[18px] tracking-[.005em] transition-colors group-hover:text-accent sm:text-[20px]"
+                title={p.artist}
+                class="block truncate font-display text-[16px] tracking-[.005em] transition-colors group-hover:text-accent sm:text-[20px]"
               >
                 {p.artist}
               </span>
-              <span class="mt-0.5 block truncate text-[13.5px] text-muted">
+              <span
+                title={p.title}
+                class="mt-0.5 block truncate text-[13px] text-muted sm:text-[13.5px]"
+              >
                 {p.title}
               </span>
             </span>
             <span class="flex shrink-0 flex-col items-end gap-1 text-right">
-              <span class="font-display text-[21px] leading-none">
+              <span
+                class="font-display text-[19px] leading-none sm:text-[21px]"
+              >
                 {p.plays}
               </span>
+              <!-- the last-played date is desktop-only: on a 360px row it would
+                   steal the width artist/title need (full date stays in `title`). -->
               <span
+                title={p.last_played_at
+                  ? fmtPlayedAt(p.last_played_at)
+                  : undefined}
                 class="text-[10px] font-semibold uppercase tracking-[.2em] text-faint"
               >
                 {p.plays === 1 ? "spin" : "spins"}
                 {#if p.last_played_at}
-                  · last {fmtPlayedAt(p.last_played_at)}
+                  <span class="hidden sm:inline"
+                    >· last {fmtPlayedAt(p.last_played_at)}</span
+                  >
                 {/if}
               </span>
             </span>
@@ -593,39 +711,44 @@ no chart can ever widen the page. -->
     </div>
 
     {#if timeline.length}
-      <!-- A1 — vertical hairline columns on a baseline rule. The track scrolls
-           sideways on narrow screens so 24 months never smear together. -->
-      <div class="overflow-x-auto pb-1">
-        <div class="min-w-[520px]">
-          <div class="flex items-end gap-[3px] border-b border-edge">
-            {#each timeline as b (b.key)}
-              <div
-                title={`${b.label} — ${b.count}`}
-                class="flex h-44 flex-1 basis-0 flex-col justify-end sm:h-52"
-              >
-                <span class="flex h-32 items-end sm:h-40">
-                  {#if b.count > 0}
+      <!-- A1 — vertical hairline columns on a baseline rule. The track is at
+           least wide enough that each column keeps its tick label and scrolls
+           sideways beyond that, so 24 months never smear together. -->
+      <div class="relative">
+        <div class="chart-scroll pb-1" data-scroll-fade>
+          <div style={`min-width: ${Math.max(timeline.length * 34, 520)}px`}>
+            <div class="flex items-end gap-[3px] border-b border-edge">
+              {#each timeline as b, i (b.key)}
+                <div
+                  title={`${b.label} — ${b.count}`}
+                  class="flex h-44 flex-1 basis-0 flex-col justify-end sm:h-52"
+                >
+                  <span class="flex h-32 items-end sm:h-40">
+                    {#if b.count > 0}
+                      <span
+                        class="w-full max-w-[9px] transition-[height] duration-500"
+                        style={`height: ${Math.max((b.count / maxCount) * 100, 4)}%; background-color: ${stepShade("var(--accent)", i, timeline.length)}`}
+                      ></span>
+                    {/if}
+                  </span>
+                </div>
+              {/each}
+            </div>
+            <div class="flex gap-[3px] pt-2">
+              {#each timeline as b (b.key)}
+                <span class="flex-1 basis-0 text-center">
+                  {#if b.tick}
                     <span
-                      class="w-full max-w-[9px] bg-accent transition-[height] duration-500"
-                      style={`height: ${Math.max((b.count / maxCount) * 100, 4)}%`}
-                    ></span>
+                      class="whitespace-nowrap text-[9px] uppercase tracking-[.08em] text-faint"
+                      >{b.tick_label}</span
+                    >
                   {/if}
                 </span>
-              </div>
-            {/each}
-          </div>
-          <div class="flex gap-[3px] pt-2">
-            {#each timeline as b (b.key)}
-              <span class="flex-1 basis-0 text-center">
-                {#if b.tick}
-                  <span class="text-[9px] uppercase tracking-[.08em] text-faint"
-                    >{b.tick_label}</span
-                  >
-                {/if}
-              </span>
-            {/each}
+              {/each}
+            </div>
           </div>
         </div>
+        <div class="chart-fade" aria-hidden="true"></div>
       </div>
 
       <!-- A2 — cumulative growth: 1px stroke + 8% accent fill, no axes -->
@@ -680,43 +803,46 @@ no chart can ever widen the page. -->
         >
           {heat.year}, day by day
         </h3>
-        <div class="overflow-x-auto pb-1">
-          <div class="min-w-[480px]">
-            <div class="mb-1 flex gap-px">
-              {#each heat.cols as c, i (i)}
-                {@const lbl = heat.months.find((m) => m.col === i)}
-                <span
-                  class="flex h-3 w-[11px] shrink-0 items-center text-[8.5px] uppercase tracking-wide text-faint"
-                >
-                  {lbl?.label}
-                </span>
-              {/each}
-            </div>
-            <div class="flex gap-px">
-              {#each heat.cols as c, ci (ci)}
-                <div class="flex flex-col gap-px">
-                  {#each c.cells as cell, j (j)}
-                    {#if cell.n >= 0}
-                      <span
-                        title={cell.n
-                          ? `${cell.key} — ${cell.n} acquisition${cell.n > 1 ? "s" : ""}`
-                          : cell.key}
-                        class="h-[11px] w-[11px] shrink-0 border"
-                        style:background-color={cell.n > 1
-                          ? "var(--accent)"
-                          : cell.n === 1
-                            ? "var(--accent-dim)"
-                            : "transparent"}
-                        style:border-color={cell.n > 0
-                          ? "transparent"
-                          : "var(--hair)"}
-                      ></span>
-                    {/if}
-                  {/each}
-                </div>
-              {/each}
+        <div class="relative">
+          <div class="chart-scroll pb-1" data-scroll-fade>
+            <div class="min-w-[480px]">
+              <div class="mb-1 flex gap-px">
+                {#each heat.cols as c, i (i)}
+                  {@const lbl = heat.months.find((m) => m.col === i)}
+                  <span
+                    class="flex h-3 w-[11px] shrink-0 items-center text-[8.5px] uppercase tracking-wide text-faint"
+                  >
+                    {lbl?.label}
+                  </span>
+                {/each}
+              </div>
+              <div class="flex gap-px">
+                {#each heat.cols as c, ci (ci)}
+                  <div class="flex flex-col gap-px">
+                    {#each c.cells as cell, j (j)}
+                      {#if cell.n >= 0}
+                        <span
+                          title={cell.n
+                            ? `${cell.key} — ${cell.n} acquisition${cell.n > 1 ? "s" : ""}`
+                            : cell.key}
+                          class="h-[11px] w-[11px] shrink-0 border"
+                          style:background-color={cell.n > 1
+                            ? "var(--accent)"
+                            : cell.n === 1
+                              ? "var(--accent-dim)"
+                              : "transparent"}
+                          style:border-color={cell.n > 0
+                            ? "transparent"
+                            : "var(--hair)"}
+                        ></span>
+                      {/if}
+                    {/each}
+                  </div>
+                {/each}
+              </div>
             </div>
           </div>
+          <div class="chart-fade" aria-hidden="true"></div>
         </div>
       </div>
     {/if}
@@ -790,10 +916,11 @@ no chart can ever widen the page. -->
         <h3 class="stat-section-title">Where the money goes</h3>
         {#if s.price_bands.length}
           {@render barChart(
-            s.price_bands.map((b) => ({
+            s.price_bands.map((b, i) => ({
               label: b.label,
               num: b.count,
               display: String(b.count),
+              color: stepShade("var(--accent)", i, s.price_bands.length),
             })),
           )}
           {#if s.unpriced_entries > 0}
@@ -866,7 +993,8 @@ no chart can ever widen the page. -->
         {/if}
       </section>
 
-      <!-- B5 — condition vs. price (hidden unless ≥15 graded + priced) -->
+      <!-- B5 — condition vs. price (hidden unless ≥15 graded + priced). Dots
+           step moss light (P, worst) → dark (M, best): better grade, deeper fill. -->
       {#if scatterGeom}
         <section>
           <h3 class="stat-section-title">Condition against price</h3>
@@ -893,8 +1021,8 @@ no chart can ever widen the page. -->
                 cx={d.x}
                 cy={d.y}
                 r="2.2"
-                fill="var(--accent)"
-                opacity="0.55"
+                fill={stepShade("var(--chart-moss)", d.x, CONDITIONS.length)}
+                opacity="0.75"
               >
                 <title>{d.label}</title>
               </circle>
@@ -927,6 +1055,7 @@ no chart can ever widen the page. -->
               label: r.label,
               num: r.count,
               display: String(r.count),
+              color: CATEGORICAL[1],
             })),
             (label) => `/?q=${encodeURIComponent(label)}`,
           )}
@@ -990,6 +1119,7 @@ no chart can ever widen the page. -->
               label: f.label,
               num: f.count,
               display: String(f.count),
+              color: CATEGORICAL[3],
             })),
           )}
         {:else}
@@ -1015,6 +1145,7 @@ no chart can ever widen the page. -->
                   label: r.label,
                   num: r.count,
                   display: String(r.count),
+                  color: condColor(r.label),
                 })),
               )}
             </div>
@@ -1042,6 +1173,7 @@ no chart can ever widen the page. -->
               label: r.label,
               num: r.count,
               display: String(r.count),
+              color: CATEGORICAL[4],
             })),
           )}
         {:else}
@@ -1078,7 +1210,7 @@ no chart can ever widen the page. -->
       <section class="flex flex-col justify-end">
         {#if s.hero_decade}
           <div class="font-display text-[56px] leading-none tracking-[-.01em]">
-            {s.hero_decade.label}
+            <DecadeLabel label={s.hero_decade.label} />
           </div>
           <div
             class="mt-3 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
@@ -1158,14 +1290,14 @@ no chart can ever widen the page. -->
         {#if s.cross_tab.length}
           <ul class="flex flex-col gap-4">
             {#each s.cross_tab as row (row.decade)}
-              <li class="grid grid-cols-[56px_1fr_auto] items-center gap-4">
+              <li class="grid grid-cols-[72px_1fr_auto] items-center gap-4">
                 <span class="text-[12px] uppercase tracking-wide text-muted">
-                  {row.decade}
+                  <DecadeLabel label={row.decade} />
                 </span>
                 <div class="flex h-1 w-full overflow-hidden bg-surface-2">
                   {#each row.segments as seg (seg.label)}
                     <span
-                      style:background-color={crossShade(seg.label)}
+                      style:background-color={catColor(seg.label)}
                       style:width={`${(seg.count / row.total) * 100}%`}
                       title={`${row.decade} · ${seg.label} — ${seg.count}`}
                     ></span>
@@ -1183,7 +1315,7 @@ no chart can ever widen the page. -->
                 <span class="flex items-center gap-1.5">
                   <span
                     class="h-[7px] w-[7px]"
-                    style:background-color={crossShade(g)}
+                    style:background-color={catColor(g)}
                   ></span>
                   <span
                     class="text-[10px] uppercase tracking-[.14em] text-faint"

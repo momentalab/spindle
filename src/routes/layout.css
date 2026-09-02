@@ -41,6 +41,13 @@
 	--accent: #8a6c33; /* antique gold — used sparingly */
 	--accent-dim: rgba(138, 108, 51, 0.65);
 
+	/* Chart palette — muted cousins of the accent, one hue per chart family so
+	   neighboring charts never read the same color. */
+	--chart-moss: #5d6e4b;
+	--chart-clay: #9c4a2f;
+	--chart-slate: #5c6b82;
+	--chart-mauve: #7d5a63;
+
 	/* legacy token slots, remapped into the editorial palette */
 	--plum: #8a6c33;
 	--plum-soft: rgba(138, 108, 51, 0.1);
@@ -65,6 +72,11 @@ html.dark {
 	--hair: rgba(240, 235, 228, 0.08);
 	--accent: #c8a06a; /* muted gold */
 	--accent-dim: rgba(200, 160, 106, 0.45);
+
+	--chart-moss: #94a584;
+	--chart-clay: #c07a5b;
+	--chart-slate: #8fa0bd;
+	--chart-mauve: #b08a94;
 
 	--plum: #c8a06a;
 	--plum-soft: rgba(200, 160, 106, 0.12);
@@ -93,6 +105,10 @@ html.dark {
 	--color-faint: var(--faint);
 	--color-accent: var(--accent);
 	--color-accent-dim: var(--accent-dim);
+	--color-chart-moss: var(--chart-moss);
+	--color-chart-clay: var(--chart-clay);
+	--color-chart-slate: var(--chart-slate);
+	--color-chart-mauve: var(--chart-mauve);
 
 	--color-plum: var(--plum);
 	--color-plum-soft: var(--plum-soft);
@@ -174,4 +190,33 @@ h3 {
 /* native option lists pick up the theme's text color */
 select option {
 	color: var(--ink);
+}
+
+/* Horizontal-scroll affordance for chart tracks: a `.chart-scroll` box with a
+   sibling `.chart-fade` overlay (parent must be `position: relative`). The page
+   toggles `data-fade` on the scroller from a scroll/resize listener while more
+   content lies beyond the right fold; without JS it simply stays hidden. */
+.chart-scroll {
+	overflow-x: auto;
+	scrollbar-width: thin;
+	scrollbar-color: var(--hair) transparent;
+}
+.chart-scroll::-webkit-scrollbar {
+	height: 4px;
+}
+.chart-scroll::-webkit-scrollbar-thumb {
+	background: var(--hair);
+}
+.chart-fade {
+	position: absolute;
+	inset-block: 0;
+	right: 0;
+	width: 2.5rem;
+	pointer-events: none;
+	opacity: 0;
+	background: linear-gradient(to left, var(--paper), transparent);
+	transition: opacity 0.2s ease;
+}
+.chart-scroll[data-fade] + .chart-fade {
+	opacity: 1;
 }
