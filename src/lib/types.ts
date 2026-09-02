@@ -21,7 +21,8 @@ export interface RecordRow {
 	artist: string;
 	title: string;
 	style: string | null;
-	genre: string | null;
+	/** One entry per genre from the record_genres table (hydrated onto the row). */
+	genres: string[];
 	year: string | null;
 	label: string | null;
 	format: string | null;
@@ -62,7 +63,7 @@ export interface DiscogsSeed {
 	artist: string;
 	title: string;
 	style: string | null;
-	genre: string | null;
+	genres: string[];
 	year: string | null;
 	label: string | null;
 	format: string | null;
@@ -77,6 +78,7 @@ export interface RecordDraft {
 	artist: string;
 	title: string;
 	style: string;
+	/** Comma-separated form state — split into individual genres on save. */
 	genre: string;
 	year: string;
 	label: string;
@@ -104,9 +106,99 @@ export type SortColumn =
 
 export interface ListOptions {
 	search?: string;
+	/** Exact genre value — matches records that carry this genre (one of many). */
 	genre?: string;
 	label?: string;
 	status?: RecordStatus | '';
 	sort: SortColumn;
 	dir: 'asc' | 'desc';
+}
+
+/* ------------------------------------------------------------------ */
+/* Genre vocabulary + parsing                                          */
+/* ------------------------------------------------------------------ */
+
+/** The top-level genres Discogs offers (discogs.com/genre) — suggested in the
+ * record form so a completed value is spelled exactly as Discogs has it. */
+export const DISCOGS_GENRES = [
+	'Blues',
+	'Brass & Military',
+	"Children's",
+	'Classical',
+	'Electronic',
+	'Folk, World, & Country',
+	'Funk / Soul',
+	'Hip-Hop',
+	'Jazz',
+	'Latin',
+	'Non-Music',
+	'Pop',
+	'Reggae',
+	'Rock',
+	'Stage & Screen'
+] as const;
+
+/**
+ * Genres Discogs defines with an embedded comma. The API sends them as single
+ * array elements, but the record form carries genres as one comma-separated
+ * string — a naive split would shred "Folk, World, & Country" into "Folk",
+ * "World", "& Country". `parseGenreList` uses these to keep the genre atomic.
+ */
+export const DISCOGS_COMMA_GENRES = ['Folk, World, & Country'] as const;
+
+/**
+ * fragment ("& country") → full genre name. When a comma-bearing genre's
+ * joined form is split on commas, only its `&`-clause survives as a
+ * recognizable fragment — the leading pieces ("Folk", "World") look like
+ * ordinary standalone genres and are dropped instead.
+ */
+const COMMA_GENRE_FRAGMENTS: Record<string, string> = Object.fromEntries(
+	[...DISCOGS_COMMA_GENRES].flatMap((g) =>
+		g.split(',')
+			.filter((p) => p.includes('&'))
+			.map((p) => [p.trim().toLowerCase(), g])
+	)
+);
+
+/**
+ * Split a comma-separated genre field (form input, legacy column value) into
+ * individual genres: trimmed, blanks and case-insensitive duplicates dropped.
+ *
+ * The `&`-clause fragment of a comma-bearing Discogs genre ("Folk, World, &
+ * Country" → "& Country") is merged back into the full genre name, and the
+ * bare leading fragments that accompany it are dropped — so "Folk, World, &
+ * Country" parses to the single genre ["Folk, World, & Country"], and a
+ * record already shredded by an older split heals itself on its next save.
+ */
+export function parseGenreList(raw: string | null | undefined): string[] {
+	if (!raw) return [];
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const part of raw.split(',')) {
+		const g = part.trim();
+		if (!g) continue;
+		const key = g.toLowerCase();
+		if (seen.has(key)) continue;
+		seen.add(key);
+		out.push(COMMA_GENRE_FRAGMENTS[key] ?? g);
+	}
+	// A merged comma-bearing genre swallows its own bare leading fragments:
+	// "Folk, World, & Country" must not leave stray "Folk" / "World" entries.
+	for (const c of DISCOGS_COMMA_GENRES) {
+		if (!out.some((x) => x.toLowerCase() === c.toLowerCase())) continue;
+		const pieces = new Set(
+			c.split(',')
+				.filter((p) => !p.includes('&'))
+				.map((p) => p.trim().toLowerCase())
+		);
+		for (let i = out.length - 1; i >= 0; i--) {
+			if (pieces.has(out[i].toLowerCase())) out.splice(i, 1);
+		}
+	}
+	return out;
+}
+
+/** Render individual genres back into the comma-joined form used by drafts. */
+export function joinGenres(genres: readonly string[]): string {
+	return genres.join(', ');
 }

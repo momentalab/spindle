@@ -436,8 +436,10 @@
 							class="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-muted"
 						>
 							<span class="truncate">{rec.title}</span>
-							{#if rec.year || rec.genre}<span class="text-faint"
-									>{[rec.year, rec.genre].filter(Boolean).join(" · ")}</span
+							{#if rec.year || rec.genres.length}<span class="text-faint"
+									>{[rec.year, rec.genres.join(", ")]
+										.filter(Boolean)
+										.join(" · ")}</span
 								>{/if}
 						</span>
 					</span>
@@ -512,7 +514,7 @@
 						</td>
 						<td class="py-3 pr-4 text-muted">{rec.title}</td>
 						<td class="py-3 pr-4 text-muted">{rec.year ?? ""}</td>
-						<td class="py-3 pr-4 text-muted">{rec.genre ?? ""}</td>
+						<td class="py-3 pr-4 text-muted">{rec.genres.join(", ")}</td>
 						<td class="py-3 pr-4 text-muted">{rec.label ?? ""}</td>
 						<td class="py-3 pr-4 font-mono text-xs text-faint">
 							{[
@@ -577,9 +579,9 @@
 						{rec.artist}
 					</p>
 					<p class="mt-0.5 truncate text-[13px] text-muted">{rec.title}</p>
-					{#if rec.year || rec.genre}
+					{#if rec.year || rec.genres.length}
 						<p class="mt-0.5 text-[11px] uppercase tracking-[.16em] text-faint">
-							{[rec.year, rec.genre].filter(Boolean).join(" · ")}
+							{[rec.year, rec.genres.join(", ")].filter(Boolean).join(" · ")}
 						</p>
 					{/if}
 					<p class="mt-1.5">

@@ -13,6 +13,7 @@
  * limit to one (CSV defaults to records).
  */
 import { getDb } from '$lib/server/db';
+import { withGenres } from '$lib/server/records';
 import type { PlayRow, PhotoRow, RecordRow } from '$lib/types';
 
 export type ExportFormat = 'csv' | 'json';
@@ -29,7 +30,7 @@ export const RECORD_COLUMNS: (keyof RecordRow)[] = [
 	'artist',
 	'title',
 	'style',
-	'genre',
+	'genres',
 	'year',
 	'label',
 	'format',
@@ -79,6 +80,9 @@ function csvField(value: unknown): string {
 function recordToCsvRow(rec: RecordRow): string {
 	const cells = RECORD_COLUMNS.map((col) => {
 		switch (col) {
+			case 'genres':
+				// Individual genres rendered back into the familiar comma-joined form.
+				return csvField(rec.genres.join(', '));
 			case 'price_paid':
 				return rec.price_paid === null ? '' : String((rec.price_paid / 100).toFixed(2));
 			case 'limited_edition':
@@ -101,9 +105,9 @@ export function exportAsCsv(table: ExportTable = 'records'): string {
 	const lines: string[] = [];
 
 	if (table === 'records') {
-		const records = db
-			.prepare('SELECT * FROM records ORDER BY artist ASC, title ASC')
-			.all() as RecordRow[];
+		const records = (
+			db.prepare('SELECT * FROM records ORDER BY artist ASC, title ASC').all() as Omit<RecordRow, 'genres'>[]
+		).map(withGenres);
 		lines.push(RECORD_COLUMNS.map((c) => csvField(CSV_HEADERS[c] ?? c)).join(','));
 		for (const rec of records) lines.push(recordToCsvRow(rec));
 	} else if (table === 'photos') {
@@ -132,7 +136,9 @@ export function exportAsJson(table: 'all' | ExportTable = 'all'): string {
 	const records =
 		table === 'photos' || table === 'plays'
 			? []
-			: (db.prepare('SELECT * FROM records ORDER BY artist ASC, title ASC').all() as RecordRow[]);
+			: (db.prepare('SELECT * FROM records ORDER BY artist ASC, title ASC').all() as Omit<RecordRow, 'genres'>[]).map(
+					withGenres
+				);
 	const photos =
 		table === 'records' || table === 'plays'
 			? []

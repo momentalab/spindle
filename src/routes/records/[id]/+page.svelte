@@ -230,7 +230,9 @@
 				["Year", data.record.year ?? ""],
 				[
 					"Genre",
-					[data.record.genre, data.record.style].filter(Boolean).join(" — "),
+					[data.record.genres.join(", "), data.record.style]
+						.filter(Boolean)
+						.join(" — "),
 				],
 				["Label", data.record.label ?? ""],
 				["Format", data.record.format ?? ""],

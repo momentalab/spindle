@@ -295,15 +295,27 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 
 	const n = (v: unknown): number => (typeof v === 'number' ? v : 0);
 
-	/* ---- Distributions with money attached (B4 toggle): genre & label in SQL. */
-	const groupValRows = (column: 'genre' | 'label'): ValBarRow[] =>
+	/* ---- Distributions with money attached (B4 toggle). Genres are a set per
+	   record (record_genres junction) — every genre a record carries gets its own
+	   bar; label is a plain single-value column. */
+	const groupLabelRows = (): ValBarRow[] =>
 		(db.prepare(`
-			SELECT ${column} AS label,
-			       COUNT(*) AS count,
+			SELECT label AS label, COUNT(*) AS count,
 			       SUM(CASE WHEN status = 'in_collection' THEN COALESCE(price_paid, 0) * copies ELSE 0 END) AS value_cents
 			FROM records
-			WHERE ${column} IS NOT NULL AND TRIM(${column}) != ''
-			GROUP BY ${column}
+			WHERE label IS NOT NULL AND TRIM(label) != ''
+			GROUP BY label
+		`).all() as ValBarRow[]).sort(
+			(a, b) => b.count - a.count || a.label.localeCompare(b.label)
+		);
+
+	const groupGenreRows = (): ValBarRow[] =>
+		(db.prepare(`
+			SELECT g.genre AS label, COUNT(*) AS count,
+			       SUM(CASE WHEN r.status = 'in_collection' THEN COALESCE(r.price_paid, 0) * r.copies ELSE 0 END) AS value_cents
+			FROM record_genres g
+			JOIN records r ON r.id = g.record_id
+			GROUP BY g.genre
 		`).all() as ValBarRow[]).sort(
 			(a, b) => b.count - a.count || a.label.localeCompare(b.label)
 		);
@@ -311,13 +323,13 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	/* ---- One full-table pass feeds decades (F1/B4), median year (D1),
 	   extremes (D2), cross-tab (C5), story dates (A1/A3) and formats (C2). ---- */
 	const rows = db.prepare(`
-		SELECT year, genre, status, price_paid, copies,
+		SELECT id, year, status, price_paid, copies,
 		       COALESCE(acquired_at, created_at) AS at,
 		       acquired_at, format
 		FROM records
 	`).all() as {
+		id: number;
 		year: string | null;
-		genre: string | null;
 		status: RecordStatus;
 		price_paid: number | null;
 		copies: number;
@@ -325,6 +337,18 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		acquired_at: string | null;
 		format: string | null;
 	}[];
+
+	/* Genres are a set per record — one id → genres map feeds the C5 cross-tab
+	   and the windowed top-genre (D1). */
+	const genresByRecord = new Map<number, string[]>();
+	for (const g of db.prepare('SELECT record_id, genre FROM record_genres').all() as {
+		record_id: number;
+		genre: string;
+	}[]) {
+		const list = genresByRecord.get(g.record_id) ?? [];
+		list.push(g.genre);
+		genresByRecord.set(g.record_id, list);
+	}
 
 	const yearNums: number[] = [];
 	const decadeAgg = new Map<string, ValBarRow>();
@@ -346,11 +370,12 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		cell.count++;
 		if (r.status === 'in_collection' && r.price_paid !== null) cell.value_cents += r.price_paid * r.copies;
 		decadeAgg.set(d, cell);
-		if (y !== null && r.genre && r.genre.trim()) {
-			const g = r.genre.trim();
-			const m = crossAgg.get(d) ?? new Map<string, number>();
-			m.set(g, (m.get(g) ?? 0) + 1);
-			crossAgg.set(d, m);
+		if (y !== null) {
+			for (const g of genresByRecord.get(r.id) ?? []) {
+				const m = crossAgg.get(d) ?? new Map<string, number>();
+				m.set(g, (m.get(g) ?? 0) + 1);
+				crossAgg.set(d, m);
+			}
 		}
 		if (r.status === 'in_collection') {
 			const fb = formatBucket(r.format);
@@ -421,8 +446,7 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		const datePart = parseDatePart(r.at);
 		if (datePart) heatmapDateCount.set(datePart, (heatmapDateCount.get(datePart) ?? 0) + 1);
 		if (inWindow(key)) {
-			if (r.genre && r.genre.trim()) {
-				const g = r.genre.trim();
+			for (const g of genresByRecord.get(r.id) ?? []) {
 				windowedGenre.set(g, (windowedGenre.get(g) ?? 0) + 1);
 			}
 			const acq = parseDatePart(r.acquired_at);
@@ -696,8 +720,8 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		avg_price_cents: typeof headline.avg_price === 'number' ? Math.round(headline.avg_price) : null,
 		priced_entries: n(headline.priced_entries),
 		unpriced_entries: n(headline.unpriced_entries),
-		by_genre: groupValRows('genre'),
-		by_label: groupValRows('label'),
+		by_genre: groupGenreRows(),
+		by_label: groupLabelRows(),
 		by_decade,
 		statuses,
 		timeline,

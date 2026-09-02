@@ -1,5 +1,10 @@
 <script lang="ts">
-	import { CONDITIONS, RECORD_STATUSES, STATUS_LABELS } from "$lib/types";
+	import {
+		CONDITIONS,
+		DISCOGS_GENRES,
+		RECORD_STATUSES,
+		STATUS_LABELS,
+	} from "$lib/types";
 	import type { RecordDraft } from "$lib/types";
 	import Input from "$lib/components/ui/Input.svelte";
 	import Select from "$lib/components/ui/Select.svelte";
@@ -41,10 +46,15 @@
 					required
 					bind:value={draft.title}
 				/>
+				<!-- Datalist offers Discogs' top-level genres (incl. the one that
+				     contains commas) so a completed value is spelled exactly as
+				     Discogs has it; typing anything else stays free-form. -->
 				<Input
 					id="f-genre"
 					name="genre"
-					label="Genre"
+					label="Genre (one per comma)"
+					placeholder="e.g. Electronic, Pop"
+					datalist={DISCOGS_GENRES}
 					bind:value={draft.genre}
 				/>
 				<Input

@@ -3,9 +3,11 @@
  * SQLite layer; all business logic for create/update/list/delete lives here so
  * route handlers stay small.
  */
+import type Database from 'better-sqlite3';
 import { getDb } from '$lib/server/db';
 import { MEDIA_DIR, ensureDataDirs } from '$lib/server/paths';
 import type { ListOptions, PlayRow, PhotoRow, RecordRow, RecordStatus } from '$lib/types';
+import { parseGenreList } from '$lib/types';
 import { readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
@@ -13,22 +15,54 @@ import path from 'node:path';
 /* Lookup helpers                                                      */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Genres live in the record_genres junction table (one row per genre), so raw
+ * records rows never carry a `genres` field — every record read hydrates it
+ * from the junction before returning.
+ */
+function hydrateGenres(row: Omit<RecordRow, 'genres'>): RecordRow {
+	const genres = (
+		getDb()
+			.prepare('SELECT genre FROM record_genres WHERE record_id = ? ORDER BY id')
+			.all(row.id) as { genre: string }[]
+	).map((g) => g.genre);
+	return { ...row, genres };
+}
+
+/** For modules that read raw record rows directly (e.g. the exporter). */
+export function withGenres(row: Omit<RecordRow, 'genres'>): RecordRow {
+	return hydrateGenres(row);
+}
+
 export function findRecordById(id: number): RecordRow | undefined {
-	return getDb().prepare('SELECT * FROM records WHERE id = ?').get(id) as RecordRow | undefined;
+	const row = getDb().prepare('SELECT * FROM records WHERE id = ?').get(id) as
+		| Omit<RecordRow, 'genres'>
+		| undefined;
+	return row ? hydrateGenres(row) : undefined;
 }
 
 export function findByBarcode(barcode: string): RecordRow | undefined {
 	const digits = barcode.replace(/\D+/g, '');
 	if (!digits) return undefined;
-	return getDb().prepare('SELECT * FROM records WHERE barcode = ? LIMIT 1').get(digits) as
-		| RecordRow
-		| undefined;
+	const row = getDb()
+		.prepare('SELECT * FROM records WHERE barcode = ? LIMIT 1')
+		.get(digits) as Omit<RecordRow, 'genres'> | undefined;
+	return row ? hydrateGenres(row) : undefined;
 }
 
 export function findByDiscogsId(discogsId: number): RecordRow | undefined {
-	return getDb().prepare('SELECT * FROM records WHERE discogs_id = ? LIMIT 1').get(discogsId) as
-		| RecordRow
-		| undefined;
+	const row = getDb()
+		.prepare('SELECT * FROM records WHERE discogs_id = ? LIMIT 1')
+		.get(discogsId) as Omit<RecordRow, 'genres'> | undefined;
+	return row ? hydrateGenres(row) : undefined;
+}
+
+/** One record's genre rows for batch writes (create / update). */
+function upsertRecordGenres(db: Database.Database, recordId: number, genres: string[]): void {
+	const deleteAll = db.prepare('DELETE FROM record_genres WHERE record_id = ?');
+	const insert = db.prepare('INSERT OR IGNORE INTO record_genres (record_id, genre) VALUES (?, ?)');
+	deleteAll.run(recordId);
+	for (const g of genres) insert.run(recordId, g);
 }
 
 /* ------------------------------------------------------------------ */
@@ -39,7 +73,9 @@ const SORTABLE: Record<ListOptions['sort'], string> = {
 	artist: 'artist',
 	title: 'title',
 	year: 'year',
-	genre: 'genre',
+	// Genres live in the junction table — sorting by genre orders by the first
+	// (lowest-id) genre entry, exposed as rg0.genre below.
+	genre: 'rg0.genre',
 	label: 'label',
 	acquired_at: 'acquired_at',
 	updated_at: 'updated_at'
@@ -51,34 +87,51 @@ export function listRecords(opts: ListOptions): RecordRow[] {
 	const params: Record<string, unknown> = {};
 
 	if (opts.search && opts.search.trim()) {
-		where.push('(artist LIKE @q OR title LIKE @q OR genre LIKE @q OR label LIKE @q)');
+		where.push(
+			`(r.artist LIKE @q OR r.title LIKE @q OR r.label LIKE @q OR EXISTS (SELECT 1 FROM record_genres g WHERE g.record_id = r.id AND g.genre LIKE @q))`
+		);
 		params.q = `%${opts.search.trim()}%`;
 	}
 	if (opts.genre) {
-		where.push('genre = @genre');
+		where.push(`EXISTS (SELECT 1 FROM record_genres g WHERE g.record_id = r.id AND g.genre = @genre)`);
 		params.genre = opts.genre;
 	}
 	if (opts.label) {
-		where.push('label = @label');
+		where.push('r.label = @label');
 		params.label = opts.label;
 	}
 	if (opts.status) {
-		where.push('status = @status');
+		where.push('r.status = @status');
 		params.status = opts.status;
 	}
 
-	const sortCol = SORTABLE[opts.sort] ?? 'artist';
+	const sortCol = SORTABLE[opts.sort] ?? 'r.artist';
 	const dir = opts.dir === 'desc' ? 'DESC' : 'ASC';
-	const sql = `SELECT * FROM records ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-		ORDER BY ${sortCol} IS NULL, ${sortCol} ${dir}, artist ASC, title ASC`;
+	const sql = `SELECT r.* FROM records r
+		LEFT JOIN record_genres rg0 ON rg0.record_id = r.id AND rg0.id = (
+			SELECT MIN(id) FROM record_genres WHERE record_id = r.id
+		)
+		${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+		ORDER BY ${sortCol} IS NULL, ${sortCol} ${dir}, r.artist ASC, r.title ASC`;
 
-	return db.prepare(sql).all(params) as RecordRow[];
+	return (db.prepare(sql).all(params) as Omit<RecordRow, 'genres'>[]).map(hydrateGenres);
 }
 
 /** Distinct values for filter dropdowns. */
 export function distinctValues(column: 'genre' | 'label' | 'source'): string[] {
-	const rows = getDb()
-		.prepare(`SELECT DISTINCT ${column} AS v FROM records WHERE ${column} IS NOT NULL AND ${column} != '' ORDER BY v`)
+	const db = getDb();
+	if (column === 'genre') {
+		// Genres are individual entries now — a record with "Electronic, Pop"
+		// contributes to both dropdown values.
+		const rows = db
+			.prepare('SELECT DISTINCT genre AS v FROM record_genres ORDER BY v')
+			.all() as { v: string }[];
+		return rows.map((r) => r.v);
+	}
+	const rows = db
+		.prepare(
+			`SELECT DISTINCT ${column} AS v FROM records WHERE ${column} IS NOT NULL AND ${column} != '' ORDER BY v`
+		)
 		.all() as { v: string }[];
 	return rows.map((r) => r.v);
 }
@@ -97,7 +150,8 @@ export interface NewRecordInput {
 	artist: string;
 	title: string;
 	style: string | null;
-	genre: string | null;
+	/** Individual genres (one record_genres row each). */
+	genres: string[];
 	year: string | null;
 	label: string | null;
 	format: string | null;
@@ -117,20 +171,30 @@ export interface NewRecordInput {
 export function createRecord(input: NewRecordInput): RecordRow {
 	const db = getDb();
 	const now = new Date().toISOString();
-	const info = db
-		.prepare(
-			`INSERT INTO records (
-				discogs_id, barcode, artist, title, style, genre, year, label, format,
-				limited_edition, condition_media, condition_sleeve, price_paid, acquired_at,
-				source, status, copies, notes, cover_filename, cover_remote_url, created_at, updated_at
-			) VALUES (
-				@discogs_id, @barcode, @artist, @title, @style, @genre, @year, @label, @format,
-				@limited_edition, @condition_media, @condition_sleeve, @price_paid, @acquired_at,
-				@source, @status, @copies, @notes, @cover_filename, @cover_remote_url, @now, @now
-			)`
-		)
-		.run({ ...input, limited_edition: input.limited_edition ? 1 : 0, now });
-	return findRecordById(Number(info.lastInsertRowid))!;
+	const genres = input.genres.map((g) => g.trim()).filter(Boolean);
+	const insertRecord = db.prepare(
+		`INSERT INTO records (
+			discogs_id, barcode, artist, title, style, year, label, format,
+			limited_edition, condition_media, condition_sleeve, price_paid, acquired_at,
+			source, status, copies, notes, cover_filename, cover_remote_url, created_at, updated_at
+		) VALUES (
+			@discogs_id, @barcode, @artist, @title, @style, @year, @label, @format,
+			@limited_edition, @condition_media, @condition_sleeve, @price_paid, @acquired_at,
+			@source, @status, @copies, @notes, @cover_filename, @cover_remote_url, @now, @now
+		)`
+	);
+	const { genres: _genres, ...rest } = input;
+	const newId = db.transaction((): number => {
+		const info = insertRecord.run({
+			...rest,
+			limited_edition: input.limited_edition ? 1 : 0,
+			now
+		});
+		const recordId = Number(info.lastInsertRowid);
+		upsertRecordGenres(db, recordId, genres);
+		return recordId;
+	})();
+	return findRecordById(newId)!;
 }
 
 /** Parse the shared record form (import preview + manual entry) into a NewRecordInput. */
@@ -164,7 +228,7 @@ export function parseRecordForm(data: FormData): NewRecordInput | null {
 		artist,
 		title,
 		style: str('style'),
-		genre: str('genre'),
+		genres: parseGenreList(str('genre')),
 		year: str('year'),
 		label: str('label'),
 		format: str('format'),
@@ -184,14 +248,13 @@ export function parseRecordForm(data: FormData): NewRecordInput | null {
 
 export type UpdateRecordInput = Partial<NewRecordInput> & { copies?: number };
 
-/** Columns that may be updated (everything except id / created_at). */
+/** Columns that may be updated (everything except id / created_at / genres — genres are synced in the junction). */
 const UPDATABLE: (keyof NewRecordInput)[] = [
 	'discogs_id',
 	'barcode',
 	'artist',
 	'title',
 	'style',
-	'genre',
 	'year',
 	'label',
 	'format',
@@ -225,12 +288,20 @@ export function updateRecord(id: number, patch: UpdateRecordInput): RecordRow | 
 		fields.push('copies = @copies');
 		params.copies = patch.copies;
 	}
-	if (fields.length === 0) return existing;
+	if (fields.length === 0 && patch.genres === undefined) return existing;
 
 	params.now = new Date().toISOString();
 	fields.push('updated_at = @now');
 
-	db.prepare(`UPDATE records SET ${fields.join(', ')} WHERE id = @id`).run(params);
+	const run = db.transaction(() => {
+		if (fields.length > 0) {
+			db.prepare(`UPDATE records SET ${fields.join(', ')} WHERE id = @id`).run(params);
+		}
+		if (patch.genres !== undefined) {
+			upsertRecordGenres(db, id, patch.genres.map((g) => g.trim()).filter(Boolean));
+		}
+	});
+	run();
 	return findRecordById(id);
 }
 
@@ -247,7 +318,7 @@ export function deleteRecord(id: number): boolean {
 	const rec = findRecordById(id);
 	if (!rec) return false;
 
-	// Collect photo filenames before the FK cascade removes the rows.
+	// Collect photo filenames before the FK cascades remove the rows (photos + record_genres).
 	const photos = db.prepare('SELECT filename FROM photos WHERE record_id = ?').all(id) as {
 		filename: string;
 	}[];

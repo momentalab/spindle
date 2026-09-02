@@ -110,6 +110,55 @@ const migrations: Migration[] = [
 				CREATE INDEX IF NOT EXISTS idx_plays_record_id ON plays(record_id);
 			`);
 		}
+	},
+	{
+		version: 3,
+		description:
+			'genres as a set: record_genres junction (backfilled from the legacy comma-joined column, which is then dropped)',
+		up(db) {
+			// SQLite ≥ 3.25 (bundled node-sqlite / better-sqlite3 are well past this).
+			db.exec(`
+				CREATE TABLE IF NOT EXISTS record_genres (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE,
+					genre TEXT NOT NULL CHECK (TRIM(genre) != ''),
+					UNIQUE (record_id, genre)
+				);
+
+				CREATE INDEX IF NOT EXISTS idx_record_genres_genre ON record_genres(genre);
+			`);
+
+			// Backfill: split legacy "Electronic, Pop" values into one row per genre.
+			// Case-insensitive dedupe so "Pop" and "pop" collapse to one entry.
+			const rows = db.prepare(`SELECT id, genre FROM records`).all() as {
+				id: number;
+				genre: string | null;
+			}[];
+			const insert = db.prepare(
+				'INSERT OR IGNORE INTO record_genres (record_id, genre) VALUES (?, ?)'
+			);
+			const backfill = db.transaction(() => {
+				for (const row of rows) {
+					if (!row.genre) continue;
+					const seen = new Set<string>();
+					for (const part of row.genre.split(',')) {
+						const g = part.trim();
+						if (!g) continue;
+						const key = g.toLowerCase();
+						if (seen.has(key)) continue;
+						seen.add(key);
+						insert.run(row.id, g);
+					}
+				}
+			});
+			backfill();
+
+			// Drop the legacy index first — DROP COLUMN revalidates surviving indexes
+			// against the remaining schema and refuses to drop a column an index still
+			// references. Safe even for a DB restored from an old backup that never ran v3.
+			db.exec(`DROP INDEX IF EXISTS idx_records_genre`);
+			db.exec(`ALTER TABLE records DROP COLUMN genre`);
+		}
 	}
 ];
 

@@ -205,7 +205,7 @@ export function toSeed(release: RawRelease): DiscogsSeed {
 		artist: release.artists_sort || artists || 'Unknown artist',
 		title: release.title,
 		style: (release.styles ?? []).join(', ') || null,
-		genre: (release.genres ?? []).join(', ') || null,
+		genres: (release.genres ?? []).map((g) => g.trim()).filter(Boolean),
 		year,
 		label,
 		format,
