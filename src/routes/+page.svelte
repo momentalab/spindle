@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { invalidateAll } from "$app/navigation";
 	import { page } from "$app/state";
 	import type { PageData } from "./$types";
 	import Badge from "$lib/components/ui/Badge.svelte";
@@ -80,10 +81,12 @@
 		Boolean(active.search || active.genre || active.label || active.status),
 	);
 
-	const statusTone: Record<string, "forest" | "butter" | "muted"> = {
+	// wanted → plum: the pre-ownership end of the status axis (F5).
+	const statusTone: Record<string, "forest" | "plum" | "butter" | "muted"> = {
 		in_collection: "forest",
 		sold: "butter",
 		traded_away: "muted",
+		wanted: "plum",
 	};
 
 	// Play log from the index: quick +1 (and −) on every row without leaving
@@ -94,11 +97,31 @@
 		playCountOverrides[rec.id] ?? data.play_counts[rec.id] ?? 0;
 
 	let busyPlays = $state<Record<number, boolean>>({});
+	let busyAcquires = $state<Record<number, boolean>>({});
 
 	interface PlayResponse {
 		ok?: boolean;
 		play_count?: number;
 		message?: string;
+	}
+
+	/** One-tap acquire from a home row: stay on the page, flip the badge. */
+	async function quickAcquire(rec: { id: number }): Promise<void> {
+		if (busyAcquires[rec.id]) return;
+		busyAcquires[rec.id] = true;
+		try {
+			const res = await fetch(`/api/records/${rec.id}/acquire`, {
+				method: "POST",
+			});
+			if (!res.ok) throw new Error(`HTTP ${res.status}`);
+			await invalidateAll();
+		} catch {
+			// Leave the row alone — the user can retry.
+		} finally {
+			const b = { ...busyAcquires };
+			delete b[rec.id];
+			busyAcquires = b;
+		}
 	}
 
 	async function quickLog(rec: { id: number }): Promise<void> {
@@ -151,6 +174,29 @@
 <!-- One-tap play log per row: − (undo latest) + count + +1. Rendered as a
      SIBLING of the row anchor in every view (never nested inside it). Quiet
      chip: hidden until row hover on desktop, always visible on touch. -->
+<!-- One-tap acquire: sits where the play chip sits, but only on wanted rows.
+     fetch + invalidateAll keeps us on the page — the row flips to the forest
+     badge in place; a failed request leaves the row untouched. -->
+{#snippet acquireChip(rec: {
+	id: number;
+	artist: string;
+	title: string;
+	status: string;
+})}
+	{#if rec.status === "wanted"}
+		<button
+			type="button"
+			class="pointer-events-auto inline-flex items-center gap-1 rounded-xs border border-hair bg-paper/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-accent shadow-sm backdrop-blur-sm transition-colors duration-200 hover:border-accent disabled:pointer-events-none disabled:opacity-50"
+			disabled={!!busyAcquires[rec.id]}
+			title="Move to the collection"
+			aria-label={`Mark ${rec.artist} — ${rec.title} as acquired`}
+			onclick={() => void quickAcquire(rec)}
+		>
+			→ acquired
+		</button>
+	{/if}
+{/snippet}
+
 {#snippet playControl(rec: { id: number; artist: string; title: string })}
 	<div
 		class="pointer-events-auto inline-flex items-center gap-1 rounded-xs border border-hair bg-paper/90 px-2 py-1 opacity-0 shadow-sm backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100 focus-within:opacity-100 hover:opacity-100 pointer-coarse:opacity-100"
@@ -221,6 +267,14 @@
 		<p class="mt-3 font-display text-[15px] italic text-muted">
 			{data.total}
 			{data.total === 1 ? "album" : "albums"}, scanned and shelved.
+			{#if data.wanted_total > 0}
+				<a
+					href="/?status=wanted&view={view}"
+					class="text-plum underline decoration-hair underline-offset-4 transition-colors hover:decoration-plum"
+				>
+					{data.wanted_total} still wanted.
+				</a>
+			{/if}
 		</p>
 	</div>
 	<div class="shrink-0 text-right">
@@ -454,7 +508,8 @@
 					</span>
 				</a>
 				<span class="shrink-0 py-5 pl-2 pr-4 sm:pr-6"
-					>{@render playControl(rec)}</span
+					>{@render playControl(rec)}
+					{@render acquireChip(rec)}</span
 				>
 			</div>
 		{/each}
@@ -527,11 +582,12 @@
 						<td class="py-3 pr-4 text-right font-mono text-xs text-muted"
 							>{fmtPrice(rec.price_paid)}</td
 						>
-						<td class="py-3 pr-4"
-							><Badge tone={statusTone[rec.status]}
+						<td class="py-3 pr-4">
+							<Badge tone={statusTone[rec.status]}
 								>{STATUS_LABELS[rec.status]}</Badge
-							></td
-						>
+							>
+							<div class="mt-1.5">{@render acquireChip(rec)}</div>
+						</td>
 						<!-- play log: quiet inline controls, always usable on touch -->
 						<td class="py-3 pr-4">
 							{@render playControl(rec)}
@@ -590,7 +646,10 @@
 						>
 					</p>
 				</a>
-				<div class="mt-2 flex justify-end">{@render playControl(rec)}</div>
+				<div class="mt-2 flex items-center justify-between gap-2">
+					{@render acquireChip(rec)}
+					{@render playControl(rec)}
+				</div>
 			</div>
 		{/each}
 	</div>

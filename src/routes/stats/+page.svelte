@@ -83,11 +83,13 @@
     metricRows(s.by_source).map((r) => ({ ...r, color: CATEGORICAL[3] })),
   );
 
-  /* Status keeps its existing semantic tones (matches the collection badges). */
+  /* Status keeps its existing semantic tones (matches the collection badges);
+     wanted is plum — the pre-ownership end of the shelf (F5). */
   const STATUS_COLORS: Record<string, string> = {
     in_collection: "var(--forest)",
     sold: "var(--butter)",
     traded_away: "var(--faint)",
+    wanted: "var(--plum)",
   };
   /** Statuses rendered on the same bar scale as the other distributions. */
   const statusRows = $derived(
@@ -123,6 +125,9 @@
       seg(" records on the shelf"),
     ];
     if (genre) l1.push(seg(", mostly "), seg(genre.label, true));
+    // F5 — the wishlist is off-shelf, but part of the story.
+    if (s.wanted > 0)
+      l1.push(seg(", and "), seg(String(s.wanted), true), seg(" still wanted"));
     l1.push(seg("."));
     lines.push(l1);
 
@@ -521,6 +526,15 @@ sideways inside their own box with an edge fade hinting at more content. -->
         class="mt-2 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
       >
         in collection
+        <!-- F5 — the wishlist readout, quiet and off-shelf. -->
+        {#if s.wanted > 0}
+          <a
+            href="/?status=wanted"
+            class="ml-2 font-display italic tracking-normal normal-case text-plum underline decoration-hair underline-offset-4 hover:decoration-plum"
+          >
+            {s.wanted} wanted
+          </a>
+        {/if}
       </div>
     </div>
     <div>

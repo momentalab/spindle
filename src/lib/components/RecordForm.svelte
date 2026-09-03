@@ -155,6 +155,11 @@
 					{/each}
 				</datalist>
 			</div>
+			{#if draft.status === "wanted"}
+				<p class="mt-4 font-display text-[13px] italic text-faint">
+					price and condition can wait until it's on the shelf.
+				</p>
+			{/if}
 		</section>
 
 		<!-- More -->
@@ -165,18 +170,45 @@
 				More
 			</h3>
 			<div class="space-y-5">
-				<label
-					class="inline-flex cursor-pointer select-none items-center gap-3 text-sm text-muted transition-colors hover:text-ink"
-				>
-					<input
-						type="checkbox"
-						name="limited_edition"
-						id="f-limited"
-						class="h-4 w-4 accent-accent"
-						bind:checked={draft.limited_edition}
-					/>
-					<span>Limited edition</span>
-				</label>
+				<!-- Numbered pressings: copy no. / total copies ride beside the limited
+				     flag but are independent of it (a numbered reissue may not be
+				     flagged limited). Both optional; parseRecordForm drops non-integers. -->
+				<div class="flex flex-wrap items-end gap-x-10 gap-y-5">
+					<label
+						class="inline-flex cursor-pointer select-none items-center gap-3 pb-2 text-sm text-muted transition-colors hover:text-ink"
+					>
+						<input
+							type="checkbox"
+							name="limited_edition"
+							id="f-limited"
+							class="h-4 w-4 accent-accent"
+							bind:checked={draft.limited_edition}
+						/>
+						<span>Limited edition</span>
+					</label>
+					<div class="w-24">
+						<Input
+							id="f-copy-number"
+							name="copy_number"
+							type="number"
+							min="1"
+							step="1"
+							label="Copy no."
+							bind:value={draft.copy_number}
+						/>
+					</div>
+					<div class="w-28">
+						<Input
+							id="f-copy-total"
+							name="copy_total"
+							type="number"
+							min="1"
+							step="1"
+							label="of (total)"
+							bind:value={draft.copy_total}
+						/>
+					</div>
+				</div>
 
 				<Textarea
 					id="f-notes"

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
 	import { page } from "$app/state";
+	import AcquireDialog from "$lib/components/AcquireDialog.svelte";
 	import RecordForm from "$lib/components/RecordForm.svelte";
 	import Banner from "$lib/components/ui/Banner.svelte";
 	import Badge from "$lib/components/ui/Badge.svelte";
@@ -24,6 +25,13 @@
 		const record = data.record; // reactive read
 		if (record) draft = draftFromRow(record);
 	});
+
+	// Acquire dialog (F5): "Mark as acquired" opens this instead of flipping
+	// immediately — the just-bought-it details (date, price, conditions) belong
+	// in one place. The dialog's own form posts to ?/acquire with use:enhance;
+	// the 303 then navigates back, the record flips out of "wanted" and the
+	// dialog unmounts with the ?acquired=1 flash on the spec sheet.
+	let acquireOpen = $state(false);
 
 	// Missing-cover repair (F2): re-pull the artwork from Discogs when this record
 	// only has a remote fallback (or a discogs_id to look one up). The ?/repair_cover
@@ -141,6 +149,19 @@
 		return `${PLAY_MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
 	}
 
+	/** Whole days between an ISO date and the start of today: "today", "yesterday" or "N days ago". */
+	function relDays(iso: string): string {
+		const d = new Date(iso);
+		if (Number.isNaN(d.getTime())) return "";
+		const today = new Date();
+		const startOfDay = (x: Date) =>
+			new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+		const days = Math.round((startOfDay(today) - startOfDay(d)) / 86400000);
+		if (days <= 0) return "today";
+		if (days === 1) return "yesterday";
+		return `${days} days ago`;
+	}
+
 	async function logPlay(): Promise<void> {
 		loggingPlay = true;
 		const prevCount = playCountOverride;
@@ -206,16 +227,33 @@
 		return cents === null ? "" : `$${(cents / 100).toFixed(2)}`;
 	}
 
-	const flash =
-		page.url.searchParams.get("imported") ||
-		page.url.searchParams.get("added_copy") ||
-		page.url.searchParams.get("cover_saved");
+	// Key-based (has, not get): the redirect params carry values (?acquired=1),
+	// so comparing against the key name is what makes these banners fire.
+	const flash = $derived.by(() => {
+		const sp = page.url.searchParams;
+		if (sp.has("imported")) return "imported";
+		if (sp.has("added_copy")) return "added_copy";
+		if (sp.has("cover_saved")) return "cover_saved";
+		if (sp.has("acquired")) return "acquired";
+		return null;
+	});
 
-	const statusTone: Record<string, "forest" | "butter" | "muted"> = {
+	const statusTone: Record<string, "forest" | "plum" | "butter" | "muted"> = {
 		in_collection: "forest",
 		sold: "butter",
 		traded_away: "muted",
+		wanted: "plum",
 	};
+
+	/** Numbered pressing — `828 / 1000`, or `#828` when only the number exists. */
+	const copyDisplay = $derived.by(() => {
+		const n = data.record.copy_number;
+		const t = data.record.copy_total;
+		if (n === null && t === null) return "";
+		if (n !== null && t !== null) return `${n} / ${t}`;
+		if (n !== null) return `#${n}`;
+		return `/ ${t}`;
+	});
 
 	// Flat label/value pairs for the spec sheet (nulls skipped).
 	const meta = $derived(
@@ -249,8 +287,29 @@
 						.join(" · "),
 				],
 				["Price paid", fmtPrice(data.record.price_paid)],
-				["Acquired", data.record.acquired_at ?? ""],
+				// F7 pre-stage — shown when a sale is recorded; the portfolio view (F7)
+				// is what gives these columns their user-facing meaning.
+				[
+					"Sold",
+					data.record.sold_at
+						? `${relDays(data.record.sold_at)} · ${fmtPlayDate(data.record.sold_at)}`
+						: "",
+				],
+				["Sale price", fmtPrice(data.record.sale_price)],
+				[
+					"Acquired",
+					data.record.acquired_at
+						? `${relDays(data.record.acquired_at)} · ${fmtPlayDate(data.record.acquired_at)}`
+						: "",
+				],
 				["Source", data.record.source ?? ""],
+				[
+					"Wanted since",
+					data.record.wanted_at
+						? `${relDays(data.record.wanted_at)} · ${fmtPlayDate(data.record.wanted_at)}`
+						: "",
+				],
+				["Copy", copyDisplay],
 			] as [string, string][]
 		).filter(([, v]) => v !== ""),
 	);
@@ -272,6 +331,8 @@
 	<div class="mt-6"><Banner variant="success">Record saved.</Banner></div>
 {:else if flash === "added_copy"}
 	<div class="mt-6"><Banner variant="success">Added another copy.</Banner></div>
+{:else if flash === "acquired"}
+	<div class="mt-6"><Banner variant="success">On the shelf.</Banner></div>
 {:else if flash === "cover_saved"}
 	<div class="mt-6">
 		<Banner variant="success">Cover saved.</Banner>
@@ -382,7 +443,9 @@
 				>
 					Status
 				</dt>
-				<dd class="text-[15px] font-normal text-accent">
+				<dd
+					class={`text-[15px] font-normal ${data.record.status === "wanted" ? "text-plum" : data.record.status === "in_collection" ? "text-accent" : "text-muted"}`}
+				>
 					{STATUS_LABELS[data.record.status]}
 				</dd>
 			</div>
@@ -404,13 +467,23 @@
 		{/if}
 
 		<div class="mt-9 flex flex-wrap items-center gap-4">
-			<Button
-				variant="primary"
-				disabled={loggingPlay}
-				onclick={() => void logPlay()}
-			>
-				{loggingPlay ? "Logging…" : "Log a play"}
-			</Button>
+			{#if data.record.status === "wanted"}
+				<!-- (F5): the primary action for a want. Opens the acquire dialog —
+				     date (default today), price and conditions land with it; the
+				     ?/acquire form lives inside the dialog, enhance keeps the
+				     page in place and the 303 lands the "On the shelf." flash. -->
+				<Button variant="primary" onclick={() => (acquireOpen = true)}>
+					Mark as acquired
+				</Button>
+			{:else}
+				<Button
+					variant="primary"
+					disabled={loggingPlay}
+					onclick={() => void logPlay()}
+				>
+					{loggingPlay ? "Logging…" : "Log a play"}
+				</Button>
+			{/if}
 			{#if playCount > 0}
 				<Button
 					variant="ghost"
@@ -433,9 +506,12 @@
 			<!-- inline-flex, not inline: a display:inline wrapper form ignores
 			     margins and collapses its height, which is what made rows of
 			     buttons stack with no vertical spacing. -->
-			<form method="POST" action="?/add_copy" class="inline-flex">
-				<Button type="submit" variant="secondary">Add a copy</Button>
-			</form>
+			{#if data.record.status !== "wanted"}
+				<!-- Copies of a want is nonsense until it's owned (F5). -->
+				<form method="POST" action="?/add_copy" class="inline-flex">
+					<Button type="submit" variant="secondary">Add a copy</Button>
+				</form>
+			{/if}
 			<form
 				method="POST"
 				action="?/delete"
@@ -597,3 +673,16 @@
 
 	{#if uploadError}<p class="mt-4 text-sm text-rust">{uploadError}</p>{/if}
 </section>
+
+<!-- Acquire dialog (F5) — the one-tap, now with its details: when, what it cost,
+	    how it came in. All fields optional; the date defaults to today. -->
+{#if data.record.status === "wanted"}
+	<AcquireDialog
+		open={acquireOpen}
+		action="?/acquire"
+		artist={data.record.artist}
+		title={data.record.title}
+		error={form?.error ?? null}
+		onCancel={() => (acquireOpen = false)}
+	/>
+{/if}

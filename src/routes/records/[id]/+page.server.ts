@@ -8,6 +8,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { repairCover } from '$lib/server/covers';
 import {
+	acquireRecord,
 	addCopy,
 	deleteRecord,
 	findRecordById,
@@ -36,6 +37,32 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
+	acquire: async ({ request, params }) => {
+		const id = Number.parseInt(params.id, 10);
+		const rec = findRecordById(id);
+		if (!rec) error(404, 'Record not found');
+		// Not a wanted record — nothing to acquire (banner offers this instead of Add a copy).
+		if (rec.status !== 'wanted')
+			return fail(400, { error: 'Only wanted records can be acquired.' });
+
+		// The acquire dialog may carry purchase details (all optional):
+		// acquired_at (YYYY-MM-DD), price_paid (dollars), both conditions.
+		const data = await request.formData();
+		const dateRaw = String(data.get('acquired_at') ?? '');
+		const priceRaw = String(data.get('price_paid') ?? '').trim();
+		const priceCents =
+			priceRaw && Number.isFinite(parseFloat(priceRaw))
+				? Math.round(parseFloat(priceRaw) * 100)
+				: null;
+		acquireRecord(id, {
+			acquired_at: /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : null,
+			price_paid: priceCents,
+			condition_media: String(data.get('condition_media') ?? '') || null,
+			condition_sleeve: String(data.get('condition_sleeve') ?? '') || null
+		});
+		redirect(303, `/records/${id}?acquired=1`);
+	},
+
 	edit: async ({ request, params }) => {
 		const id = Number.parseInt(params.id, 10);
 		const data = await request.formData();

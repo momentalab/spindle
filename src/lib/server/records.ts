@@ -7,7 +7,7 @@ import type Database from 'better-sqlite3';
 import { getDb } from '$lib/server/db';
 import { MEDIA_DIR, ensureDataDirs } from '$lib/server/paths';
 import type { LabelEntry, ListOptions, PlayRow, PhotoRow, RecordRow, RecordStatus } from '$lib/types';
-import { parseGenreList, parseLabelList, parseStyleList } from '$lib/types';
+import { parseGenreList, parseLabelList, parseStyleList, RECORD_STATUSES } from '$lib/types';
 import { readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
@@ -176,8 +176,11 @@ export function distinctValues(column: 'genre' | 'label' | 'source'): string[] {
 	return rows.map((r) => r.v);
 }
 
-export function countRecords(): number {
-	return (getDb().prepare('SELECT COUNT(*) AS c FROM records').get() as { c: number }).c;
+/** Count all records, or — with a status — only the rows in that state. */
+export function countRecords(status?: RecordStatus): number {
+	const sql = status ? 'SELECT COUNT(*) AS c FROM records WHERE status = ?' : 'SELECT COUNT(*) AS c FROM records';
+	const row = (status ? getDb().prepare(sql).get(status) : getDb().prepare(sql).get()) as { c: number };
+	return row.c;
 }
 
 /* ------------------------------------------------------------------ */
@@ -204,7 +207,12 @@ export interface NewRecordInput {
 	acquired_at: string | null;
 	source: string | null;
 	status: RecordStatus;
+	wanted_at: string | null; // ISO date — set on entering "wanted" (invariant, below)
 	copies: number;
+	copy_number: number | null;
+	copy_total: number | null;
+	sale_price: number | null; // cents
+	sold_at: string | null; // ISO date
 	notes: string | null;
 	cover_filename: string | null;
 	cover_remote_url: string | null;
@@ -216,15 +224,23 @@ export function createRecord(input: NewRecordInput): RecordRow {
 	const styles = input.styles.map((s) => s.trim()).filter(Boolean);
 	const genres = input.genres.map((g) => g.trim()).filter(Boolean);
 	const labels = input.labels.filter((l) => l.name.trim() !== '');
+	// Status invariants are applied at write time, not in SQL. Entering "wanted"
+	// stamps the wish date and forces acquired_at NULL (a wanted record can't be
+	// both wanted and acquired); entering "sold" stamps the sale date.
+	const wanted_at = input.status === 'wanted' ? (input.wanted_at ?? now) : null;
+	const acquired_at = input.status === 'wanted' ? null : input.acquired_at;
+	const sold_at = input.status === 'sold' ? (input.sold_at ?? now) : input.sold_at;
 	const insertRecord = db.prepare(
 		`INSERT INTO records (
 			discogs_id, barcode, artist, title, year, format,
 			limited_edition, condition_media, condition_sleeve, price_paid, acquired_at,
-			source, status, copies, notes, cover_filename, cover_remote_url, created_at, updated_at
+			source, status, wanted_at, copies, copy_number, copy_total, sale_price, sold_at,
+			notes, cover_filename, cover_remote_url, created_at, updated_at
 		) VALUES (
 			@discogs_id, @barcode, @artist, @title, @year, @format,
 			@limited_edition, @condition_media, @condition_sleeve, @price_paid, @acquired_at,
-			@source, @status, @copies, @notes, @cover_filename, @cover_remote_url, @now, @now
+			@source, @status, @wanted_at, @copies, @copy_number, @copy_total, @sale_price, @sold_at,
+			@notes, @cover_filename, @cover_remote_url, @now, @now
 		)`
 	);
 	const { styles: _styles, genres: _genres, labels: _labels, ...rest } = input;
@@ -232,6 +248,9 @@ export function createRecord(input: NewRecordInput): RecordRow {
 		const info = insertRecord.run({
 			...rest,
 			limited_edition: input.limited_edition ? 1 : 0,
+			acquired_at,
+			wanted_at,
+			sold_at,
 			now
 		});
 		const recordId = Number(info.lastInsertRowid);
@@ -261,10 +280,23 @@ export function parseRecordForm(data: FormData): NewRecordInput | null {
 		price_paid = Number.isFinite(parsed) ? parsed : null;
 	}
 
+	// F7 pre-stage — sale price in dollars, same dollars→cents rounding as price_paid.
+	const salePriceRaw = str('sale_price');
+	let sale_price: number | null = null;
+	if (salePriceRaw) {
+		const parsed = Math.round(parseFloat(salePriceRaw) * 100);
+		sale_price = Number.isFinite(parsed) ? parsed : null;
+	}
+
+	// Numbered pressings: both optional, independently settable positive integers.
+	const posInt = (raw: string | null): number | null => {
+		if (!raw) return null;
+		const n = Number.parseInt(raw, 10);
+		return Number.isInteger(n) && n > 0 ? n : null;
+	};
+
 	const statusRaw = str('status') ?? '';
-	const status: RecordStatus = (['in_collection', 'sold', 'traded_away'] as const).includes(
-		statusRaw as RecordStatus
-	)
+	const status: RecordStatus = (RECORD_STATUSES as readonly string[]).includes(statusRaw)
 		? (statusRaw as RecordStatus)
 		: 'in_collection';
 
@@ -285,7 +317,12 @@ export function parseRecordForm(data: FormData): NewRecordInput | null {
 		acquired_at: str('acquired_at'),
 		source: str('source'),
 		status,
+		wanted_at: str('wanted_at'),
 		copies: 1,
+		copy_number: posInt(str('copy_number')),
+		copy_total: posInt(str('copy_total')),
+		sale_price,
+		sold_at: str('sold_at'),
 		notes: str('notes'),
 		cover_filename: null,
 		cover_remote_url: str('cover_url')
@@ -294,7 +331,7 @@ export function parseRecordForm(data: FormData): NewRecordInput | null {
 
 export type UpdateRecordInput = Partial<NewRecordInput> & { copies?: number };
 
-/** Columns that may be updated (everything except id / created_at and the set fields — styles/genres/labels are synced in their junctions). */
+/** Columns that may be updated (everything except id / created_at and the set fields — styles/genres/labels are synced in their junctions). wanted_at is not updatable: it's managed by the status-transition invariants below. */
 const UPDATABLE: (keyof NewRecordInput)[] = [
 	'discogs_id',
 	'barcode',
@@ -309,6 +346,10 @@ const UPDATABLE: (keyof NewRecordInput)[] = [
 	'acquired_at',
 	'source',
 	'status',
+	'copy_number',
+	'copy_total',
+	'sale_price',
+	'sold_at',
 	'notes',
 	'cover_filename',
 	'cover_remote_url'
@@ -321,17 +362,51 @@ export function updateRecord(id: number, patch: UpdateRecordInput): RecordRow | 
 
 	const fields: string[] = [];
 	const params: Record<string, unknown> = { id };
+	/** SET-clause writer that replaces any prior assignment to the same column. */
+	const addField = (col: string, value: unknown): void => {
+		const i = fields.findIndex((f) => f.startsWith(`${col} =`));
+		if (i !== -1) fields.splice(i, 1); // a bare splice(-1) would drop the *last* field
+		fields.push(`${col} = @${col}`);
+		params[col] = value;
+	};
 
 	for (const key of UPDATABLE) {
 		const value = patch[key];
 		if (value === undefined) continue;
-		fields.push(`${key} = @${key}`);
-		params[key] = key === 'limited_edition' ? (value ? 1 : 0) : value;
+		addField(key, key === 'limited_edition' ? (value ? 1 : 0) : value);
 	}
 	if (patch.copies !== undefined) {
-		fields.push('copies = @copies');
-		params.copies = patch.copies;
+		addField('copies', patch.copies);
 	}
+
+	// Status transitions get the same invariants as createRecord, using the
+	// existing row so "since" dates survive re-saves.
+	const oldStatus = existing.status;
+	const newStatus = patch.status ?? oldStatus;
+	if (newStatus !== oldStatus) {
+		const today = new Date().toISOString();
+		if (newStatus === 'wanted') {
+			// Re-wanting after a sale keeps the original wish date — that's the
+			// interesting number for D6. A wanted record can't have been acquired.
+			addField('wanted_at', existing.wanted_at ?? today);
+			addField('acquired_at', null);
+		}
+		if (oldStatus === 'wanted' && newStatus !== 'wanted') {
+			addField('wanted_at', null);
+			if (newStatus === 'in_collection' && !(patch.acquired_at ?? existing.acquired_at)) {
+				addField('acquired_at', today);
+			}
+		}
+		if (newStatus === 'sold') {
+			addField('sold_at', patch.sold_at ?? existing.sold_at ?? today);
+		}
+		if (oldStatus === 'sold' && newStatus !== 'sold') {
+			// A record you bought back is not a sale — keep the portfolio view honest.
+			if (patch.sale_price === undefined) addField('sale_price', null);
+			if (patch.sold_at === undefined) addField('sold_at', null);
+		}
+	}
+
 	if (
 		fields.length === 0 &&
 		patch.genres === undefined &&
@@ -366,6 +441,38 @@ export function addCopy(id: number): RecordRow | undefined {
 		.prepare("UPDATE records SET copies = copies + 1, updated_at = datetime('now') WHERE id = ?")
 		.run(id);
 	return findRecordById(id);
+}
+
+/** Optional purchase details captured at the moment of acquisition. */
+export interface AcquireOptions {
+	/** 'YYYY-MM-DD'; today's date when omitted or empty. */
+	acquired_at?: string | null;
+	/** Cents; only written when a non-null value is given (blank = keep). */
+	price_paid?: number | null;
+	condition_media?: string | null;
+	condition_sleeve?: string | null;
+}
+
+/**
+ * Acquire a wanted record: flip it into the collection, carrying optional
+ * purchase details (the "just bought it" moment — date defaults to today).
+ * Guarded no-op unless the row is actually wanted (a non-wanted record returns
+ * untouched, so callers can distinguish via the returned status). Reuses the
+ * updateRecord transition invariants (wanted_at cleared, acquired_at filled),
+ * so the same rules apply as a manual status edit. Returns undefined if the
+ * record doesn't exist → routes 404.
+ */
+export function acquireRecord(id: number, details?: AcquireOptions): RecordRow | undefined {
+	const existing = findRecordById(id);
+	if (!existing) return undefined;
+	if (existing.status !== 'wanted') return existing;
+
+	const patch: UpdateRecordInput = { status: 'in_collection' };
+	if (details?.acquired_at) patch.acquired_at = details.acquired_at;
+	if (details?.price_paid != null) patch.price_paid = details.price_paid;
+	if (details?.condition_media) patch.condition_media = details.condition_media;
+	if (details?.condition_sleeve) patch.condition_sleeve = details.condition_sleeve;
+	return updateRecord(id, patch);
 }
 
 /** Delete a record and any media files it owns (covers + photos). */

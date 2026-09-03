@@ -5,7 +5,13 @@
  */
 import { error, fail, redirect } from '@sveltejs/kit';
 import { searchReleases, getRelease, toSeed, DiscogsError } from '$lib/server/discogs';
-import { findByBarcode, findByDiscogsId, addCopy, parseRecordForm } from '$lib/server/records';
+import {
+	findByBarcode,
+	findByDiscogsId,
+	addCopy,
+	acquireRecord,
+	parseRecordForm
+} from '$lib/server/records';
 import { importRecord } from '$lib/server/importer';
 import type { PageServerLoad, Actions } from './$types';
 import type { DiscogsSeed } from '$lib/types';
@@ -48,6 +54,16 @@ export const actions: Actions = {
 			}
 		}
 
+		// F5 — the buying-companion loop: re-scanning a wanted record flips it
+		// into the collection instead of offering another copy.
+		if (op === 'acquire') {
+			const recordId = Number.parseInt(String(data.get('record_id') ?? ''), 10);
+			if (Number.isFinite(recordId) && recordId > 0) {
+				acquireRecord(recordId);
+				redirect(303, `/records/${recordId}?acquired=1`);
+			}
+		}
+
 		const input = parseRecordForm(data);
 		if (!input) {
 			return fail(400, { error: 'Artist and title are required.' });
@@ -59,8 +75,15 @@ export const actions: Actions = {
 			const byDiscogs = input.discogs_id ? findByDiscogsId(input.discogs_id) : undefined;
 			const duplicate = byBarcode ?? byDiscogs;
 			if (duplicate) {
+				// status rides along so the banner can offer "Mark as acquired"
+				// when the existing row is a want (F5).
 				return fail(409, {
-					duplicate: { id: duplicate.id, artist: duplicate.artist, title: duplicate.title }
+					duplicate: {
+						id: duplicate.id,
+						artist: duplicate.artist,
+						title: duplicate.title,
+						status: duplicate.status
+					}
 				});
 			}
 		}

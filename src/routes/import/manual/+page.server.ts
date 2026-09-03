@@ -3,7 +3,13 @@
  * If the user fills in a barcode and it already exists locally, offer add-copy.
  */
 import { fail, redirect } from '@sveltejs/kit';
-import { findByBarcode, addCopy, parseRecordForm, distinctValues } from '$lib/server/records';
+import {
+	findByBarcode,
+	addCopy,
+	acquireRecord,
+	parseRecordForm,
+	distinctValues
+} from '$lib/server/records';
 import { importRecord } from '$lib/server/importer';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -24,13 +30,29 @@ export const actions: Actions = {
 			}
 		}
 
+		// F5 — re-entering a wanted record's details (or its barcode) flips it
+		// into the collection instead of offering another copy.
+		if (data.get('op') === 'acquire') {
+			const recordId = Number.parseInt(String(data.get('record_id') ?? ''), 10);
+			if (Number.isFinite(recordId) && recordId > 0) {
+				acquireRecord(recordId);
+				redirect(303, `/records/${recordId}?acquired=1`);
+			}
+		}
+
 		const input = parseRecordForm(data);
 		if (!input) return fail(400, { error: 'Artist and title are required.' });
 
 		const duplicate = input.barcode ? findByBarcode(input.barcode) : undefined;
 		if (duplicate && data.get('op') !== 'create_anyway') {
+			// status rides along for the F5 wanted → "Mark as acquired" banner.
 			return fail(409, {
-				duplicate: { id: duplicate.id, artist: duplicate.artist, title: duplicate.title }
+				duplicate: {
+					id: duplicate.id,
+					artist: duplicate.artist,
+					title: duplicate.title,
+					status: duplicate.status
+				}
 			});
 		}
 

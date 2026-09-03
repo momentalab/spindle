@@ -20,6 +20,10 @@ export function emptyDraft(): RecordDraft {
 		acquired_at: new Date().toISOString().slice(0, 10),
 		source: 'manual',
 		status: 'in_collection',
+		copy_number: '',
+		copy_total: '',
+		sale_price: '',
+		sold_at: '',
 		notes: '',
 		cover_url: ''
 	};
@@ -65,6 +69,10 @@ export function draftFromRow(row: RecordRow): RecordDraft {
 		acquired_at: row.acquired_at ?? '',
 		source: row.source ?? '',
 		status: row.status,
+		copy_number: row.copy_number !== null ? String(row.copy_number) : '',
+		copy_total: row.copy_total !== null ? String(row.copy_total) : '',
+		sale_price: row.sale_price !== null ? (row.sale_price / 100).toFixed(2) : '',
+		sold_at: row.sold_at ?? '',
 		notes: row.notes ?? '',
 		cover_url: row.cover_remote_url ?? ''
 	};

@@ -10,9 +10,14 @@
 
 	let { data, form }: { data: PageData; form: ActionData | null } = $props();
 	let draft: RecordDraft = $state(emptyDraft());
-	let duplicate = $state<{ id: number; artist: string; title: string } | null>(
-		null,
-	);
+	// status rides the dedupe payload so a wanted row offers "Mark as acquired"
+	// (F5) instead of another copy.
+	let duplicate = $state<{
+		id: number;
+		artist: string;
+		title: string;
+		status?: string;
+	} | null>(null);
 	let createAnyway = $state(false);
 
 	// A fresh action result (error from a new submit) dismisses the stale duplicate banner.
@@ -42,13 +47,21 @@
 {#if duplicate}
 	{@const dup = duplicate}
 	<div class="mt-6">
-		<Banner variant="error">
+		<Banner variant={dup.status === "wanted" ? "info" : "error"}>
 			{#snippet actions()}
-				<form method="POST" class="inline">
-					<input type="hidden" name="op" value="add_copy" />
-					<input type="hidden" name="record_id" value={dup.id} />
-					<Button type="submit" size="sm">Add copy</Button>
-				</form>
+				{#if dup.status === "wanted"}
+					<form method="POST" class="inline">
+						<input type="hidden" name="op" value="acquire" />
+						<input type="hidden" name="record_id" value={dup.id} />
+						<Button type="submit" size="sm">Mark as acquired</Button>
+					</form>
+				{:else}
+					<form method="POST" class="inline">
+						<input type="hidden" name="op" value="add_copy" />
+						<input type="hidden" name="record_id" value={dup.id} />
+						<Button type="submit" size="sm">Add copy</Button>
+					</form>
+				{/if}
 				<Button
 					size="sm"
 					variant="secondary"
@@ -60,8 +73,19 @@
 					Create anyway
 				</Button>
 			{/snippet}
-			Already saved as <strong>{duplicate.artist} — {duplicate.title}</strong> (same
-			barcode).
+			{#if dup.status === "wanted"}
+				On your wishlist:
+				<a
+					href="/records/{dup.id}"
+					class="underline underline-offset-4 transition-colors hover:text-accent"
+				>
+					<strong>{duplicate.artist} — {duplicate.title}</strong>
+				</a>
+				(same barcode) — found it? Acquire it.
+			{:else}
+				Already saved as <strong>{duplicate.artist} — {duplicate.title}</strong>
+				(same barcode).
+			{/if}
 		</Banner>
 	</div>
 {/if}
@@ -86,7 +110,9 @@
 		<RecordForm
 			bind:draft
 			sources={data.sources}
-			submitLabel="Save to my collection"
+			submitLabel={draft.status === "wanted"
+				? "Save to wishlist"
+				: "Save to my collection"}
 		/>
 	</form>
 </div>

@@ -28,6 +28,9 @@ export const load: PageServerLoad = async ({ url }) => {
 	return {
 		records,
 		total: countRecords(),
+		// Wanted rows show up in the index like any other — but the header gets a
+		// quiet "N still wanted" pointer (deep link to the filtered view).
+		wanted_total: countRecords('wanted'),
 		play_counts: playCounts(records.map((r) => r.id)),
 		filters: {
 			genres: distinctValues('genre'),

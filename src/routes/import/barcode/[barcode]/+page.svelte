@@ -14,9 +14,14 @@
 	let draft: RecordDraft = $state(emptyDraft());
 	let expandingId = $state<number | null>(null);
 	let expandError = $state<string | null>(null);
-	let duplicate = $state<{ id: number; artist: string; title: string } | null>(
-		null,
-	);
+	// status rides the dedupe payload so a wanted row offers "Mark as acquired"
+	// (F5) instead of another copy.
+	let duplicate = $state<{
+		id: number;
+		artist: string;
+		title: string;
+		status?: string;
+	} | null>(null);
 
 	// Keep the form in sync with server-provided state (initial seed, and a fresh
 	// dedupe result that lands via `form` after non-enhanced submissions).
@@ -88,24 +93,41 @@
 {#if data.existing}
 	{@const existing = data.existing}
 	<div class="mt-8">
-		<Banner variant="warn">
+		<Banner variant={existing.status === "wanted" ? "info" : "warn"}>
 			{#snippet actions()}
-				<form method="POST" class="inline">
-					<input type="hidden" name="op" value="add_copy" />
-					<input type="hidden" name="record_id" value={existing.id} />
-					<Button type="submit" size="sm" variant="secondary"
-						>Add another copy</Button
-					>
-				</form>
+				{#if existing.status === "wanted"}
+					<!-- F5 — found it at the shop: flip the want into the collection. -->
+					<form method="POST" class="inline">
+						<input type="hidden" name="op" value="acquire" />
+						<input type="hidden" name="record_id" value={existing.id} />
+						<Button type="submit" size="sm">Mark as acquired</Button>
+					</form>
+				{:else}
+					<form method="POST" class="inline">
+						<input type="hidden" name="op" value="add_copy" />
+						<input type="hidden" name="record_id" value={existing.id} />
+						<Button type="submit" size="sm" variant="secondary"
+							>Add another copy</Button
+						>
+					</form>
+				{/if}
 			{/snippet}
-			Already in your collection:
+			{#if existing.status === "wanted"}
+				On your wishlist:
+			{:else}
+				Already in your collection:
+			{/if}
 			<a
-				href="/records/{data.existing.id}"
+				href="/records/{existing.id}"
 				class="underline underline-offset-4 transition-colors hover:text-accent"
 			>
-				{data.existing.artist} — {data.existing.title}
+				{existing.artist} — {existing.title}
 			</a>
-			({data.existing.copies} cop{data.existing.copies === 1 ? "y" : "ies"})
+			{#if existing.status !== "wanted"}
+				({existing.copies} cop{existing.copies === 1 ? "y" : "ies"})
+			{:else}
+				— scanned at the shop, not owned yet.
+			{/if}
 		</Banner>
 	</div>
 {/if}
@@ -186,11 +208,19 @@
 	<div class="mt-6">
 		<Banner variant="error">
 			{#snippet actions()}
-				<form method="POST" class="inline">
-					<input type="hidden" name="op" value="add_copy" />
-					<input type="hidden" name="record_id" value={dup.id} />
-					<Button type="submit" size="sm">Add copy</Button>
-				</form>
+				{#if dup.status === "wanted"}
+					<form method="POST" class="inline">
+						<input type="hidden" name="op" value="acquire" />
+						<input type="hidden" name="record_id" value={dup.id} />
+						<Button type="submit" size="sm">Mark as acquired</Button>
+					</form>
+				{:else}
+					<form method="POST" class="inline">
+						<input type="hidden" name="op" value="add_copy" />
+						<input type="hidden" name="record_id" value={dup.id} />
+						<Button type="submit" size="sm">Add copy</Button>
+					</form>
+				{/if}
 				<Button
 					size="sm"
 					variant="secondary"
@@ -228,7 +258,13 @@
 			name="op"
 			value={createAnyway ? "create_anyway" : "save"}
 		/>
-		<RecordForm bind:draft submitLabel="Save to my collection" />
+		<!-- F5 — saving a want goes to the wishlist, not the shelf. -->
+		<RecordForm
+			bind:draft
+			submitLabel={draft.status === "wanted"
+				? "Save to wishlist"
+				: "Save to my collection"}
+		/>
 	</form>
 </div>
 

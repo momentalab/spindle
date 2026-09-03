@@ -109,6 +109,7 @@ export interface CollectionStats {
 	in_collection: number;
 	sold: number;
 	traded_away: number;
+	wanted: number; // F5 — the wishlist segment (shown in the status bar + headline)
 	copies_total: number;
 	limited_editions: number; // in-collection rows flagged limited
 	covers_local: number; // rows with a locally stored cover file
@@ -282,6 +283,7 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 			SUM(status = 'in_collection') AS in_collection,
 			SUM(status = 'sold') AS sold,
 			SUM(status = 'traded_away') AS traded_away,
+			SUM(status = 'wanted') AS wanted,
 			SUM(copies) AS copies_total,
 			SUM(CASE WHEN status = 'in_collection' AND limited_edition = 1 THEN 1 ELSE 0 END) AS limited_editions,
 			SUM(cover_filename IS NOT NULL) AS covers_local,
@@ -299,24 +301,26 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	   labels are each a set per record (junction tables) — every value a record
 	   carries gets its own bar, so a record on two labels counts toward both. */
 	const groupLabelRows = (): ValBarRow[] =>
-		(db.prepare(`
-			SELECT rl.label AS label, COUNT(*) AS count,
-			       SUM(CASE WHEN r.status = 'in_collection' THEN COALESCE(r.price_paid, 0) * r.copies ELSE 0 END) AS value_cents
-			FROM record_labels rl
-			JOIN records r ON r.id = rl.record_id
-			GROUP BY rl.label
-		`).all() as ValBarRow[]).sort(
+	(db.prepare(`
+		SELECT rl.label AS label, COUNT(*) AS count,
+		       SUM(CASE WHEN r.status = 'in_collection' THEN COALESCE(r.price_paid, 0) * r.copies ELSE 0 END) AS value_cents
+		FROM record_labels rl
+		JOIN records r ON r.id = rl.record_id
+		WHERE r.status != 'wanted'
+		GROUP BY rl.label
+	`).all() as ValBarRow[]).sort(
 			(a, b) => b.count - a.count || a.label.localeCompare(b.label)
 		);
 
 	const groupGenreRows = (): ValBarRow[] =>
-		(db.prepare(`
-			SELECT g.genre AS label, COUNT(*) AS count,
-			       SUM(CASE WHEN r.status = 'in_collection' THEN COALESCE(r.price_paid, 0) * r.copies ELSE 0 END) AS value_cents
-			FROM record_genres g
-			JOIN records r ON r.id = g.record_id
-			GROUP BY g.genre
-		`).all() as ValBarRow[]).sort(
+	(db.prepare(`
+		SELECT g.genre AS label, COUNT(*) AS count,
+		       SUM(CASE WHEN r.status = 'in_collection' THEN COALESCE(r.price_paid, 0) * r.copies ELSE 0 END) AS value_cents
+		FROM record_genres g
+		JOIN records r ON r.id = g.record_id
+		WHERE r.status != 'wanted'
+		GROUP BY g.genre
+	`).all() as ValBarRow[]).sort(
 			(a, b) => b.count - a.count || a.label.localeCompare(b.label)
 		);
 
@@ -357,6 +361,9 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	const formatCounts = new Map<string, number>();
 
 	for (const r of rows) {
+		// F5 — wanted rows are the wishlist, not the shelf: they must not
+		// inflate decades, median year, extremes or the cross-tab.
+		if (r.status === 'wanted') continue;
 		const y = parseYear(r.year);
 		if (y !== null) {
 			yearNums.push(y);
@@ -400,7 +407,9 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	/* D2 — attach the actual pressing to each extreme year (most recent wins ties). */
 	if (extremes.oldest || extremes.freshest) {
 		const rowsWithId = db.prepare(`
-			SELECT id, artist, title, year FROM records ORDER BY id
+			SELECT id, artist, title, year FROM records
+			WHERE status != 'wanted'
+			ORDER BY id
 		`).all() as { id: number; artist: string; title: string; year: string | null }[];
 		for (const r of rowsWithId) {
 			const y = parseYear(r.year);
@@ -435,6 +444,7 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	const heatmapDateCount = new Map<string, number>(); // A3 — 'YYYY-MM-DD' → n
 
 	for (const r of rows) {
+		if (r.status === 'wanted') continue; // F5 — the wishlist doesn't grow the shelf
 		const key = parseMonthKey(r.at);
 		if (!key) {
 			undated_count++;
@@ -511,7 +521,7 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	const top_artists = (db.prepare(`
 		SELECT artist AS label, COUNT(*) AS count
 		FROM records
-		WHERE TRIM(artist) != ''
+		WHERE TRIM(artist) != '' AND status != 'wanted'
 		GROUP BY artist
 	`).all() as StatBarRow[])
 		.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
@@ -713,6 +723,7 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		in_collection: shelf,
 		sold: n(headline.sold),
 		traded_away: n(headline.traded_away),
+		wanted: n(headline.wanted),
 		copies_total: n(headline.copies_total),
 		limited_editions: n(headline.limited_editions),
 		covers_local: n(headline.covers_local),

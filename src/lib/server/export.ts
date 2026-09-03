@@ -36,16 +36,21 @@ export const RECORD_COLUMNS: (keyof RecordRow)[] = [
 	'labels',
 	'format',
 	'limited_edition',
+	'copy_number',
+	'copy_total',
 	'condition_media',
 	'condition_sleeve',
 	'price_paid',
+	'sale_price',
 	'acquired_at',
+	'sold_at',
 	'source',
 	'status',
 	'copies',
 	'notes',
 	'cover_filename',
 	'cover_remote_url',
+	'wanted_at',
 	'created_at',
 	'updated_at'
 ];
@@ -53,6 +58,7 @@ export const RECORD_COLUMNS: (keyof RecordRow)[] = [
 /** Human-friendly CSV headers. */
 const CSV_HEADERS: Record<string, string> = {
 	price_paid: 'price_paid_usd',
+	sale_price: 'sale_price_usd',
 	limited_edition: 'limited_edition (yes/no)',
 	cover_filename: 'cover_url',
 	created_at: 'added_at',
@@ -92,6 +98,8 @@ function recordToCsvRow(rec: RecordRow): string {
 				return csvField(joinLabels(rec.labels));
 			case 'price_paid':
 				return rec.price_paid === null ? '' : String((rec.price_paid / 100).toFixed(2));
+			case 'sale_price':
+				return rec.sale_price === null ? '' : String((rec.sale_price / 100).toFixed(2));
 			case 'limited_edition':
 				return rec.limited_edition ? 'yes' : 'no';
 			case 'cover_filename':
