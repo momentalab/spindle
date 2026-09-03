@@ -295,16 +295,16 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 
 	const n = (v: unknown): number => (typeof v === 'number' ? v : 0);
 
-	/* ---- Distributions with money attached (B4 toggle). Genres are a set per
-	   record (record_genres junction) — every genre a record carries gets its own
-	   bar; label is a plain single-value column. */
+	/* ---- Distributions with money attached (B4 toggle). Genres, styles and
+	   labels are each a set per record (junction tables) — every value a record
+	   carries gets its own bar, so a record on two labels counts toward both. */
 	const groupLabelRows = (): ValBarRow[] =>
 		(db.prepare(`
-			SELECT label AS label, COUNT(*) AS count,
-			       SUM(CASE WHEN status = 'in_collection' THEN COALESCE(price_paid, 0) * copies ELSE 0 END) AS value_cents
-			FROM records
-			WHERE label IS NOT NULL AND TRIM(label) != ''
-			GROUP BY label
+			SELECT rl.label AS label, COUNT(*) AS count,
+			       SUM(CASE WHEN r.status = 'in_collection' THEN COALESCE(r.price_paid, 0) * r.copies ELSE 0 END) AS value_cents
+			FROM record_labels rl
+			JOIN records r ON r.id = rl.record_id
+			GROUP BY rl.label
 		`).all() as ValBarRow[]).sort(
 			(a, b) => b.count - a.count || a.label.localeCompare(b.label)
 		);
@@ -626,13 +626,14 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		nm_or_better_pct: mediaCond.pct
 	};
 
-	/* C4 — styles under genres (deeper taste texture). */
+	/* C4 — styles under genres (deeper taste texture). Individual styles now —
+	   a record tagged "Jazz, Free Jazz" contributes to both bars. */
 	const by_style = topN(
 		(db.prepare(`
-			SELECT style AS label, COUNT(*) AS count
-			FROM records
-			WHERE style IS NOT NULL AND TRIM(style) != ''
-			GROUP BY style
+			SELECT rs.style AS label, COUNT(*) AS count
+			FROM record_styles rs
+			JOIN records r ON r.id = rs.record_id
+			GROUP BY rs.style
 		`).all() as StatBarRow[]).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
 	);
 

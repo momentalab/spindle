@@ -20,11 +20,13 @@ export interface RecordRow {
 	barcode: string | null;
 	artist: string;
 	title: string;
-	style: string | null;
+	/** One entry per style from the record_styles table (hydrated onto the row). */
+	styles: string[];
 	/** One entry per genre from the record_genres table (hydrated onto the row). */
 	genres: string[];
 	year: string | null;
-	label: string | null;
+	/** One entry per label from the record_labels table (hydrated onto the row). */
+	labels: LabelEntry[];
 	format: string | null;
 	limited_edition: 0 | 1;
 	condition_media: string | null;
@@ -62,10 +64,10 @@ export interface DiscogsSeed {
 	barcode: string | null;
 	artist: string;
 	title: string;
-	style: string | null;
+	styles: string[];
 	genres: string[];
 	year: string | null;
-	label: string | null;
+	labels: LabelEntry[];
 	format: string | null;
 	limited_edition: 0 | 1;
 	cover_url: string | null;
@@ -77,10 +79,12 @@ export interface RecordDraft {
 	barcode: string;
 	artist: string;
 	title: string;
+	/** Comma-separated form state — split into individual styles on save. */
 	style: string;
 	/** Comma-separated form state — split into individual genres on save. */
 	genre: string;
 	year: string;
+	/** Comma-separated form state, "Name (CATNO)" per label — split on save. */
 	label: string;
 	format: string;
 	limited_edition: boolean;
@@ -201,4 +205,78 @@ export function parseGenreList(raw: string | null | undefined): string[] {
 /** Render individual genres back into the comma-joined form used by drafts. */
 export function joinGenres(genres: readonly string[]): string {
 	return genres.join(', ');
+}
+
+/* ------------------------------------------------------------------ */
+/* Style + label parsing                                               */
+/* ------------------------------------------------------------------ */
+
+/** One record label: the clean name plus its catalogue number when known. */
+export interface LabelEntry {
+	name: string;
+	/** Catalogue number ("catno") — e.g. "BS 2744" in "Warner Records (BS 2744)". */
+	catno: string | null;
+}
+
+/**
+ * Split a comma-separated style field (form input, legacy column value) into
+ * individual styles: trimmed, blanks and case-insensitive duplicates dropped.
+ * Discogs styles are a flat free list — no special-case entries like genres have.
+ */
+export function parseStyleList(raw: string | null | undefined): string[] {
+	if (!raw) return [];
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const part of raw.split(',')) {
+		const s = part.trim();
+		if (!s) continue;
+		const key = s.toLowerCase();
+		if (seen.has(key)) continue;
+		seen.add(key);
+		out.push(s);
+	}
+	return out;
+}
+
+/**
+ * Split a comma-separated label field into individual labels. Each part may
+ * carry a parenthesized catalogue number — "Warner Records (BS 2744)" →
+ * { name: 'Warner Records', catno: 'BS 2744' }. The first paren chunk becomes
+ * the catno; further chunks (barcode noise) are dropped. Blanks and
+ * case-insensitive name duplicates are dropped.
+ */
+export function parseLabelList(raw: string | null | undefined): LabelEntry[] {
+	if (!raw) return [];
+	const seen = new Set<string>();
+	const out: LabelEntry[] = [];
+	for (const part of raw.split(',')) {
+		let name = '';
+		let catno: string | null = null;
+		for (const seg of part.split(/(\([^()]*\))/g)) {
+			const m = /^\(([^()]*)\)$/.exec(seg);
+			if (m) {
+				const chunk = m[1].trim();
+				if (chunk && catno === null) catno = chunk; // first paren chunk only
+			} else {
+				name += seg;
+			}
+		}
+		const n = name.trim();
+		if (!n) continue;
+		const key = n.toLowerCase();
+		if (seen.has(key)) continue;
+		seen.add(key);
+		out.push({ name: n, catno });
+	}
+	return out;
+}
+
+/** Render individual styles back into the comma-joined form used by drafts. */
+export function joinStyles(styles: readonly string[]): string {
+	return styles.join(', ');
+}
+
+/** Render labels back into the "Name (CATNO)" comma-joined form used by drafts. */
+export function joinLabels(labels: readonly LabelEntry[]): string {
+	return labels.map((l) => (l.catno ? `${l.name} (${l.catno})` : l.name)).join(', ');
 }

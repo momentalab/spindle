@@ -9,7 +9,7 @@
 	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from "$lib/discogs";
 	import Segmented from "$lib/components/ui/Segmented.svelte";
 	import Select from "$lib/components/ui/Select.svelte";
-	import { STATUS_LABELS } from "$lib/types";
+	import { STATUS_LABELS, joinLabels } from "$lib/types";
 
 	let { data }: { data: PageData } = $props();
 
@@ -515,7 +515,7 @@
 						<td class="py-3 pr-4 text-muted">{rec.title}</td>
 						<td class="py-3 pr-4 text-muted">{rec.year ?? ""}</td>
 						<td class="py-3 pr-4 text-muted">{rec.genres.join(", ")}</td>
-						<td class="py-3 pr-4 text-muted">{rec.label ?? ""}</td>
+						<td class="py-3 pr-4 text-muted">{joinLabels(rec.labels)}</td>
 						<td class="py-3 pr-4 font-mono text-xs text-faint">
 							{[
 								rec.condition_media && `M:${rec.condition_media}`,

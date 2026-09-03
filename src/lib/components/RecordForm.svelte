@@ -52,7 +52,7 @@
 				<Input
 					id="f-genre"
 					name="genre"
-					label="Genre (one per comma)"
+					label="Genre"
 					placeholder="e.g. Electronic, Pop"
 					datalist={DISCOGS_GENRES}
 					bind:value={draft.genre}
@@ -61,6 +61,7 @@
 					id="f-style"
 					name="style"
 					label="Style"
+					placeholder="e.g. Jazz, Free Jazz"
 					bind:value={draft.style}
 				/>
 				<Input id="f-year" name="year" label="Year" bind:value={draft.year} />
@@ -68,6 +69,7 @@
 					id="f-label"
 					name="label"
 					label="Label"
+					placeholder="e.g. Warner Records (BS 2744)"
 					bind:value={draft.label}
 				/>
 				<Input

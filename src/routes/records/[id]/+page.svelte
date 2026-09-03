@@ -10,7 +10,7 @@
 	import { draftFromRow, emptyDraft } from "$lib/draft";
 	import { appTitle } from "$lib/index";
 	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from "$lib/discogs";
-	import { STATUS_LABELS } from "$lib/types";
+	import { STATUS_LABELS, joinLabels, joinStyles } from "$lib/types";
 	import type { PhotoRow, RecordDraft } from "$lib/types";
 	import type { ActionData, PageData } from "./$types";
 
@@ -230,11 +230,11 @@
 				["Year", data.record.year ?? ""],
 				[
 					"Genre",
-					[data.record.genres.join(", "), data.record.style]
+					[data.record.genres.join(", "), joinStyles(data.record.styles)]
 						.filter(Boolean)
 						.join(" — "),
 				],
-				["Label", data.record.label ?? ""],
+				["Label", joinLabels(data.record.labels)],
 				["Format", data.record.format ?? ""],
 				["Barcode", data.record.barcode ?? ""],
 				[

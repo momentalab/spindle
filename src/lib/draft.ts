@@ -1,6 +1,6 @@
 /** Pure draft-state helpers (client + server). */
 import type { DiscogsSeed, RecordDraft, RecordRow } from '$lib/types';
-import { joinGenres } from '$lib/types';
+import { joinGenres, joinLabels, joinStyles } from '$lib/types';
 
 export function emptyDraft(): RecordDraft {
 	return {
@@ -34,10 +34,10 @@ export function draftFromSeed(seed: DiscogsSeed): RecordDraft {
 		barcode: seed.barcode ?? '',
 		artist: seed.artist,
 		title: seed.title,
-		style: seed.style ?? '',
+		style: joinStyles(seed.styles ?? []),
 		genre: joinGenres(seed.genres ?? []),
 		year: seed.year ?? '',
-		label: seed.label ?? '',
+		label: joinLabels(seed.labels ?? []),
 		format: seed.format ?? '',
 		limited_edition: seed.limited_edition === 1,
 		source: 'discogs',
@@ -53,10 +53,10 @@ export function draftFromRow(row: RecordRow): RecordDraft {
 		barcode: row.barcode ?? '',
 		artist: row.artist,
 		title: row.title,
-		style: row.style ?? '',
+		style: joinStyles(row.styles),
 		genre: joinGenres(row.genres),
 		year: row.year ?? '',
-		label: row.label ?? '',
+		label: joinLabels(row.labels),
 		format: row.format ?? '',
 		limited_edition: row.limited_edition === 1,
 		condition_media: row.condition_media ?? '',

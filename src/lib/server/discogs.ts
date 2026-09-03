@@ -12,7 +12,7 @@
  *   the UI falls back to manual entry. Local data is always fully usable.
  */
 import { env } from '$env/dynamic/private';
-import type { DiscogsSeed } from '$lib/types';
+import type { DiscogsSeed, LabelEntry } from '$lib/types';
 
 const API_BASE = 'https://api.discogs.com';
 const USER_AGENT = 'mynyl/0.1 (local vinyl collection tracker)';
@@ -168,12 +168,22 @@ export function toSeed(release: RawRelease): DiscogsSeed {
 		.join(', ');
 
 	// Record labels are entity_type "1"; prefer those, fall back to any label.
+	// Keep name + catno as structured entries (one record_labels row each);
+	// case-insensitive dedupe by name so co-pressings collapse to one entry.
 	const recordLabels = (release.labels ?? []).filter((l) => l.entity_type === '1');
-	const labels = recordLabels.length > 0 ? recordLabels : (release.labels ?? []);
-	const label =
-		labels
-			.map((l) => (l.catno ? `${l.name} (${l.catno})` : l.name))
-			.join(', ') || null;
+	const rawLabels = recordLabels.length > 0 ? recordLabels : (release.labels ?? []);
+	const labels: LabelEntry[] = [];
+	{
+		const seen = new Set<string>();
+		for (const l of rawLabels) {
+			const name = (l.name ?? '').trim();
+			if (!name) continue;
+			const key = name.toLowerCase();
+			if (seen.has(key)) continue;
+			seen.add(key);
+			labels.push({ name, catno: (l.catno ?? '').trim() || null });
+		}
+	}
 
 	const format = (release.formats ?? [])
 		.map((f) => [f.name, ...(f.descriptions ?? [])].filter(Boolean).join(', '))
@@ -204,10 +214,10 @@ export function toSeed(release: RawRelease): DiscogsSeed {
 		barcode: barcodeRaw ?? null,
 		artist: release.artists_sort || artists || 'Unknown artist',
 		title: release.title,
-		style: (release.styles ?? []).join(', ') || null,
+		styles: (release.styles ?? []).map((s) => s.trim()).filter(Boolean),
 		genres: (release.genres ?? []).map((g) => g.trim()).filter(Boolean),
 		year,
-		label,
+		labels,
 		format,
 		limited_edition,
 		cover_url

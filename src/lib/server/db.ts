@@ -4,6 +4,7 @@
  */
 import Database from 'better-sqlite3';
 import { DB_PATH, ensureDataDirs } from '$lib/server/paths';
+import { parseLabelList, parseStyleList } from '$lib/types';
 
 let _db: Database.Database | null = null;
 
@@ -158,6 +159,60 @@ const migrations: Migration[] = [
 			// references. Safe even for a DB restored from an old backup that never ran v3.
 			db.exec(`DROP INDEX IF EXISTS idx_records_genre`);
 			db.exec(`ALTER TABLE records DROP COLUMN genre`);
+		}
+	},
+	{
+		version: 4,
+		description:
+			'styles + labels as sets: record_styles and record_labels junctions (backfilled from the legacy comma-joined columns, which are then dropped)',
+		up(db) {
+			db.exec(`
+				CREATE TABLE IF NOT EXISTS record_styles (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE,
+					style TEXT NOT NULL CHECK (TRIM(style) != ''),
+					UNIQUE (record_id, style)
+				);
+
+				CREATE INDEX IF NOT EXISTS idx_record_styles_style ON record_styles(style);
+
+				CREATE TABLE IF NOT EXISTS record_labels (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE,
+					label TEXT NOT NULL CHECK (TRIM(label) != ''),
+					catno TEXT,
+					UNIQUE (record_id, label)
+				);
+
+				CREATE INDEX IF NOT EXISTS idx_record_labels_label ON record_labels(label);
+			`);
+
+			// Backfill with the same parsers the save path uses, so legacy rows are
+			// cleaned identically to a fresh save: styles split + case-insensitive
+			// dedupe; labels split, paren chunks stripped (first = catno), deduped.
+			const rows = db.prepare(`SELECT id, style, label FROM records`).all() as {
+				id: number;
+				style: string | null;
+				label: string | null;
+			}[];
+			const insStyle = db.prepare(
+				'INSERT OR IGNORE INTO record_styles (record_id, style) VALUES (?, ?)'
+			);
+			const insLabel = db.prepare(
+				'INSERT OR IGNORE INTO record_labels (record_id, label, catno) VALUES (?, ?, ?)'
+			);
+			const backfill = db.transaction(() => {
+				for (const row of rows) {
+					for (const s of parseStyleList(row.style)) insStyle.run(row.id, s);
+					for (const l of parseLabelList(row.label)) insLabel.run(row.id, l.name, l.catno);
+				}
+			});
+			backfill();
+
+			// Drop the legacy index first (same reason as v3), then both columns.
+			db.exec(`DROP INDEX IF EXISTS idx_records_label`);
+			db.exec(`ALTER TABLE records DROP COLUMN style`);
+			db.exec(`ALTER TABLE records DROP COLUMN label`);
 		}
 	}
 ];

@@ -15,6 +15,7 @@
 import { getDb } from '$lib/server/db';
 import { withGenres } from '$lib/server/records';
 import type { PlayRow, PhotoRow, RecordRow } from '$lib/types';
+import { joinLabels, joinStyles } from '$lib/types';
 
 export type ExportFormat = 'csv' | 'json';
 export const EXPORT_FORMATS: ExportFormat[] = ['csv', 'json'];
@@ -29,10 +30,10 @@ export const RECORD_COLUMNS: (keyof RecordRow)[] = [
 	'barcode',
 	'artist',
 	'title',
-	'style',
+	'styles',
 	'genres',
 	'year',
-	'label',
+	'labels',
 	'format',
 	'limited_edition',
 	'condition_media',
@@ -80,9 +81,15 @@ function csvField(value: unknown): string {
 function recordToCsvRow(rec: RecordRow): string {
 	const cells = RECORD_COLUMNS.map((col) => {
 		switch (col) {
+			case 'styles':
+				// Individual styles rendered back into the familiar comma-joined form.
+				return csvField(joinStyles(rec.styles));
 			case 'genres':
 				// Individual genres rendered back into the familiar comma-joined form.
 				return csvField(rec.genres.join(', '));
+			case 'labels':
+				// One "Name (CATNO)" per label, comma-joined.
+				return csvField(joinLabels(rec.labels));
 			case 'price_paid':
 				return rec.price_paid === null ? '' : String((rec.price_paid / 100).toFixed(2));
 			case 'limited_edition':
