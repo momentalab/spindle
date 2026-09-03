@@ -339,10 +339,14 @@
 	</div>
 {/if}
 
-<!-- detail — a full catalogue spread -->
-<div class="mt-8 grid gap-14 lg:grid-cols-[minmax(300px,420px)_1fr]">
-	<div>
-		<div class="w-full">
+<!-- detail — a full catalogue spread. The cover track is capped at 100%
+     (and the wrapper gets min-w-0) so its w-full child can never inflate the
+     column past the viewport on fresh records. -->
+<div
+	class="mt-8 grid gap-14 lg:grid-cols-[minmax(300px,min(420px,100%))_minmax(0,1fr)]"
+>
+	<div class="min-w-0">
+		<div class="w-full max-w-full">
 			<CoverImage
 				src={coverSrc()}
 				alt={`Cover — ${data.record.artist}, ${data.record.title}`}

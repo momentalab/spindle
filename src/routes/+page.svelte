@@ -57,8 +57,8 @@
 	}
 
 	const sortableColumns: [string, string][] = [
-		["artist", "Artist"],
 		["title", "Title"],
+		["artist", "Artist"],
 		["year", "Year"],
 		["genre", "Genre"],
 		["label", "Label"],
@@ -484,12 +484,12 @@
 					<span class="min-w-0">
 						<span
 							class="block truncate font-display text-[19px] tracking-[.005em] transition-colors group-hover:text-accent sm:text-[21px]"
-							>{rec.artist}</span
+							>{rec.title}</span
 						>
 						<span
 							class="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-[13.5px] text-muted"
 						>
-							<span class="truncate">{rec.title}</span>
+							<span class="truncate">{rec.artist}</span>
 							{#if rec.year || rec.genres.length}<span class="text-faint"
 									>{[rec.year, rec.genres.join(", ")]
 										.filter(Boolean)
@@ -560,14 +560,14 @@
 							<a
 								href="/records/{rec.id}"
 								class="font-display text-[15px] transition-colors hover:text-accent"
-								>{rec.artist}</a
+								>{rec.title}</a
 							>
 							{#if rec.copies > 1}<span
 									class="ml-1.5 font-display text-xs italic text-faint"
 									>×{rec.copies}</span
 								>{/if}
 						</td>
-						<td class="py-3 pr-4 text-muted">{rec.title}</td>
+						<td class="py-3 pr-4 text-muted">{rec.artist}</td>
 						<td class="py-3 pr-4 text-muted">{rec.year ?? ""}</td>
 						<td class="py-3 pr-4 text-muted">{rec.genres.join(", ")}</td>
 						<td class="py-3 pr-4 text-muted">{joinLabels(rec.labels)}</td>
@@ -611,7 +611,7 @@
 				<a
 					href="/records/{rec.id}"
 					class="block"
-					aria-label={`${rec.artist} — ${rec.title}`}
+					aria-label={`${rec.title} — ${rec.artist}`}
 				>
 					<div class="relative">
 						<CoverImage
@@ -627,14 +627,14 @@
 							</span>
 						{/if}
 					</div>
-					<!-- artist → title → year/genre → status: the badge gets its
-					     own line so it never competes with the artist name. -->
+					<!-- title → artist → year/genre → status: the badge gets its
+					     own line so it never competes with the album name. -->
 					<p
 						class="mt-3.5 truncate font-display text-[17px] transition-colors group-hover:text-accent"
 					>
-						{rec.artist}
+						{rec.title}
 					</p>
-					<p class="mt-0.5 truncate text-[13px] text-muted">{rec.title}</p>
+					<p class="mt-0.5 truncate text-[13px] text-muted">{rec.artist}</p>
 					{#if rec.year || rec.genres.length}
 						<p class="mt-0.5 text-[11px] uppercase tracking-[.16em] text-faint">
 							{[rec.year, rec.genres.join(", ")].filter(Boolean).join(" · ")}
