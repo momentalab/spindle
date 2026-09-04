@@ -12,6 +12,8 @@ export const load: PageServerLoad = async ({ url }) => {
 	const genre = url.searchParams.get('genre') ?? '';
 	const label = url.searchParams.get('label') ?? '';
 	const statusParam = url.searchParams.get('status') ?? '';
+	// local=1 — hide the Discogs section of the search results entirely.
+	const localOnly = url.searchParams.get('local') === '1';
 	const sort = (url.searchParams.get('sort') ?? 'artist') as ListOptions['sort'];
 	const dirParam = url.searchParams.get('dir') ?? 'asc';
 
@@ -27,6 +29,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	const records = listRecords(opts);
 	return {
 		records,
+		local_only: localOnly,
 		total: countRecords(),
 		// Wanted rows show up in the index like any other — but the header gets a
 		// quiet "N still wanted" pointer (deep link to the filtered view).
