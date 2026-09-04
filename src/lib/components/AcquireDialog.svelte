@@ -10,8 +10,10 @@
     action,
     artist = "",
     title = "",
+    recordId = undefined,
     error = null,
     onCancel,
+    onSuccess = undefined,
   }: {
     open: boolean;
     /** Where the form posts (the acquire action) — e.g. "?/acquire". */
@@ -19,8 +21,20 @@
     /** Who it's on the shelf for — shown in the dialog head. */
     artist?: string;
     title?: string;
+    /**
+     * When set, the form carries a hidden record_id input — for acquire
+     * actions that don't get the id from the route (the home page). Detail
+     * routes omit it: their action reads the id from the route params.
+     */
+    recordId?: number;
     error?: string | null;
     onCancel: () => void;
+    /**
+     * Fired after a successful, non-redirect submit — the home page closes in
+     * place and revalidates. Redirects (detail page) navigate away and the
+     * dialog unmounts with the page.
+     */
+    onSuccess?: () => void;
   } = $props();
 
   let submitting = $state(false);
@@ -117,17 +131,22 @@
         {action}
         class="mt-6 flex flex-col gap-5"
         use:enhance={() =>
-          async ({ update }) => {
+          async ({ update, result }) => {
             submitting = true;
             try {
+              // `update` applies the default behavior: a redirect result
+              // (detail page) navigates and unmounts this dialog with the
+              // page; a plain success stays in place.
               await update();
+              if (result?.type === "success") onSuccess?.();
             } finally {
-              // On success the 303 navigates + revalidates; the record
-              // flips out of "wanted" and this dialog unmounts.
               submitting = false;
             }
           }}
       >
+        {#if recordId !== undefined}
+          <input type="hidden" name="record_id" value={recordId} />
+        {/if}
         <div class="grid grid-cols-2 gap-x-5">
           <Input
             id={DATE_INPUT_ID}

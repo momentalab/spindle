@@ -133,6 +133,10 @@ export function listRecords(opts: ListOptions): RecordRow[] {
 		where.push('r.status = @status');
 		params.status = opts.status;
 	}
+	if (opts.exclude_status) {
+		where.push('r.status != @exclude_status');
+		params.exclude_status = opts.exclude_status;
+	}
 
 	const sortCol = SORTABLE[opts.sort] ?? 'r.artist';
 	const dir = opts.dir === 'desc' ? 'DESC' : 'ASC';

@@ -131,6 +131,8 @@ export interface ListOptions {
 	genre?: string;
 	label?: string;
 	status?: RecordStatus | '';
+	/** Rows in this status are omitted — the home Collection shelf hides the wishlist. */
+	exclude_status?: RecordStatus;
 	sort: SortColumn;
 	dir: 'asc' | 'desc';
 }

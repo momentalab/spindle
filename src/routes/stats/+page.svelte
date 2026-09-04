@@ -529,7 +529,7 @@ sideways inside their own box with an edge fade hinting at more content. -->
         <!-- F5 — the wishlist readout, quiet and off-shelf. -->
         {#if s.wanted > 0}
           <a
-            href="/?status=wanted"
+            href="/?tab=wishlist"
             class="ml-2 font-display italic tracking-normal normal-case text-plum underline decoration-hair underline-offset-4 hover:decoration-plum"
           >
             {s.wanted} wanted

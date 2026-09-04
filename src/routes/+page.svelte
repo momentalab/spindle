@@ -2,7 +2,8 @@
 	import { onMount } from "svelte";
 	import { invalidateAll } from "$app/navigation";
 	import { page } from "$app/state";
-	import type { PageData } from "./$types";
+	import AcquireDialog from "$lib/components/AcquireDialog.svelte";
+	import type { ActionData, PageData } from "./$types";
 	import Badge from "$lib/components/ui/Badge.svelte";
 	import BackupSection from "$lib/components/BackupSection.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
@@ -18,7 +19,30 @@
 		type SortColumn,
 	} from "$lib/types";
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData | null } = $props();
+
+	/* -------------------------------------------------------------- */
+	/* Shelf split: Collection vs Wishlist. The server load resolves   */
+	/* ?tab= (with ?status=wanted kept as a legacy alias) for first    */
+	/* paint; after hydration the full /api/list dataset holds both,   */
+	/* so switching is pure local state - no navigation.               */
+	/* -------------------------------------------------------------- */
+
+	const shelves = [
+		{ id: "collection", label: "Collection" },
+		{ id: "wishlist", label: "Wishlist" },
+	] as const;
+	type ShelfId = (typeof shelves)[number]["id"];
+
+	// Initialized from the URL, like `view` (?tab=wishlist; the server load
+	// also honors the legacy ?status=wanted alias for first paint). After
+	// hydration, switching is pure local state — no navigation.
+	let shelf = $state<ShelfId>(
+		page.url.searchParams.get("tab") === "wishlist" ||
+			page.url.searchParams.get("status") === "wanted"
+			? "wishlist"
+			: "collection",
+	);
 
 	const views = [
 		{ id: "cards", label: "Cards" },
@@ -96,11 +120,21 @@
 		}
 	}
 
+	// The shelf split is the first filter — server and client apply the same
+	// rule, so first paint (the SSR list) and post-hydration (the full
+	// /api/list set) never disagree. Wanted rows live only on the wishlist.
+	const shelfRecords = $derived.by((): RecordRow[] => {
+		const base = localRecords ?? data.records;
+		return base.filter((r) =>
+			shelf === "wishlist" ? r.status === "wanted" : r.status !== "wanted",
+		);
+	});
+
 	// Filter + sort in one pass — the single derived every view renders from.
 	const displayRecords = $derived.by((): RecordRow[] => {
 		if (!localRecords) return data.records;
 		const q = qInput.trim().toLowerCase();
-		let out: RecordRow[] = localRecords;
+		let out: RecordRow[] = shelfRecords;
 		if (q)
 			out = out.filter(
 				(r) =>
@@ -112,7 +146,10 @@
 		if (genreF) out = out.filter((r) => r.genres.includes(genreF));
 		if (labelF)
 			out = out.filter((r) => r.labels.some((l) => l.name === labelF));
-		if (statusF) out = out.filter((r) => r.status === statusF);
+		// The wishlist shelf is pinned to wanted; the status filter applies to
+		// the collection shelf only (wanted can't match there - it's excluded).
+		if (shelf === "collection" && statusF)
+			out = out.filter((r) => r.status === statusF);
 		const mul = dir === "asc" ? 1 : -1;
 		const value = (r: RecordRow): string | number => {
 			switch (sort) {
@@ -158,8 +195,14 @@
 	}
 
 	const hasActiveFilters = $derived(
-		Boolean(qInput.trim() || genreF || labelF || statusF),
+		Boolean(
+			qInput.trim() || genreF || labelF || (shelf === "collection" && statusF),
+		),
 	);
+
+	// How many records are on the current shelf (before search/filters) — drives
+	// the header count and the "X of Y shown" line.
+	const shelfCount = $derived(shelfRecords.length);
 
 	/* -------------------------------------------------------------- */
 	/* Name lookup — the search bar doubles as a Discogs release finder */
@@ -329,31 +372,18 @@
 		playCountOverrides[rec.id] ?? data.play_counts[rec.id] ?? 0;
 
 	let busyPlays = $state<Record<number, boolean>>({});
-	let busyAcquires = $state<Record<number, boolean>>({});
+
+	// Acquire dialog (F5): the "→ acquired" chip opens this instead of flipping
+	// the row at once — the just-bought-it details (date, price, conditions)
+	// belong in a modal. The form inside posts to ?/acquire with use:enhance;
+	// a plain success closes it and revalidates, so the row leaves the shelf
+	// in place without any navigation.
+	let acquireFor = $state<RecordRow | null>(null);
 
 	interface PlayResponse {
 		ok?: boolean;
 		play_count?: number;
 		message?: string;
-	}
-
-	/** One-tap acquire from a home row: stay on the page, flip the badge. */
-	async function quickAcquire(rec: { id: number }): Promise<void> {
-		if (busyAcquires[rec.id]) return;
-		busyAcquires[rec.id] = true;
-		try {
-			const res = await fetch(`/api/records/${rec.id}/acquire`, {
-				method: "POST",
-			});
-			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			await invalidateAll();
-		} catch {
-			// Leave the row alone — the user can retry.
-		} finally {
-			const b = { ...busyAcquires };
-			delete b[rec.id];
-			busyAcquires = b;
-		}
 	}
 
 	async function quickLog(rec: { id: number }): Promise<void> {
@@ -406,23 +436,19 @@
 <!-- One-tap play log per row: − (undo latest) + count + +1. Rendered as a
      SIBLING of the row anchor in every view (never nested inside it). Quiet
      chip: hidden until row hover on desktop, always visible on touch. -->
-<!-- One-tap acquire: sits where the play chip sits, but only on wanted rows.
-     fetch + invalidateAll keeps us on the page — the row flips to the forest
-     badge in place; a failed request leaves the row untouched. -->
-{#snippet acquireChip(rec: {
-	id: number;
-	artist: string;
-	title: string;
-	status: string;
-})}
+<!-- Acquire: sits where the play chip sits, but only on wanted rows (i.e. the
+     wishlist shelf). Opens the acquire dialog for the just-bought-it details;
+     its enhanced form stays on the page — on success the row flips to the
+     collection shelf in place and the counts update with it. -->
+{#snippet acquireChip(rec: RecordRow)}
 	{#if rec.status === "wanted"}
 		<button
 			type="button"
 			class="pointer-events-auto inline-flex items-center gap-1 rounded-xs border border-hair bg-paper/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-[.14em] text-accent shadow-sm backdrop-blur-sm transition-colors duration-200 hover:border-accent disabled:pointer-events-none disabled:opacity-50"
-			disabled={!!busyAcquires[rec.id]}
+			disabled={acquireFor !== null}
 			title="Move to the collection"
 			aria-label={`Mark ${rec.artist} — ${rec.title} as acquired`}
-			onclick={() => void quickAcquire(rec)}
+			onclick={() => (acquireFor = rec)}
 		>
 			→ acquired
 		</button>
@@ -464,7 +490,9 @@
 	</div>
 {/snippet}
 
-<svelte:head><title>{appTitle("Collection")}</title></svelte:head>
+<svelte:head>
+	<title>{appTitle(shelf === "wishlist" ? "Wishlist" : "Collection")}</title>
+</svelte:head>
 
 <!-- Hover-reveal micro-link for the table view only (index/cards are whole-row anchors). -->
 {#snippet discogsMicroLink(rec: {
@@ -487,34 +515,45 @@
 {/snippet}
 
 <!-- page head — editorial, big and quiet -->
-<header
-	class="flex flex-wrap items-end justify-between gap-6 border-b border-edge pb-7"
->
-	<div>
+<header class="flex flex-wrap items-end justify-between gap-6 pb-7">
+	<div class="min-w-0">
 		<h1
 			class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em] sm:text-[52px]"
 		>
-			Your records,<br />catalogued.
+			{#if shelf === "wishlist"}The wishlist,<br />in waiting.{:else}Your
+				records,<br />catalogued.{/if}
 		</h1>
 		<p class="mt-3 font-display text-[15px] italic text-muted">
-			{data.total}
-			{data.total === 1 ? "album" : "albums"}, scanned and shelved.
-			{#if data.wanted_total > 0}
-				<a
-					href="/?status=wanted&view={view}"
-					class="text-plum underline decoration-hair underline-offset-4 transition-colors hover:decoration-plum"
-				>
-					{data.wanted_total} still wanted.
-				</a>
+			{#if shelf === "wishlist"}
+				{data.wanted_total}
+				{data.wanted_total === 1 ? "release" : "releases"}
+				on the short list.
+			{:else}
+				{shelfCount}
+				{shelfCount === 1 ? "album" : "albums"}, scanned and shelved.
+				{#if data.wanted_total > 0}
+					<a
+						href="/?tab=wishlist"
+						class="text-plum underline decoration-hair underline-offset-4 transition-colors hover:decoration-plum"
+					>
+						{data.wanted_total} still wanted.
+					</a>
+				{/if}
 			{/if}
 		</p>
 	</div>
 	<div class="shrink-0 text-right">
-		<div class="font-display text-[44px] leading-none">{data.total}</div>
+		<div
+			class="font-display text-[44px] leading-none {shelf === 'wishlist'
+				? 'text-plum'
+				: ''}"
+		>
+			{shelfCount}
+		</div>
 		<div
 			class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
 		>
-			records in index
+			{shelf === "wishlist" ? "records wanted" : "records on the shelf"}
 		</div>
 		<!-- Scan: the primary way in — visible at every width so a new record
 		     is one tap away without hunting for it (empty shelf included). -->
@@ -546,6 +585,16 @@
 		{/if}
 	</div>
 </header>
+
+<!-- the shelf split: the wishlist is its own tab, not a filter. The server
+     load resolves it for first paint (deep-linkable via ?tab=wishlist, with
+     the legacy ?status=wanted kept as an alias); switching after hydration
+     is pure local state — no navigation, nothing outside the grid re-renders. -->
+<div class="border-b border-edge">
+	<div class="flex items-center gap-7 px-1 pt-4">
+		<Segmented options={shelves} bind:value={shelf} />
+	</div>
+</div>
 
 <!-- search — its own row: the bar is full-width at every viewport, so on a
      phone it is always visible and never squeezed behind the filter column.
@@ -588,18 +637,23 @@
 				{#each data.filters.labels as l}<option value={l}>{l}</option>{/each}
 			</Select>
 		</label>
-		<label class="flex flex-col gap-1.5">
-			<span
-				class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
-				>Status</span
-			>
-			<Select name="status" bind:value={statusF} class="w-36 py-1.5">
-				<option value="">Any</option>
-				{#each Object.entries(STATUS_LABELS) as [value, label]}<option {value}
-						>{label}</option
-					>{/each}
-			</Select>
-		</label>
+		<!-- The wishlist shelf is pinned to status = wanted, so the filter is
+		     hidden there; on the collection shelf "Wanted" isn't an option —
+		     those records live on their own tab. -->
+		{#if shelf === "collection"}
+			<label class="flex flex-col gap-1.5">
+				<span
+					class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
+					>Status</span
+				>
+				<Select name="status" bind:value={statusF} class="w-36 py-1.5">
+					<option value="">Any</option>
+					{#each Object.entries(STATUS_LABELS) as [value, label]: value}
+						{#if value !== "wanted"}<option {value}>{label}</option>{/if}
+					{/each}
+				</Select>
+			</label>
+		{/if}
 
 		<!-- local-only: hide the Discogs section entirely (initialized from ?local=1) -->
 		<label
@@ -625,7 +679,7 @@
 			<span
 				class="hidden text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint md:inline"
 			>
-				{displayRecords.length} of {data.total} shown
+				{displayRecords.length} of {shelfCount} shown
 			</span>
 		</div>
 	</div>
@@ -686,11 +740,21 @@
 			</svg>
 		</div>
 		<p class="mb-2 font-display text-2xl font-normal">
-			{data.total === 0 ? "No records yet" : "Nothing matches those filters"}
+			{shelfCount === 0 && displayRecords.length === 0
+				? shelf === "wishlist"
+					? "Nothing on the wishlist yet"
+					: data.total === 0
+						? "No records yet"
+						: "No records on this shelf yet"
+				: "Nothing matches those filters"}
 		</p>
 		<p class="mb-7 max-w-sm font-display text-[15px] italic text-muted">
-			{data.total === 0
-				? "Scan a barcode or add one manually to start your collection."
+			{shelfCount === 0 && displayRecords.length === 0
+				? shelf === "wishlist"
+					? "Heart a release from the search bar, or save an import as wanted, to start the list."
+					: data.total === 0
+						? "Scan a barcode or add one manually to start your collection."
+						: "Scan a record, or mark a wishlist record as acquired."
 				: "Try adjusting or clearing the search and filters."}
 		</p>
 		{#if data.total === 0}
@@ -1000,6 +1064,26 @@
 			</ul>
 		{/if}
 	</section>
+{/if}
+
+<!-- Acquire dialog (F5): opened by the "→ acquired" chip on any wanted row.
+     The form inside posts to ?/acquire with use:enhance; the home action
+     returns a plain success (no redirect), so onSuccess closes it and
+     revalidates — the row leaves the wishlist in place and the counts flip. -->
+{#if acquireFor}
+	<AcquireDialog
+		open
+		action="?/acquire"
+		recordId={acquireFor.id}
+		artist={acquireFor.artist}
+		title={acquireFor.title}
+		error={form?.error ?? null}
+		onCancel={() => (acquireFor = null)}
+		onSuccess={() => {
+			acquireFor = null;
+			void invalidateAll();
+		}}
+	/>
 {/if}
 
 <!-- Backup & restore: shown even on an empty collection — restoring into a
