@@ -7,7 +7,6 @@
 	import Badge from "$lib/components/ui/Badge.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import CoverImage from "$lib/components/ui/CoverImage.svelte";
-	import Input from "$lib/components/ui/Input.svelte";
 	import { draftFromRow, emptyDraft } from "$lib/draft";
 	import { appTitle } from "$lib/index";
 	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from "$lib/discogs";
@@ -47,57 +46,171 @@
 	const photos = $derived(photosOverride ?? data.photos);
 	let uploading = $state(false);
 	let uploadError = $state<string | null>(null);
-	let newPhotoFile = $state<FileList | null>(null);
-	let caption = $state("");
+	// Uploads are automatic: picking an image starts the POST immediately and the
+	// in-flight `staging` tiles show a live preview, so there's never a moment
+	// where it looks like nothing happened. The picker is a plain <label>
+	// (no form) so there is nothing to submit — onchange just kicks off the fetch.
+	let staging = $state<{ file: File; url: string }[]>([]);
+	// Photos above this get a confirm dialog first, then an aggressive re-encode,
+	// so a 48MP phone shot doesn't bloat storage. Must stay in sync with the
+	// server cap (photos/+server.ts).
+	const BIG_PHOTO_BYTES = 8 * 1024 * 1024;
+	const UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
+	let bigFiles = $state<File[]>([]);
+	const bigSingle = $derived(bigFiles.length === 1 ? bigFiles[0] : null);
 
-	// Downscale client-side to ~1600px JPEG before upload (keeps storage lean).
-	async function downscale(file: File): Promise<Blob> {
-		const bitmap = await createImageBitmap(file);
-		const maxSide = 1600;
-		const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
-		if (scale === 1 && file.type === "image/jpeg") return file;
-		const canvas = document.createElement("canvas");
-		canvas.width = Math.round(bitmap.width * scale);
-		canvas.height = Math.round(bitmap.height * scale);
-		const ctx = canvas.getContext("2d");
-		if (!ctx) return file;
-		ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-		bitmap.close();
-		return new Promise((resolve) =>
-			canvas.toBlob((b) => resolve(b ?? file), "image/jpeg", 0.85),
-		);
+	function loadImage(
+		file: File,
+	): Promise<{ url: string; el: HTMLImageElement }> {
+		return new Promise((resolve, reject) => {
+			const url = URL.createObjectURL(file);
+			const img = new Image();
+			img.onload = () => resolve({ url, el: img });
+			img.onerror = () => {
+				URL.revokeObjectURL(url);
+				reject(new Error(`${file.name} isn't a readable image`));
+			};
+			img.src = url;
+		});
 	}
 
-	async function addPhotos(e: Event): Promise<void> {
-		e.preventDefault();
-		if (!newPhotoFile || newPhotoFile.length === 0) return;
+	// Re-encode to JPEG at maxSide (long edge) before upload, stepping quality —
+	// then width — down until under targetBytes. Falls back to the original File
+	// when it isn't a decodable image or compression can't get there.
+	async function downscale(
+		file: File,
+		maxSide: number,
+		targetBytes?: number,
+	): Promise<File> {
+		let source: { url: string; el: HTMLImageElement };
+		try {
+			source = await loadImage(file);
+		} catch (e) {
+			throw e; // unreadable image — surfaced as the upload error
+		}
+		const { url, el } = source;
+		try {
+			const scale = Math.min(
+				1,
+				maxSide / Math.max(el.naturalWidth, el.naturalHeight),
+			);
+			const alreadySmall =
+				scale === 1 &&
+				file.type === "image/jpeg" &&
+				(!targetBytes || file.size <= targetBytes);
+			if (alreadySmall) return file;
+			const canvas = document.createElement("canvas");
+			canvas.width = Math.max(1, Math.round(el.naturalWidth * scale));
+			canvas.height = Math.max(1, Math.round(el.naturalHeight * scale));
+			const ctx = canvas.getContext("2d");
+			if (!ctx) return file;
+			// White fill so transparent PNGs become white, not black, JPEGs.
+			ctx.fillStyle = "#fff";
+			ctx.fillRect(0, 0, canvas.width, canvas.height);
+			ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
+			const toJpeg = (q: number) =>
+				new Promise<Blob | null>((resolve) =>
+					canvas.toBlob(resolve, "image/jpeg", q),
+				);
+			const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+			const limit = targetBytes ?? Infinity;
+			for (const q of [0.85, 0.72, 0.55]) {
+				const blob = await toJpeg(q);
+				if (!blob) break;
+				const out = new File([blob], name, { type: "image/jpeg" });
+				if (out.size <= limit) return out;
+			}
+			// Still over budget — halve the width a couple of times before giving up.
+			let side = Math.round(maxSide / 2);
+			while (side >= 400) {
+				canvas.width = side;
+				canvas.height = Math.max(
+					1,
+					Math.round(side * (el.naturalHeight / el.naturalWidth)),
+				);
+				ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
+				const blob = await toJpeg(0.55);
+				if (!blob) break;
+				const out = new File([blob], name, { type: "image/jpeg" });
+				if (out.size <= limit) return out;
+				side = Math.round(side / 2);
+			}
+			return file; // let the server-side cap be the final arbiter
+		} finally {
+			URL.revokeObjectURL(url);
+		}
+	}
+
+	function fmtSize(bytes: number): string {
+		return bytes >= 1024 * 1024
+			? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+			: `${Math.max(1, Math.round(bytes / 1024))} KB`;
+	}
+
+	function onFilesPicked(e: Event): void {
+		if (uploading) return;
+		const input = e.target as HTMLInputElement;
+		const files = Array.from(input.files ?? []);
+		input.value = ""; // allow re-picking the same file later
+		if (files.length === 0 || files.length > 10) return;
+		if (files.some((f) => f.size > BIG_PHOTO_BYTES)) {
+			bigFiles = files;
+			return;
+		}
+		void runUpload(files);
+	}
+
+	function previewUrl(f: File): string {
+		try {
+			return URL.createObjectURL(f);
+		} catch {
+			return "";
+		}
+	}
+
+	async function runUpload(files: File[], targetBytes?: number): Promise<void> {
 		uploading = true;
 		uploadError = null;
+		staging = files.map((file) => ({ file, url: previewUrl(file) }));
 		try {
 			const fd = new FormData();
-			for (const f of Array.from(newPhotoFile)) {
-				fd.append("files", await downscale(f));
+			for (const f of files) {
+				const encoded = await downscale(f, 1600, targetBytes);
+				if (encoded.size > UPLOAD_MAX_BYTES)
+					throw new Error(
+						`"${f.name}" is still ${fmtSize(encoded.size)} after compression (limit ${fmtSize(UPLOAD_MAX_BYTES)})`,
+					);
+				fd.append("files", encoded);
 			}
-			if (caption.trim()) fd.append("caption", caption.trim());
 			const res = await fetch(`/api/records/${data.record.id}/photos`, {
 				method: "POST",
 				body: fd,
 			});
-			const json = (await res.json()) as {
+			const json = (await res.json().catch(() => null)) as {
 				ok?: boolean;
 				photos?: PhotoRow[];
 				message?: string;
-			};
-			if (!res.ok || !json.ok)
-				throw new Error(json.message ?? `HTTP ${res.status}`);
+			} | null;
+			if (!res.ok || !json?.ok)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
 			photosOverride = json.photos ?? photos;
-			newPhotoFile = null;
-			caption = "";
 		} catch (err) {
 			uploadError = err instanceof Error ? err.message : "Upload failed";
 		} finally {
+			staging.forEach((s) => URL.revokeObjectURL(s.url));
+			staging = [];
 			uploading = false;
 		}
+	}
+
+	async function confirmBigUpload(): Promise<void> {
+		const files = bigFiles;
+		bigFiles = [];
+		await runUpload(files, BIG_PHOTO_BYTES);
+	}
+
+	function cancelBigUpload(): void {
+		bigFiles = [];
 	}
 
 	async function removePhoto(photoId: number): Promise<void> {
@@ -583,12 +696,48 @@
 		Photographs — {photos.length}
 	</h3>
 
-	{#if photos.length > 0}
-		<div class="flex flex-wrap gap-4">
+	<!-- in-flight previews — the auto-upload shows its photos while they go up -->
+	{#if staging.length > 0}
+		<div class="mb-5 flex flex-wrap items-center gap-3">
+			<!-- key by index: blob URLs can be reused and same-named files would collide -->
+			{#each staging as s, i (i + `-${s.file.name}`)}
+				{#if s.url}
+					<img
+						src={s.url}
+						alt=""
+						class="aspect-square w-[72px] animate-pulse rounded-xs border border-hair object-cover opacity-60"
+					/>
+				{:else}
+					<div
+						class="flex aspect-square w-[72px] items-center justify-center rounded-xs border border-dashed border-edge text-faint"
+						aria-hidden="true"
+					>
+						?
+					</div>
+				{/if}
+			{/each}
+			<span
+				class="text-[10px] font-semibold uppercase tracking-[.2em] text-faint"
+				>Uploading {staging.length === 1
+					? "photo"
+					: `${staging.length} photos`}…</span
+			>
+		</div>
+	{/if}
+
+	<!-- the picker is a bare square label in both branches, so it lines up with the
+	     thumbnail row; uploads start on pick, there is no submit step. -->
+	{#if photos.length > 0 || staging.length > 0}
+		<!-- items-start: default stretch would elongate the square picker to match
+		     a captioned thumbnail in the same row. -->
+		<div class="flex flex-wrap items-start gap-4">
 			{#each photos as p (p.id)}
 				<figure class="group relative w-[180px]">
+					<!-- v= created_at: busts the image cache when two uploads re-encode to
+					     byte-identical JPEGs — without it the browser can serve the first
+					     photo for the second filename, looking like a replacement. -->
 					<img
-						src="/media/{p.filename}"
+						src="/media/{p.filename}?v={p.created_at ?? p.id}"
 						alt={p.caption ?? "Record photograph"}
 						loading="lazy"
 						class="aspect-square w-full rounded-xs border border-hair object-cover"
@@ -606,69 +755,47 @@
 				</figure>
 			{/each}
 
-			<form
-				method="POST"
-				onsubmit={(e) => void addPhotos(e)}
-				class="flex w-[180px] flex-col items-center justify-center gap-3"
+			<label
+				class={`group block w-[180px] shrink-0 cursor-pointer overflow-hidden rounded-xs border border-dashed border-edge transition-colors hover:border-accent ${uploading ? "pointer-events-none opacity-50" : ""}`}
 			>
-				<label
-					class={`flex aspect-square w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xs border border-dashed border-edge text-center transition-colors hover:border-accent hover:text-accent ${uploading ? "pointer-events-none opacity-50" : "text-faint"}`}
+				<span
+					class="flex aspect-square w-full flex-col items-center justify-center gap-2 px-4 text-center text-faint transition-colors group-hover:text-accent"
 				>
 					<span class="text-xl leading-none" aria-hidden="true">+</span>
-					<span class="px-4 text-[10px] font-semibold uppercase tracking-[.2em]"
-						>{uploading ? "Uploading…" : "Add photographs"}</span
+					<span class="text-[10px] font-semibold uppercase tracking-[.2em]"
+						>Add photographs</span
 					>
-					<input
-						type="file"
-						name="files"
-						multiple
-						accept="image/*"
-						bind:files={newPhotoFile}
-						class="hidden"
-					/>
-				</label>
-				{#if newPhotoFile?.length}
-					<Input
-						bind:value={caption}
-						placeholder="optional caption"
-						class="w-full text-center text-xs"
-					/>
-					<button
-						type="submit"
-						disabled={uploading}
-						class="text-[10px] font-semibold uppercase tracking-[.2em] text-accent disabled:opacity-50"
-					>
-						Upload {newPhotoFile.length === 1
-							? "photo"
-							: `${newPhotoFile.length} photos`} →
-					</button>
-				{/if}
-			</form>
+				</span>
+				<input
+					type="file"
+					multiple
+					accept="image/*"
+					onchange={onFilesPicked}
+					class="hidden"
+				/>
+			</label>
 		</div>
 	{:else}
-		<div class="flex flex-wrap items-center gap-5">
-			<form
-				method="POST"
-				onsubmit={(e) => void addPhotos(e)}
-				class="inline-flex"
+		<div class="flex flex-wrap items-start gap-5">
+			<label
+				class={`group block w-[180px] shrink-0 cursor-pointer overflow-hidden rounded-xs border border-dashed border-edge transition-colors hover:border-accent ${uploading ? "pointer-events-none opacity-50" : ""}`}
 			>
-				<label
-					class={`flex h-40 w-[180px] cursor-pointer flex-col items-center justify-center gap-2 rounded-xs border border-dashed border-edge text-center transition-colors hover:border-accent hover:text-accent ${uploading ? "pointer-events-none opacity-50" : "text-faint"}`}
+				<span
+					class="flex aspect-square w-full flex-col items-center justify-center gap-2 px-4 text-center text-faint transition-colors group-hover:text-accent"
 				>
 					<span class="text-xl leading-none" aria-hidden="true">+</span>
-					<span class="px-4 text-[10px] font-semibold uppercase tracking-[.2em]"
-						>{uploading ? "Uploading…" : "Add photographs"}</span
+					<span class="text-[10px] font-semibold uppercase tracking-[.2em]"
+						>Add photographs</span
 					>
-					<input
-						type="file"
-						name="files"
-						multiple
-						accept="image/*"
-						bind:files={newPhotoFile}
-						class="hidden"
-					/>
-				</label>
-			</form>
+				</span>
+				<input
+					type="file"
+					multiple
+					accept="image/*"
+					onchange={onFilesPicked}
+					class="hidden"
+				/>
+			</label>
 			<p class="max-w-xs font-display text-[13.5px] italic text-faint">
 				No photographs yet — add images of your physical record.
 			</p>
@@ -677,6 +804,83 @@
 
 	{#if uploadError}<p class="mt-4 text-sm text-rust">{uploadError}</p>{/if}
 </section>
+
+<!-- big-photo confirm: files over 8MB ask before an aggressive re-encode + upload -->
+{#if bigFiles.length > 0}
+	<div
+		class="fixed inset-0 z-[70] flex items-end justify-center p-4 sm:items-center"
+	>
+		<button
+			type="button"
+			class="absolute inset-0 h-full w-full cursor-default bg-ink/25 backdrop-blur-[2px]"
+			aria-label="Close dialog"
+			onclick={cancelBigUpload}
+		></button>
+		<div
+			role="dialog"
+			aria-modal="true"
+			aria-label="Large photograph"
+			class="card-pop-sm relative w-full max-w-md border border-edge bg-paper p-7 shadow-xl"
+		>
+			<div class="flex items-start justify-between gap-4">
+				<div class="min-w-0">
+					<p
+						class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
+					>
+						Large photograph{bigFiles.length > 1 ? "s" : ""}
+					</p>
+					<h3 class="mt-1.5 truncate font-display text-xl leading-snug">
+						{bigSingle
+							? bigSingle.name
+							: `${bigFiles.length} photos over ${fmtSize(BIG_PHOTO_BYTES)}`}
+					</h3>
+				</div>
+				<button
+					type="button"
+					class="-mr-1.5 -mt-1.5 flex h-9 w-9 shrink-0 items-center justify-center text-muted transition-colors hover:text-accent"
+					aria-label="Close dialog"
+					onclick={cancelBigUpload}
+				>
+					<svg
+						viewBox="0 0 16 16"
+						class="h-3.5 w-3.5"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.25"
+						aria-hidden="true"
+					>
+						<path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke-linecap="square" />
+					</svg>
+				</button>
+			</div>
+			<p class="mt-4 font-display text-[14px] leading-relaxed text-muted">
+				{#if bigSingle && bigSingle.size > UPLOAD_MAX_BYTES}
+					This image is {fmtSize(bigSingle.size)} — too large even against the
+					{fmtSize(UPLOAD_MAX_BYTES)} limit, so it can't be uploaded. Try a smaller
+					file.
+				{:else}
+					This image is {bigSingle
+						? fmtSize(bigSingle.size)
+						: "over " + fmtSize(BIG_PHOTO_BYTES)}. Compress it (max side 1600px,
+					re-encoded as JPEG) and upload?
+				{/if}
+			</p>
+			<div class="mt-7 flex justify-end gap-3">
+				<Button variant="secondary" type="button" onclick={cancelBigUpload}>
+					Cancel
+				</Button>
+				<Button
+					variant="primary"
+					type="button"
+					disabled={!!(bigSingle && bigSingle.size > UPLOAD_MAX_BYTES)}
+					onclick={() => void confirmBigUpload()}
+				>
+					Compress & upload
+				</Button>
+			</div>
+		</div>
+	</div>
+{/if}
 
 <!-- Acquire dialog (F5) — the one-tap, now with its details: when, what it cost,
 	    how it came in. All fields optional; the date defaults to today. -->

@@ -30,10 +30,12 @@ export async function POST({ params, request }): Promise<Response> {
 	const captionRaw = data.get('caption');
 	const caption = typeof captionRaw === 'string' && captionRaw.trim() ? captionRaw.trim() : null;
 
-	// Client downscales to ~1600px JPEG; enforce a hard ceiling here regardless.
-	const MAX_BYTES = 8 * 1024 * 1024;
+	// Client re-encodes to ~1600px JPEG and asks before compressing photos over
+	// 8MB; enforce a hard ceiling here regardless. Must stay in sync with the
+	// UPLOAD_MAX_BYTES cap in records/[id]/+page.svelte.
+	const MAX_BYTES = 25 * 1024 * 1024;
 	for (const f of files) {
-		if (f.size > MAX_BYTES) error(400, `Photo too large (${Math.ceil(f.size / 1024 / 1024)}MB, max 8MB)`);
+		if (f.size > MAX_BYTES) error(400, `Photo too large (${Math.ceil(f.size / 1024 / 1024)}MB, max 25MB)`);
 	}
 
 	const saved = [];

@@ -23,7 +23,7 @@ services:
       PORT: "3000"
       DATA_DIR: /data
       # 512M (not the old 10M) so large backup zips can be restored in-app;
-      # photo uploads are still capped per-file at 8MB server-side.
+      # photo uploads are still capped per-file at 25MB server-side.
       BODY_SIZE_LIMIT: ${BODY_SIZE_LIMIT:-512M}
       DISCOGS_CONSUMER_KEY: ${DISCOGS_CONSUMER_KEY:-}
       DISCOGS_CONSUMER_SECRET: ${DISCOGS_CONSUMER_SECRET:-}
