@@ -173,13 +173,15 @@ const DAY_MS = 86400000;
 /** C2 — fixed display order for the format spectrum. */
 const FORMAT_ORDER = ['7"', '10"', 'LP', 'Box', 'CD', 'Other'] as const;
 
-/** Keep the longest tail readable: top N + a single "Other" bucket. */
-function topN(rows: StatBarRow[]): StatBarRow[] {
-	if (rows.length <= TOP_N) return rows;
-	const head = [...rows].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)).slice(0, TOP_N);
-	const restCount = rows.slice(TOP_N).reduce((sum, r) => sum + r.count, 0);
+/** Keep the longest tail readable: top `cap` + a single "Other" bucket. */
+function topN(rows: StatBarRow[], cap: number = TOP_N): StatBarRow[] {
+	if (rows.length <= cap) return rows;
+	const head = [...rows].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)).slice(0, cap);
+	const restCount = rows.slice(cap).reduce((sum, r) => sum + r.count, 0);
 	return [...head, { label: 'Other', count: restCount }];
 }
+/** C4 — the radar's axis budget: a long tail costs no horizontal space there, so styles get far more room than the bar charts' TOP_N before an "Other" bucket appears (25 axes is about the densest a readable web gets). */
+const STYLE_TOP_N = 24;
 
 /** "1974" → 1974 (anything unparsable or out of 1900–2100 → null). */
 function parseYear(year: string | null): number | null {
@@ -637,14 +639,17 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	};
 
 	/* C4 — styles under genres (deeper taste texture). Individual styles now —
-	   a record tagged "Jazz, Free Jazz" contributes to both bars. */
+	   a record tagged "Jazz, Free Jazz" contributes to both axes. The radar
+	   handles long tails natively, so this uses the generous STYLE_TOP_N cap:
+	   collapsing a dozen one-record styles into one wedge would dominate it. */
 	const by_style = topN(
 		(db.prepare(`
 			SELECT rs.style AS label, COUNT(*) AS count
 			FROM record_styles rs
 			JOIN records r ON r.id = rs.record_id
 			GROUP BY rs.style
-		`).all() as StatBarRow[]).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+		`).all() as StatBarRow[]).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)),
+		STYLE_TOP_N
 	);
 
 	/* C5 — genre × decade cross-tab: top 5 genres per decade + 'Other'. */

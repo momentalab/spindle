@@ -56,8 +56,8 @@
       display: metric === "value" ? fmtValue(r.value_cents) : String(r.count),
     }));
 
-  /* By-genre bars carry one stable hue per genre (rank order) — the same mapping
-     the C5 cross-tab uses, so a genre reads the same color in both places. */
+  /* By-genre slices carry one stable hue per genre (rank order) — the same
+     mapping the C5 cross-tab uses, so a genre reads the same color in both. */
   const genreRows = $derived(
     metricRows(s.by_genre).map((r) => ({ ...r, color: catColor(r.label) })),
   );
@@ -81,6 +81,20 @@
   );
   const sourceRows = $derived(
     metricRows(s.by_source).map((r) => ({ ...r, color: CATEGORICAL[3] })),
+  );
+  /* C4 — styles on the spider: one mauve hue, deepest at the top style so rank
+     reads as fill strength, the way decades read as position. */
+  const styleRows = $derived(
+    s.by_style.map((r, i) => ({
+      label: r.label,
+      num: r.count,
+      display: String(r.count),
+      color: stepShade(
+        "var(--chart-mauve)",
+        Math.max(s.by_style.length - 1 - i, 0),
+        Math.max(s.by_style.length, 1),
+      ),
+    })),
   );
 
   /* Status keeps its existing semantic tones (matches the collection badges);
@@ -302,7 +316,7 @@
     "var(--chart-mauve)",
   ] as const;
 
-  /** Stable hue per legend genre (rank order) — shared by the genre bars and C5. */
+  /** Stable hue per legend genre (rank order) — shared by the genre spider and C5. */
   const catColor = (label: string): string => {
     if (label === "Other") return "var(--hair)";
     const i = crossLegend.indexOf(label);
@@ -380,6 +394,151 @@
   });
   const condTicks = ["M", "NM", "VG+", "VG", "G+", "G", "F", "P"].reverse();
 
+  /* ---- C1' / C4 — spider (radar) geometry, area-based: one filled kite per
+     category (center → value vertex → flanking chord midpoints); the kites tile
+     the value polygon exactly and the dots pin its vertices. ≥18 axes switch to
+     radial labels so dense webs never collide; <3 can't close a web → text. ---- */
+  interface SpiderSlice {
+    label: string;
+    lines: string[];
+    display: string;
+    color: string;
+    path: string; // filled kite
+    dot: { x: number; y: number }; // the value vertex — a corner of the polygon
+    dense?: boolean; // radial label mode
+    px?: number; // label frame: translate(px, py) rotate(rot deg)
+    py?: number;
+    rot?: number;
+    textX: number;
+    firstY: number;
+    valueY: number;
+    anchor: "start" | "middle" | "end";
+  }
+  interface SpiderGeom {
+    W: number;
+    H: number;
+    maxW: number;
+    cx: number;
+    cy: number;
+    rings: { d: string; edge: boolean }[];
+    spokes: { x2: number; y2: number }[]; // axes, drawn under the fill
+    slices: SpiderSlice[];
+  }
+  const spiderGeom = (
+    rows: { label: string; num: number; display: string; color?: string }[],
+    big = false,
+  ): SpiderGeom | null => {
+    const n = rows.length;
+    if (n < 3) return null;
+    const dense = n >= 18;
+    const wide = dense || big;
+    const W = wide ? 620 : 480;
+    const H = wide ? 520 : 340;
+    const cx = W / 2;
+    const cy = H / 2;
+    const R = wide ? 130 : 92;
+    const max = rows.reduce((m, r) => Math.max(m, r.num), 0);
+    const axisA = (i: number) => (i / n) * Math.PI * 2 - Math.PI / 2;
+    const pol = (a: number, r: number) => ({
+      x: cx + Math.cos(a) * r,
+      y: cy + Math.sin(a) * r,
+    });
+    const f = (v: number) => Math.round(v * 100) / 100;
+    const rings = [0.25, 0.5, 0.75, 1].map((t, ri) => ({
+      d: `M ${rows
+        .map((_, i) => {
+          const p = pol(axisA(i), R * t);
+          return `${f(p.x)} ${f(p.y)}`;
+        })
+        .join(" L ")} Z`,
+      edge: ri === 3,
+    }));
+    const spokes = rows.map((_, i) => {
+      const p = pol(axisA(i), R);
+      return { x2: f(p.x), y2: f(p.y) };
+    });
+    const wrap = (label: string): string[] => {
+      const soft = n >= 10 ? 10 : 15; // shorter lines once axes crowd the rim
+      const hard = dense ? 13 : n >= 10 ? 14 : 20;
+      if (label.length <= soft) return [label];
+      const half = Math.floor(label.length / 2);
+      let sp = label.indexOf(" ", half);
+      if (sp <= 0 || sp === label.length - 1) sp = label.lastIndexOf(" ", half);
+      const clip = (t: string) =>
+        t.length > hard ? `${t.slice(0, hard - 1)}…` : t;
+      if (sp > 0) return [clip(label.slice(0, sp)), clip(label.slice(sp + 1))];
+      return [label.length > hard + 4 ? `${label.slice(0, hard + 3)}…` : label];
+    };
+    const slices = rows.map((r, i) => {
+      const a = axisA(i);
+      const cos = Math.cos(a);
+      const sin = Math.sin(a);
+      const rad = max > 0 ? Math.max((r.num / max) * R, 3) : 3;
+      const d = pol(a, rad);
+      const lines = wrap(r.label);
+      // Kite flanks meet at the chord midpoints → the fills tile the polygon exactly.
+      const prev = rows[(i - 1 + n) % n];
+      const nxt = rows[(i + 1) % n];
+      const rPrev = max > 0 ? Math.max((prev.num / max) * R, 3) : 3;
+      const rNxt = max > 0 ? Math.max((nxt.num / max) * R, 3) : 3;
+      const prevV = pol(axisA(i - 1), rPrev);
+      const nxtV = pol(axisA(i + 1), rNxt);
+      const halfPrev = { x: (prevV.x + d.x) / 2, y: (prevV.y + d.y) / 2 };
+      const halfNxt = { x: (nxtV.x + d.x) / 2, y: (nxtV.y + d.y) / 2 };
+      const base = {
+        label: r.label,
+        lines,
+        display: r.display,
+        color: r.color ?? "var(--accent)",
+        path: `M ${cx} ${cy} L ${f(halfPrev.x)} ${f(halfPrev.y)} L ${f(d.x)} ${f(
+          d.y,
+        )} L ${f(halfNxt.x)} ${f(halfNxt.y)} Z`,
+        dot: { x: f(d.x), y: f(d.y) },
+      };
+      if (dense) {
+        // Label runs outward along its own spoke; flipped on the left half so
+        // text never reads upside down. Values stay in tooltip/aria.
+        const P = pol(a, R + 8);
+        const flip = cos < -0.15;
+        return {
+          ...base,
+          dense: true,
+          px: f(P.x),
+          py: f(P.y),
+          rot: f(((flip ? a + Math.PI : a) * 180) / Math.PI),
+          anchor: (flip ? "end" : "start") as SpiderSlice["anchor"],
+          textX: 0,
+          firstY: 0,
+          valueY: 0,
+        };
+      }
+      const lp = pol(a, R + 16);
+      const anchor: SpiderSlice["anchor"] =
+        cos > 0.35 ? "start" : cos < -0.35 ? "end" : "middle";
+      let firstY: number;
+      let valueY: number;
+      if (sin < -0.55) {
+        firstY = lp.y - 4 - (lines.length - 1) * 12;
+        valueY = firstY - 13;
+      } else if (sin > 0.55) {
+        firstY = lp.y + 12;
+        valueY = firstY + (lines.length - 1) * 12 + 13;
+      } else {
+        firstY = lp.y + 4 - ((lines.length - 1) * 12) / 2;
+        valueY = firstY + (lines.length - 1) * 12 + 13;
+      }
+      return {
+        ...base,
+        dense: false,
+        textX: f(lp.x),
+        firstY: f(firstY),
+        valueY: f(valueY),
+        anchor,
+      };
+    });
+    return { W, H, maxW: wide ? 820 : 520, cx, cy, rings, spokes, slices };
+  };
+
   /* ---- C5 — cross-tab legend (union of the top genre labels across rows) ---- */
   const crossLegend = $derived.by(() => {
     const seen = new Map<string, number>();
@@ -456,6 +615,102 @@ sideways inside their own box with an edge fade hinting at more content. -->
     </div>
     <div class="chart-fade" aria-hidden="true"></div>
   </div>
+{/snippet}
+
+<!-- Spider (radar) chart, area-based: one filled kite per category tiling a
+single straight-edged value polygon around the center — hairline spokes show the
+axes through the fill, each dot pins a vertex of the polygon, label + value sit
+past the axis end. Reads the same rows as barChart; fewer than three axes falls
+back to the ledger voice. -->
+{#snippet radarChart(
+  rows: {
+    label: string;
+    num: number;
+    display: string;
+    color?: string;
+  }[],
+  big: boolean = false,
+)}
+  {@const geom = spiderGeom(rows, big)}
+  {#if geom}
+    <svg
+      viewBox={`0 0 ${geom.W} ${geom.H}`}
+      role="img"
+      aria-label={`Spider chart: ${rows.map((r) => `${r.label} — ${r.display}`).join("; ")}`}
+      style:max-width={`${geom.maxW}px`}
+      class="mx-auto w-full"
+    >
+      {#each geom.rings as ring (ring.d)}
+        <path
+          d={ring.d}
+          fill="none"
+          stroke={ring.edge ? "var(--edge)" : "var(--hair)"}
+          stroke-width="1"
+        />
+      {/each}
+      {#each geom.spokes as sp (sp.x2 + "," + sp.y2)}
+        <line
+          x1={geom.cx}
+          y1={geom.cy}
+          x2={sp.x2}
+          y2={sp.y2}
+          stroke="var(--hair)"
+          stroke-width="1"
+        />
+      {/each}
+      {#each geom.slices as sl (sl.label)}
+        <path d={sl.path} fill={sl.color} fill-opacity="0.3">
+          <title>{sl.label} — {sl.display}</title>
+        </path>
+      {/each}
+      {#each geom.slices as sl (sl.label)}
+        <circle
+          cx={sl.dot.x}
+          cy={sl.dot.y}
+          r="3"
+          fill={sl.color}
+          stroke="var(--paper)"
+          stroke-width="1.2"
+        >
+          <title>{sl.label} — {sl.display}</title>
+        </circle>
+        {#if sl.dense}
+          {#each sl.lines as line, li (li)}
+            <text
+              transform={`translate(${sl.px} ${sl.py}) rotate(${sl.rot})`}
+              y={li * 12 - ((sl.lines.length - 1) * 12) / 2}
+              text-anchor={sl.anchor}
+              style:fill={sl.color}
+              class="text-[10px] font-semibold uppercase tracking-[.05em]"
+              >{line}</text
+            >
+          {/each}
+        {:else}
+          {#each sl.lines as line, li (li)}
+            <text
+              x={sl.textX}
+              y={sl.firstY + li * 12}
+              text-anchor={sl.anchor}
+              style:fill={sl.color}
+              class="text-[9.5px] font-semibold uppercase tracking-[.06em]"
+              >{line}</text
+            >
+          {/each}
+          <text
+            x={sl.textX}
+            y={sl.valueY}
+            text-anchor={sl.anchor}
+            class="fill-faint font-display italic text-[11.5px]"
+            >{sl.display}</text
+          >
+        {/if}
+      {/each}
+    </svg>
+  {:else if rows.length > 0}
+    <p class="font-display text-[14px] italic text-muted">
+      Needs at least three categories to draw the web.
+    </p>
+  {/if}
 {/snippet}
 
 <!-- page head — editorial, mirrors home -->
@@ -1093,19 +1348,6 @@ sideways inside their own box with an edge fade hinting at more content. -->
 
       <section>
         <h3 class="stat-section-title">
-          By genre · {metric === "value" ? "spend" : "counts"}
-        </h3>
-        {#if s.by_genre.length}
-          {@render barChart(genreRows)}
-        {:else}
-          <p class="font-display text-[14px] italic text-muted">
-            No genres catalogued yet.
-          </p>
-        {/if}
-      </section>
-
-      <section>
-        <h3 class="stat-section-title">
           By label · {metric === "value" ? "spend" : "counts"}
         </h3>
         {#if s.by_label.length}
@@ -1143,6 +1385,32 @@ sideways inside their own box with an edge fade hinting at more content. -->
         {/if}
       </section>
 
+      <!-- genre gets the full row too, next to the style web it parents -->
+      <section class="md:col-span-2">
+        <h3 class="stat-section-title">
+          By genre · {metric === "value" ? "spend" : "counts"}
+        </h3>
+        {#if s.by_genre.length}
+          {@render radarChart(genreRows, true)}
+        {:else}
+          <p class="font-display text-[14px] italic text-muted">
+            No genres catalogued yet.
+          </p>
+        {/if}
+      </section>
+
+      <!-- C4 — styles under genres: a full row for the dense web -->
+      <section class="md:col-span-2">
+        <h3 class="stat-section-title">Styles</h3>
+        {#if s.by_style.length}
+          {@render radarChart(styleRows)}
+        {:else}
+          <p class="font-display text-[14px] italic text-muted">
+            No styles recorded yet.
+          </p>
+        {/if}
+      </section>
+
       <!-- C3 — the condition report: media & sleeve over the Goldmine scale -->
       <section>
         <h3 class="stat-section-title">Condition report</h3>
@@ -1174,25 +1442,6 @@ sideways inside their own box with an edge fade hinting at more content. -->
         {:else}
           <p class="font-display text-[14px] italic text-muted">
             No conditions graded yet.
-          </p>
-        {/if}
-      </section>
-
-      <!-- C4 — styles under genres -->
-      <section>
-        <h3 class="stat-section-title">Styles</h3>
-        {#if s.by_style.length}
-          {@render barChart(
-            s.by_style.map((r) => ({
-              label: r.label,
-              num: r.count,
-              display: String(r.count),
-              color: CATEGORICAL[4],
-            })),
-          )}
-        {:else}
-          <p class="font-display text-[14px] italic text-muted">
-            No styles recorded yet.
           </p>
         {/if}
       </section>
