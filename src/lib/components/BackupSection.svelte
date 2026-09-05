@@ -89,7 +89,7 @@
 
 <!-- Backup & restore (F8): the local-first safety net. Quiet footer section —
      download is a routine utility, restore is deliberate (confirm dialog). -->
-<section class="mt-16 border-t border-hair pt-8">
+<section class="border-b border-hair py-10">
   <div class="flex flex-wrap items-start justify-between gap-x-10 gap-y-5">
     <div class="max-w-md">
       <h2

@@ -9,6 +9,7 @@
 	const links = [
 		{ href: "/", label: "Collection" },
 		{ href: "/stats", label: "Stats" },
+		{ href: "/settings", label: "Settings" },
 	] as const;
 
 	function isActive(href: string): boolean {

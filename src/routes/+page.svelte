@@ -5,7 +5,6 @@
 	import AcquireDialog from "$lib/components/AcquireDialog.svelte";
 	import type { ActionData, PageData } from "./$types";
 	import Badge from "$lib/components/ui/Badge.svelte";
-	import BackupSection from "$lib/components/BackupSection.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import CoverImage from "$lib/components/ui/CoverImage.svelte";
 	import { appTitle } from "$lib/index";
@@ -51,14 +50,31 @@
 	] as const;
 	type ViewId = (typeof views)[number]["id"];
 
-	// View mode: initialized from ?view= (deep-linkable) but kept as local state so
-	// switching is instant with no navigation.
+	// View mode: initialized from ?view= (deep-linkable), falling back to the
+	// user's saved default (set on /settings), then "cards". Kept as local state
+	// so switching is instant with no navigation. The localStorage read happens
+	// post-mount — it would break SSR to run it during hydration of first paint.
 	let view = $state<ViewId>(
 		(page.url.searchParams.get("view") as ViewId | null) ?? "cards",
 	);
 
+	$effect(() => {
+		const saved = localStorage.getItem("mynyl-default-view");
+		if (
+			page.url.searchParams.get("view") === null &&
+			saved &&
+			views.some((v) => v.id === saved)
+		) {
+			view = saved as ViewId;
+		}
+	});
+
 	function setView(v: ViewId): void {
 		view = v;
+		// A manual switch is intent — remember it as the default, unless this
+		// visit is pinned to a specific view via ?view= (that link wins).
+		if (page.url.searchParams.get("view") === null)
+			localStorage.setItem("mynyl-default-view", v);
 	}
 
 	/* -------------------------------------------------------------- */
@@ -561,25 +577,18 @@
 			<Button href="/scan" variant="primary" size="sm">Scan a record</Button>
 		</div>
 		{#if data.total > 0}
-			<!-- export: a quiet utility, not a CTA — the data is the user's to take out -->
+			<!-- export & backup live in Settings now — the header keeps one quiet pointer -->
 			<div class="mt-4 flex items-center justify-end gap-4">
 				<span
 					class="text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint"
-					>export</span
+					>data</span
 				>
 				<a
-					href="/api/export?format=csv"
-					title="Download the whole index as CSV (records + photos)"
+					href="/settings"
+					title="Export, backup & restore — all in Settings"
 					class="text-[10.5px] font-semibold uppercase tracking-[.18em] text-muted underline decoration-hair underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
 				>
-					CSV
-				</a>
-				<a
-					href="/api/export?format=json"
-					title="Download the whole index as JSON (full fidelity)"
-					class="text-[10.5px] font-semibold uppercase tracking-[.18em] text-muted underline decoration-hair underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
-				>
-					JSON
+					Settings
 				</a>
 			</div>
 		{/if}
@@ -1085,10 +1094,6 @@
 		}}
 	/>
 {/if}
-
-<!-- Backup & restore: shown even on an empty collection — restoring into a
-     wiped state is exactly the recovery moment it exists for. -->
-<BackupSection />
 
 <style>
 	/* staggered rise-in for the catalogue rows (delay comes from the inline style attr) */
