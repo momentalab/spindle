@@ -654,16 +654,16 @@ sideways inside their own box with an edge fade hinting at more content. -->
             </span>
             <span class="min-w-0">
               <span
-                title={p.artist}
+                title={p.title}
                 class="block truncate font-display text-[16px] tracking-[.005em] transition-colors group-hover:text-accent sm:text-[20px]"
               >
-                {p.artist}
+                {p.title}
               </span>
               <span
-                title={p.title}
+                title={p.artist}
                 class="mt-0.5 block truncate text-[13px] text-muted sm:text-[13.5px]"
               >
-                {p.title}
+                {p.artist}
               </span>
             </span>
             <span class="flex shrink-0 flex-col items-end gap-1 text-right">

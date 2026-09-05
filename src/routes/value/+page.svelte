@@ -72,29 +72,32 @@
       seg(money(s.cost_basis_cents), true),
       seg("."),
     ];
+    lines.push(l1);
     if (s.quoted_count > 0) {
-      l1.push(
-        seg(" Quoted market value: "),
+      const l2: Part[] = [
+        seg("Quoted market value: "),
         seg(money(s.market_value_cents), true),
-      );
+      ];
+      lines.push(l2);
       if (s.unrealized_pct !== null) {
-        l1.push(
+        lines.push([
           seg(
-            ` The ${s.priced_count} with a known cost and a live price ${s.priced_count === 1 ? "is" : "are"} `,
+            `The ${s.priced_count} record${s.priced_count === 1 ? "" : "s"} with a known cost and a live price ${s.priced_count === 1 ? "is" : "are"} `,
           ),
           seg(`${s.unrealized_pct >= 0 ? "up" : "down"} `),
-          seg(pct(Math.abs(s.unrealized_pct)), true),
+          seg(`${Math.abs(s.unrealized_pct).toFixed(1)}%`, true),
           seg(` against what ${s.priced_count === 1 ? "it" : "they"} cost.`),
-        );
+        ]);
       } else {
-        l1.push(seg(" Add a purchase price to start measuring gain or loss."));
+        lines.push([
+          seg("Add a purchase price to start measuring gain or loss."),
+        ]);
       }
     } else {
       l1.push(
         seg(" The market ledger is still empty — take a snapshot to start it."),
       );
     }
-    lines.push(l1);
     if (s.sales_count > 0) {
       lines.push([
         seg(
@@ -647,10 +650,13 @@
             Take the first snapshot to start the price ledger: one observation
             per linked record, appended to the history every time.
           {:else}
-            {s.watched_count} of {s.linked_count} linked records have been priced
-            {#if s.no_listing_count > 0}({s.no_listing_count} currently with no live
-              listings){/if}. First observation {fmtStamp(s.first_snapshot_at)};
-            latest {fmtStamp(s.last_snapshot_at)}.
+            {s.watched_count} of {s.linked_count} linked records have been priced{#if s.no_listing_count > 0}
+              (
+              {s.no_listing_count} currently with no live listings){/if}. First
+            observation
+            {fmtStamp(s.first_snapshot_at)}; latest {fmtStamp(
+              s.last_snapshot_at,
+            )}.
           {/if}
         </p>
       </div>
