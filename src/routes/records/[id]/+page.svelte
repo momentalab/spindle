@@ -477,7 +477,7 @@
 			{/if}
 		</p>
 		{#if !data.record.cover_filename && (data.record.cover_remote_url || data.record.discogs_id)}
-			<div class="mt-4">
+			<div class="mt-4 flex flex-col gap-3">
 				{#if coverError}
 					<Banner variant="error">{coverError}</Banner>
 				{/if}

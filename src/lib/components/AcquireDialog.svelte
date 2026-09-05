@@ -147,7 +147,7 @@
         {#if recordId !== undefined}
           <input type="hidden" name="record_id" value={recordId} />
         {/if}
-        <div class="grid grid-cols-2 gap-x-5">
+        <div class="grid grid-cols-2 gap-x-5 gap-y-5">
           <Input
             id={DATE_INPUT_ID}
             name="acquired_at"
@@ -166,7 +166,7 @@
             bind:value={price}
           />
         </div>
-        <div class="grid grid-cols-2 gap-x-5">
+        <div class="grid grid-cols-2 gap-x-5 gap-y-5">
           <Select
             name="condition_media"
             label="Condition (media)"
