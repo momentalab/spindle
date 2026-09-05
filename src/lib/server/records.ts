@@ -8,6 +8,7 @@ import { getDb } from '$lib/server/db';
 import { MEDIA_DIR, ensureDataDirs } from '$lib/server/paths';
 import type { LabelEntry, ListOptions, PlayRow, PhotoRow, RecordRow, RecordStatus } from '$lib/types';
 import { parseGenreList, parseLabelList, parseStyleList, RECORD_STATUSES } from '$lib/types';
+import { isLeadWordNormalizationOn, normalizeLeadWord } from '$lib/server/artist';
 import { readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
@@ -228,6 +229,11 @@ export function createRecord(input: NewRecordInput): RecordRow {
 	const styles = input.styles.map((s) => s.trim()).filter(Boolean);
 	const genres = input.genres.map((g) => g.trim()).filter(Boolean);
 	const labels = input.labels.filter((l) => l.name.trim() !== '');
+	// Artist lead-word normalization ("Beatles, The" -> "The Beatles") is applied
+	// here — the single create chokepoint — when the settings toggle is on, so
+	// every import path (barcode, manual, search-bar add, restore-free re-save)
+	// stores the same canonical form.
+	const artist = isLeadWordNormalizationOn() ? normalizeLeadWord(input.artist) : input.artist;
 	// Status invariants are applied at write time, not in SQL. Entering "wanted"
 	// stamps the wish date and forces acquired_at NULL (a wanted record can't be
 	// both wanted and acquired); entering "sold" stamps the sale date.
@@ -251,6 +257,7 @@ export function createRecord(input: NewRecordInput): RecordRow {
 	const newId = db.transaction((): number => {
 		const info = insertRecord.run({
 			...rest,
+			artist,
 			limited_edition: input.limited_edition ? 1 : 0,
 			acquired_at,
 			wanted_at,
@@ -377,6 +384,12 @@ export function updateRecord(id: number, patch: UpdateRecordInput): RecordRow | 
 	for (const key of UPDATABLE) {
 		const value = patch[key];
 		if (value === undefined) continue;
+		if (key === 'artist') {
+			// Same canonicalization as createRecord — the edit action feeds a full
+			// parseRecordForm, so artist is present on every save.
+			addField('artist', isLeadWordNormalizationOn() ? normalizeLeadWord(String(value)) : value);
+			continue;
+		}
 		addField(key, key === 'limited_edition' ? (value ? 1 : 0) : value);
 	}
 	if (patch.copies !== undefined) {

@@ -307,6 +307,22 @@ const migrations: Migration[] = [
 				);
 			}
 		}
+	},
+	{
+		version: 6,
+		description:
+			'settings key/value store (data-affecting app preferences; seeded with the artist lead-word toggle)',
+		up(db) {
+			db.exec(`
+				CREATE TABLE IF NOT EXISTS settings (
+					key TEXT PRIMARY KEY,
+					value TEXT NOT NULL
+				);
+
+				-- 'on' moves a trailing leading word to the front on save ("Beatles, The" -> "The Beatles").
+				INSERT OR IGNORE INTO settings (key, value) VALUES ('normalize_artist_leadword', 'off');
+			`);
+		}
 	}
 ];
 

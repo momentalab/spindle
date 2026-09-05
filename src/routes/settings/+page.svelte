@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from "$app/environment";
+  import { invalidateAll } from "$app/navigation";
   import type { PageData } from "./$types";
   import BackupSection from "$lib/components/BackupSection.svelte";
   import Button from "$lib/components/ui/Button.svelte";
@@ -107,6 +108,72 @@
   });
 
   /* ------------------------------------------------------------------ */
+  /* Artist names — this one is NOT browser-local: it shapes stored data,*/
+  /* so it lives in the DB (rides along in backups, and a phone scan     */
+  /* obeys the same rule as a desktop save). Toggling only affects future*/
+  /* saves; the button below rewrites what's already on the shelf.       */
+  /* ------------------------------------------------------------------ */
+
+  // svelte-ignore state_referenced_locally
+  let leadword = $state<"on" | "off">(data.summary.normalize_artist_leadword);
+  let leadwordSaving = $state(false);
+  const affectedRecords = $derived(data.summary.affected_records);
+
+  // Keep the control in step with the server's source of truth — on mount and
+  // after any invalidateAll (e.g. following a successful "apply" action).
+  $effect(() => {
+    leadword = data.summary.normalize_artist_leadword;
+  });
+
+  // Divergent sync: clicking the segmented control flips `leadword`; this
+  // effect then sees it disagree with the server summary and pushes a PUT.
+  $effect(() => {
+    const server = data.summary.normalize_artist_leadword;
+    if (leadword === server || leadwordSaving) return;
+    leadwordSaving = true;
+    fetch("/api/settings", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ normalize_artist_leadword: leadword }),
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        await invalidateAll(); // summary re-renders with the fresh value
+      })
+      .catch(() => {
+        leadword = data.summary.normalize_artist_leadword; // revert the optimistic flip
+      })
+      .finally(() => {
+        leadwordSaving = false;
+      });
+  });
+
+  async function applyLeadword(): Promise<void> {
+    if (leadwordSaving) return;
+    const ok = confirm(
+      `Rewrite the artist name on ${affectedRecords} existing ${
+        affectedRecords === 1 ? "record" : "records"
+      }?\n\nExample: "Beatles, The" becomes "The Beatles". Names already in that form are left untouched.`,
+    );
+    if (!ok) return;
+    leadwordSaving = true;
+    try {
+      const res = await fetch("/api/settings/apply-lead-word", {
+        method: "POST",
+      });
+      const j = (await res.json().catch(() => null)) as {
+        changed?: number;
+      } | null;
+      if (!res.ok || !j) throw new Error(`HTTP ${res.status}`);
+      await invalidateAll(); // the summary's affected count refreshes
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Apply failed.");
+    } finally {
+      leadwordSaving = false;
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Export — the same /api/export endpoint the old home links used.     */
   /* CSV defaults to records; JSON's "all tables" is its no-param default.*/
   /* ------------------------------------------------------------------ */
@@ -199,7 +266,8 @@
   <p
     class="mt-2.5 max-w-md font-display text-[14.5px] italic leading-snug text-muted"
   >
-    Stored locally in the browser.
+    Theme and view live in the browser; artist names live in the database — they
+    shape what gets saved, so they travel with the collection.
   </p>
 
   <div class="mt-8 grid gap-x-16 gap-y-8 sm:grid-cols-2">
@@ -222,6 +290,50 @@
       <p class="text-[11px] italic leading-relaxed text-faint">
         The default view for the Collection page.
       </p>
+    </div>
+  </div>
+
+  <!-- Artist names: a DB-backed preference (unlike the two above), because it
+       rewrites stored data at save time. -->
+  <div
+    class="mt-10 flex flex-wrap items-start justify-between gap-x-10 gap-y-5 border-t border-hair pt-8"
+  >
+    <div class="max-w-md">
+      <h3
+        class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
+      >
+        Artist names
+      </h3>
+      <p class="mt-2.5 text-[13px] leading-relaxed text-muted">
+        Move a trailing leading word to the front on save —
+        <span class="font-display italic">“Beatles, The”</span> is stored as
+        <span class="font-display italic">“The Beatles”</span>. Applies to every
+        new save and edit while on; already-stored names are untouched until you
+        apply it.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-4">
+      <Segmented
+        options={[
+          { id: "on", label: "On" },
+          { id: "off", label: "Off" },
+        ]}
+        bind:value={leadword}
+      />
+      {#if leadword === "on" && affectedRecords > 0}
+        <Button
+          variant="secondary"
+          size="sm"
+          type="button"
+          disabled={leadwordSaving}
+          onclick={() => void applyLeadword()}
+        >
+          {leadwordSaving
+            ? "Applying…"
+            : `Apply to ${affectedRecords} ${affectedRecords === 1 ? "record" : "records"}`}
+        </Button>
+      {/if}
     </div>
   </div>
 </section>
