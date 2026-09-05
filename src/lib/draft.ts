@@ -2,6 +2,17 @@
 import type { DiscogsSeed, RecordDraft, RecordRow } from '$lib/types';
 import { joinGenres, joinLabels, joinStyles } from '$lib/types';
 
+/**
+ * Date-only 'YYYY-MM-DD' for <input type="date">. Accepts date-only values or
+ * legacy full ISO timestamps (truncates) so any pre-standardization rows in the
+ * DB render correctly and heal to date-only on the next save.
+ */
+export function dateOnly(v: string | null): string {
+	if (!v) return '';
+	const m = /^(\d{4}-\d{2}-\d{2})/.exec(v);
+	return m ? m[1] : '';
+}
+
 export function emptyDraft(): RecordDraft {
 	return {
 		discogs_id: '',
@@ -66,13 +77,13 @@ export function draftFromRow(row: RecordRow): RecordDraft {
 		condition_media: row.condition_media ?? '',
 		condition_sleeve: row.condition_sleeve ?? '',
 		price_paid: cents !== null ? (cents / 100).toFixed(2) : '',
-		acquired_at: row.acquired_at ?? '',
+		acquired_at: dateOnly(row.acquired_at),
 		source: row.source ?? '',
 		status: row.status,
 		copy_number: row.copy_number !== null ? String(row.copy_number) : '',
 		copy_total: row.copy_total !== null ? String(row.copy_total) : '',
 		sale_price: row.sale_price !== null ? (row.sale_price / 100).toFixed(2) : '',
-		sold_at: row.sold_at ?? '',
+		sold_at: dateOnly(row.sold_at),
 		notes: row.notes ?? '',
 		cover_url: row.cover_remote_url ?? ''
 	};

@@ -266,8 +266,7 @@
   <p
     class="mt-2.5 max-w-md font-display text-[14.5px] italic leading-snug text-muted"
   >
-    Theme and view live in the browser; artist names live in the database — they
-    shape what gets saved, so they travel with the collection.
+    Stored locally in the browser.
   </p>
 
   <div class="mt-8 grid gap-x-16 gap-y-8 sm:grid-cols-2">

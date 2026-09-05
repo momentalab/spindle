@@ -33,10 +33,10 @@ export interface RecordRow {
 	condition_media: string | null;
 	condition_sleeve: string | null;
 	price_paid: number | null; // integer cents
-	acquired_at: string | null; // ISO date
+	acquired_at: string | null; // 'YYYY-MM-DD'
 	source: string | null;
 	status: RecordStatus;
-	wanted_at: string | null; // ISO date — set when the row enters "wanted", cleared on acquire
+	wanted_at: string | null; // 'YYYY-MM-DD' — set when the row enters "wanted", cleared on acquire
 	copies: number;
 	/** Optional copy number for numbered pressings (e.g. 828 of 1000). */
 	copy_number: number | null;
@@ -44,7 +44,7 @@ export interface RecordRow {
 	copy_total: number | null;
 	/** F7 pre-stage: realized sale price, integer cents (same convention as price_paid). */
 	sale_price: number | null;
-	/** F7 pre-stage: ISO date the record was sold. */
+	/** F7 pre-stage: 'YYYY-MM-DD' the record was sold. */
 	sold_at: string | null;
 	notes: string | null;
 	cover_filename: string | null;
@@ -109,7 +109,7 @@ export interface RecordDraft {
 	copy_total: string;
 	/** F7 pre-stage — sale price as a dollar string (matches price_paid's convention). */
 	sale_price: string;
-	/** F7 pre-stage — ISO date string. */
+	/** F7 pre-stage — 'YYYY-MM-DD' (from <input type="date">). */
 	sold_at: string;
 	notes: string;
 	/** Hidden input so a Discogs remote cover URL survives the round trip as fallback. */

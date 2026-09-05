@@ -212,7 +212,7 @@ export interface NewRecordInput {
 	acquired_at: string | null;
 	source: string | null;
 	status: RecordStatus;
-	wanted_at: string | null; // ISO date — set on entering "wanted" (invariant, below)
+	wanted_at: string | null; // 'YYYY-MM-DD' — set on entering "wanted" (invariant, below)
 	copies: number;
 	copy_number: number | null;
 	copy_total: number | null;
@@ -237,9 +237,13 @@ export function createRecord(input: NewRecordInput): RecordRow {
 	// Status invariants are applied at write time, not in SQL. Entering "wanted"
 	// stamps the wish date and forces acquired_at NULL (a wanted record can't be
 	// both wanted and acquired); entering "sold" stamps the sale date.
-	const wanted_at = input.status === 'wanted' ? (input.wanted_at ?? now) : null;
+	// User-facing event dates (acquired/wanted/sold) are date-only `YYYY-MM-DD` —
+	// nobody tracks the time something happened to a record — so auto-stamps
+	// slice the ISO "now" to match.
+	const today = now.slice(0, 10);
+	const wanted_at = input.status === 'wanted' ? (input.wanted_at ?? today) : null;
 	const acquired_at = input.status === 'wanted' ? null : input.acquired_at;
-	const sold_at = input.status === 'sold' ? (input.sold_at ?? now) : input.sold_at;
+	const sold_at = input.status === 'sold' ? (input.sold_at ?? today) : input.sold_at;
 	const insertRecord = db.prepare(
 		`INSERT INTO records (
 			discogs_id, barcode, artist, title, year, format,
@@ -401,7 +405,9 @@ export function updateRecord(id: number, patch: UpdateRecordInput): RecordRow | 
 	const oldStatus = existing.status;
 	const newStatus = patch.status ?? oldStatus;
 	if (newStatus !== oldStatus) {
-		const today = new Date().toISOString();
+		// All user-facing event dates are date-only `YYYY-MM-DD` — nobody tracks
+		// the time something happened to a record.
+		const today = new Date().toISOString().slice(0, 10);
 		if (newStatus === 'wanted') {
 			// Re-wanting after a sale keeps the original wish date — that's the
 			// interesting number for D6. A wanted record can't have been acquired.

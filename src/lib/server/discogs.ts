@@ -44,6 +44,15 @@ function recordRateHeaders(headers: Headers): void {
 	}
 }
 
+/**
+ * Remaining requests in the observed rate-limit window. Batch callers
+ * (the /value market snapshot) use this to stop *before* the wall instead
+ * of eating a 429 — e.g. loop while `throttleRemaining() > 1`.
+ */
+export function throttleRemaining(): number {
+	return throttle.remaining;
+}
+
 async function discogsFetch<T>(path: string, params?: Record<string, string>): Promise<T> {
 	await waitIfThrottled();
 	const url = new URL(`${API_BASE}${path}`);
@@ -286,6 +295,44 @@ export async function downloadImage(
 	const bytes = Buffer.from(await res.arrayBuffer());
 	const contentType = res.headers.get('content-type') ?? 'image/jpeg';
 	return { bytes, contentType };
+}
+
+/**
+ * Live marketplace quote for one release: the lowest current listing (USD)
+ * and how many copies are for sale. Powers the /value page's cost-vs-market
+ * comparison and its price-history log.
+ *
+ * Endpoint: GET /marketplace/stats/{release_id}?curr_abbr=USD — per the API
+ * docs (see references/discogs-api-docs-2026-08-21.md) this works UNAUTHENTICATED
+ * (prices come back in USD), so it needs no more auth than the rest of the app.
+ * `price_cents` is null when nothing is for sale or the release is blocked —
+ * that is data ("no live listings"), not an error; the caller stores it as such.
+ */
+export interface MarketStats {
+	/** Lowest current listing in USD, cents; null = no live listings. */
+	price_cents: number | null;
+	/** Copies currently for sale; null alongside a null price. */
+	num_for_sale: number | null;
+	/** True when the release is blocked from marketplace sale entirely. */
+	blocked: boolean;
+}
+
+interface RawMarketStats {
+	lowest_price?: { currency?: string; value?: number } | null;
+	num_for_sale?: number | null;
+	blocked_from_sale?: boolean;
+}
+
+export async function getMarketStats(releaseId: number): Promise<MarketStats> {
+	const raw = await discogsFetch<RawMarketStats>(`/marketplace/stats/${releaseId}`, {
+		curr_abbr: 'USD'
+	});
+	const value = raw.lowest_price?.value;
+	return {
+		price_cents: typeof value === 'number' && Number.isFinite(value) ? Math.round(value * 100) : null,
+		num_for_sale: typeof raw.num_for_sale === 'number' ? raw.num_for_sale : null,
+		blocked: raw.blocked_from_sale === true
+	};
 }
 
 /** True when consumer credentials are configured in .env. */

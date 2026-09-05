@@ -20,6 +20,16 @@
 		/** Existing purchase sources — offered as dropdown suggestions (typing new values stays allowed). */
 		sources?: readonly string[];
 	} = $props();
+
+	// F7 — entering "sold" gets a default sale date so the ledger is stamped
+	// without typing; an explicit date always wins. The server's own invariant
+	// (updateRecord) mirrors this for saved rows, and leaving "sold" clears the
+	// pair there — a record bought back is not a sale.
+	$effect(() => {
+		if (draft?.status === "sold" && draft.sold_at === "") {
+			draft.sold_at = new Date().toISOString().slice(0, 10);
+		}
+	});
 </script>
 
 {#if draft}
@@ -154,6 +164,40 @@
 						<option value={s}></option>
 					{/each}
 				</datalist>
+
+				<!-- F7 — the exit side of the money story: revealed only while the
+				     record is sold. The pair is optional (a sale at cost, or an
+				     unrecorded price), but both clear server-side if the status
+				     leaves "sold". -->
+				{#if draft.status === "sold"}
+					<div
+						class="sm:col-span-2 border-l-2 border-l-butter pl-5 sm:border-l-0 sm:pl-0"
+					>
+						<p
+							class="mb-4 text-[10px] font-semibold uppercase tracking-[.2em] text-faint"
+						>
+							Sale details
+						</p>
+						<div class="grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2">
+							<Input
+								id="f-sale-price"
+								name="sale_price"
+								type="number"
+								step="0.01"
+								min="0"
+								label="Sale price (USD)"
+								bind:value={draft.sale_price}
+							/>
+							<Input
+								id="f-sold-at"
+								name="sold_at"
+								type="date"
+								label="Sold on"
+								bind:value={draft.sold_at}
+							/>
+						</div>
+					</div>
+				{/if}
 			</div>
 			{#if draft.status === "wanted"}
 				<p class="mt-4 font-display text-[13px] italic text-faint">

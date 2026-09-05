@@ -323,6 +323,32 @@ const migrations: Migration[] = [
 				INSERT OR IGNORE INTO settings (key, value) VALUES ('normalize_artist_leadword', 'off');
 			`);
 		}
+	},
+	{
+		version: 7,
+		description:
+			'F7 market price log (market_prices — one append-only Discogs marketplace observation per record per snapshot) + date hygiene: normalize legacy full-timestamp acquired_at / wanted_at to date-only YYYY-MM-DD so pre-existing rows export uniform',
+		up(db) {
+			db.exec(`
+				CREATE TABLE IF NOT EXISTS market_prices (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE,
+					discogs_id INTEGER NOT NULL,
+					price_cents INTEGER,
+					num_for_sale INTEGER,
+					fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
+				);
+
+				CREATE INDEX IF NOT EXISTS idx_market_prices_record_id ON market_prices(record_id);
+			`);
+			db.exec(`
+				UPDATE records SET acquired_at = substr(acquired_at, 1, 10)
+				 WHERE acquired_at IS NOT NULL AND length(acquired_at) > 10;
+
+				UPDATE records SET wanted_at = substr(wanted_at, 1, 10)
+				 WHERE wanted_at IS NOT NULL AND length(wanted_at) > 10;
+			`);
+		}
 	}
 ];
 
