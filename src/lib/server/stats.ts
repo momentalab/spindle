@@ -103,6 +103,25 @@ export interface MostPlayedRecord {
 	last_played_at: string | null;
 }
 
+/** The most-starred albums (records) — one row per record with ≥ 1 starred track. */
+export interface StarredAlbum {
+	id: number; // records.id
+	artist: string;
+	title: string; // the record's title
+	cover: string | null;
+	stars: number; // starred tracks on this record
+}
+
+/** One favorited track for the "starred tracks" ledger (record_tracks, favorite = 1). */
+export interface StarredTrack {
+	track_id: number; // record_tracks.id — deep-link target (?track=)
+	record_id: number;
+	artist: string;
+	album: string; // the record's title
+	position: string | null;
+	title: string; // the track's title
+}
+
 export interface CollectionStats {
 	/* headline counters */
 	total: number;
@@ -156,6 +175,12 @@ export interface CollectionStats {
 	plays_total: number; // total spins logged
 	records_played: number; // distinct records with ≥ 1 spin
 	most_played: MostPlayedRecord[]; // top 5 by count, then most recent
+	/* starred */
+	favorite_tracks_total: number; // all favorited tracks, across all records
+	favorite_track_albums: number; // distinct records with ≥ 1 favorited track
+	favorite_albums_top: StarredAlbum[]; // up to TOP_N albums by star count — the lead view
+	// Full ledger (no cap — the page truncates its preview client-side with a "show more").
+	favorite_tracks_top: StarredTrack[]; // all starred tracks, album A–Z then insertion order
 }
 
 const TOP_N = 8;
@@ -706,6 +731,41 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		`).all() as MostPlayedRecord[]
 	);
 
+	/* Starred tracks — the favorites ledger. */
+	const favTracksTotal = (db.prepare('SELECT COUNT(*) AS n FROM record_tracks WHERE favorite = 1').get() as {
+		n: number;
+	}).n;
+	// The lead view: albums ranked by how many of their songs are starred.
+	// Tie-breaks keep the list stable: artist/album A–Z, then id.
+	const favorite_albums_top = (
+		db.prepare(`
+			SELECT r.id, r.artist, r.title,
+			       CASE WHEN r.cover_filename IS NOT NULL THEN '/media/' || r.cover_filename ELSE r.cover_remote_url END AS cover,
+			       SUM(t.favorite) AS stars
+			FROM record_tracks t
+			JOIN records r ON r.id = t.record_id
+			GROUP BY r.id
+			HAVING stars > 0
+			ORDER BY stars DESC, r.artist COLLATE NOCASE, r.title COLLATE NOCASE, r.id
+			LIMIT ?
+		`).all(TOP_N) as StarredAlbum[]
+	);
+	const favTrackAlbums = (
+		db.prepare('SELECT COUNT(DISTINCT record_id) AS n FROM record_tracks WHERE favorite = 1').get() as {
+			n: number;
+		}
+	).n;
+	const favorite_tracks_top = (
+		db.prepare(`
+			SELECT t.id AS track_id, r.id AS record_id, r.artist, r.title AS album,
+			       t.position, t.title
+			FROM record_tracks t
+			JOIN records r ON r.id = t.record_id
+			WHERE t.favorite = 1
+			ORDER BY r.artist COLLATE NOCASE, r.title COLLATE NOCASE, t.id
+		`).all() as StarredTrack[]
+	);
+
 	const windowTopGenreRows = [...windowedGenre.entries()].map(([label, count]) => ({ label, count }));
 	const window_top_genre: StatBarRow | null = windowTopGenreRows.length
 		? windowTopGenreRows.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))[0]
@@ -769,6 +829,10 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		extremes,
 		plays_total: playsTotal,
 		records_played: recordsPlayed,
-		most_played
+		most_played,
+		favorite_tracks_total: favTracksTotal,
+		favorite_track_albums: favTrackAlbums,
+		favorite_albums_top,
+		favorite_tracks_top
 	};
 }

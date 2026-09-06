@@ -90,6 +90,9 @@
 	let labelF = $state(page.url.searchParams.get("label") ?? "");
 	let statusF = $state(page.url.searchParams.get("status") ?? "");
 	let localOnly = $state(page.url.searchParams.get("local") === "1");
+	// Starred filter (?fav=1): records with at least one favorited track. The
+	// server load honors it for first paint; after hydration it's local state.
+	let favF = $state(page.url.searchParams.get("fav") === "1");
 	let sort = $state<SortColumn>(
 		(page.url.searchParams.get("sort") as SortColumn | null) ?? "artist",
 	);
@@ -115,7 +118,14 @@
 		genreF = "";
 		labelF = "";
 		statusF = "";
+		favF = false;
 	}
+
+	// Per-record track counts. SSR hands us a Map; /api/list refills the same
+	// shape (JSON object → Map). Absent record = no tracks (read 0).
+	let trackCounts = $state<Map<number, { total: number; fav: number }>>(
+		new Map(),
+	);
 
 	// The working copy: null until /api/list lands, then the client filters
 	// and sorts it locally (the SSR `data.records` stand in for first paint).
@@ -129,8 +139,17 @@
 		try {
 			const res = await fetch("/api/list", { signal: ctrl.signal });
 			if (!res.ok) throw new Error(`HTTP ${res.status}`);
-			const json = (await res.json()) as { records: RecordRow[] };
-			if (!ctrl.signal.aborted) localRecords = json.records;
+			const json = (await res.json()) as {
+				records: RecordRow[];
+				track_counts?: Record<string, { total: number; fav: number }>;
+			};
+			if (!ctrl.signal.aborted) {
+				localRecords = json.records;
+				const counts = new Map<number, { total: number; fav: number }>();
+				for (const [k, v] of Object.entries(json.track_counts ?? {}))
+					counts.set(Number(k), v);
+				trackCounts = counts;
+			}
 		} catch {
 			// Offline / hiccups: keep whatever we have (SSR data at first).
 		}
@@ -166,6 +185,7 @@
 		// the collection shelf only (wanted can't match there - it's excluded).
 		if (shelf === "collection" && statusF)
 			out = out.filter((r) => r.status === statusF);
+		if (favF) out = out.filter((r) => favCountOf(r) > 0);
 		const mul = dir === "asc" ? 1 : -1;
 		const value = (r: RecordRow): string | number => {
 			switch (sort) {
@@ -177,6 +197,8 @@
 					return r.genres[0]?.toLowerCase() ?? "\uffff";
 				case "label":
 					return r.labels[0]?.name.toLowerCase() ?? "\uffff";
+				case "favorite_tracks":
+					return favCountOf(r);
 				default:
 					return r.artist.toLowerCase();
 			}
@@ -196,7 +218,17 @@
 		["year", "Year"],
 		["genre", "Genre"],
 		["label", "Label"],
+		["favorite_tracks", "Starred"],
 	];
+
+	/** How many tracks on this record are favorited (0 when none tracked).
+	     SSR map until /api/list lands — same parity as playCount(). */
+	function favCountOf(rec: { id: number }): number {
+		return (
+			(localRecords ? trackCounts.get(rec.id) : data.track_counts.get(rec.id))
+				?.fav ?? 0
+		);
+	}
 
 	function fmtPrice(cents: number | null): string {
 		return cents === null ? "" : `$${(cents / 100).toFixed(2)}`;
@@ -212,7 +244,11 @@
 
 	const hasActiveFilters = $derived(
 		Boolean(
-			qInput.trim() || genreF || labelF || (shelf === "collection" && statusF),
+			qInput.trim() ||
+				genreF ||
+				labelF ||
+				favF ||
+				(shelf === "collection" && statusF),
 		),
 	);
 
@@ -530,6 +566,26 @@
 	{/if}
 {/snippet}
 
+<!-- Starred-tracks badge: gold star + count, shown only when the record has at
+     least one favorited track. Renders as a sibling of row anchors everywhere. -->
+{#snippet starBadge(rec: { id: number; artist: string; title: string })}
+	{#if favCountOf(rec) > 0}
+		<span
+			class="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-[.14em] text-accent"
+			title={`${favCountOf(rec)} starred track${favCountOf(rec) === 1 ? "" : "s"}`}
+			aria-label={`${favCountOf(rec)} starred tracks on ${rec.title}`}
+		>
+			<svg viewBox="0 0 16 16" class="h-3.5 w-3.5" aria-hidden="true">
+				<path
+					d="M8 1.8l1.9 3.9 4.2.6-3 3 .7 4.2L8 11.5l-3.8 2 .7-4.2-3-3 4.2-.6z"
+					fill="currentColor"
+				/>
+			</svg>
+			{favCountOf(rec)}
+		</span>
+	{/if}
+{/snippet}
+
 <!-- page head — editorial, big and quiet -->
 <header class="flex flex-wrap items-end justify-between gap-6 pb-7">
 	<div class="min-w-0">
@@ -681,6 +737,23 @@
 			</span>
 		</label>
 
+		<!-- Starred: records with at least one favorited track (initialized from ?fav=1) -->
+		<label
+			class="flex cursor-pointer select-none items-center gap-2 pb-1.5"
+			title="Show only records with a starred track"
+		>
+			<input
+				type="checkbox"
+				bind:checked={favF}
+				class="h-3.5 w-3.5 accent-[var(--accent)]"
+			/>
+			<span
+				class="text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"
+			>
+				Starred
+			</span>
+		</label>
+
 		<div
 			class="ml-auto flex items-center gap-5 border-l border-hair pb-1.5 pl-6"
 		>
@@ -816,6 +889,7 @@
 						<Badge tone={statusTone[rec.status]}
 							>{STATUS_LABELS[rec.status]}</Badge
 						>
+						{@render starBadge(rec)}
 						{#if rec.copies > 1}<span
 								class="font-display text-[13px] italic text-faint"
 								>{rec.copies} copies</span
@@ -886,6 +960,9 @@
 						<td class="py-3 pr-4 text-muted">{rec.year ?? ""}</td>
 						<td class="py-3 pr-4 text-muted">{rec.genres.join(", ")}</td>
 						<td class="py-3 pr-4 text-muted">{joinLabels(rec.labels)}</td>
+						<td class="py-3 pr-4">
+							{@render starBadge(rec)}
+						</td>
 						<td class="py-3 pr-4 font-mono text-xs text-faint">
 							{[
 								rec.condition_media && `M:${rec.condition_media}`,
@@ -955,10 +1032,11 @@
 							{[rec.year, rec.genres.join(", ")].filter(Boolean).join(" · ")}
 						</p>
 					{/if}
-					<p class="mt-1.5">
+					<p class="mt-1.5 flex items-center gap-2.5">
 						<Badge tone={statusTone[rec.status]}
 							>{STATUS_LABELS[rec.status]}</Badge
 						>
+						{@render starBadge(rec)}
 					</p>
 				</a>
 				<div class="mt-2 flex items-center justify-between gap-2">

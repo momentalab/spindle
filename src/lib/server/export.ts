@@ -9,19 +9,19 @@
  *  - JSON  full fidelity — every field, raw values (price in cents, flags as
  *          integers) — for round-trips and tooling.
  *
- * Tables: both exports cover `records`, `photos` and `plays`; pass table= to
- * limit to one (CSV defaults to records).
+ * Tables: both exports cover `records`, `photos`, `plays` and `tracks`; pass
+ * table= to limit to one (CSV defaults to records).
  */
 import { getDb } from '$lib/server/db';
 import { withGenres } from '$lib/server/records';
-import type { PlayRow, PhotoRow, RecordRow } from '$lib/types';
+import type { PlayRow, PhotoRow, RecordRow, TrackRow } from '$lib/types';
 import { joinLabels, joinStyles } from '$lib/types';
 
 export type ExportFormat = 'csv' | 'json';
 export const EXPORT_FORMATS: ExportFormat[] = ['csv', 'json'];
 
-export type ExportTable = 'records' | 'photos' | 'plays';
-export const EXPORT_TABLES: ExportTable[] = ['records', 'photos', 'plays'];
+export type ExportTable = 'records' | 'photos' | 'plays' | 'tracks';
+export const EXPORT_TABLES: ExportTable[] = ['records', 'photos', 'plays', 'tracks'];
 
 /** Column order for the CSV (and the key order for the JSON records array). */
 export const RECORD_COLUMNS: (keyof RecordRow)[] = [
@@ -74,6 +74,15 @@ const PHOTO_COLUMNS: (keyof PhotoRow)[] = [
 ];
 
 const PLAY_COLUMNS: (keyof PlayRow)[] = ['id', 'record_id', 'played_at'];
+
+const TRACK_COLUMNS: (keyof TrackRow)[] = [
+	'id',
+	'record_id',
+	'position',
+	'title',
+	'duration',
+	'favorite'
+];
 
 /** RFC 4180 field quoting: quote when the value holds a comma, quote, or newline. */
 function csvField(value: unknown): string {
@@ -131,37 +140,54 @@ export function exportAsCsv(table: ExportTable = 'records'): string {
 			.all() as PhotoRow[];
 		lines.push(PHOTO_COLUMNS.join(','));
 		for (const p of photos) lines.push(PHOTO_COLUMNS.map((c) => csvField(p[c])).join(','));
-	} else {
+	} else if (table === 'plays') {
 		const plays = db
 			.prepare('SELECT * FROM plays ORDER BY record_id ASC, id ASC')
 			.all() as PlayRow[];
 		lines.push(PLAY_COLUMNS.join(','));
 		for (const p of plays) lines.push(PLAY_COLUMNS.map((c) => csvField(p[c])).join(','));
+	} else {
+		const tracks = db
+			.prepare('SELECT * FROM record_tracks ORDER BY record_id ASC, id ASC')
+			.all() as TrackRow[];
+		lines.push(
+			TRACK_COLUMNS.map((c) => (c === 'favorite' ? 'favorite (yes/no)' : c)).join(',')
+		);
+		for (const t of tracks)
+			lines.push(
+				TRACK_COLUMNS.map((c) =>
+					c === 'favorite' ? csvField(t.favorite === 1 ? 'yes' : 'no') : csvField(t[c])
+				).join(',')
+			);
 	}
 
 	return lines.join('\r\n') + '\r\n';
 }
 
 /**
- * Full JSON dump. `table` defaults to "all" (records + photos + plays +
- * summary counts); pass a table name to limit the export to that dataset.
+ * Full JSON dump. `table` defaults to "all" (records + photos + plays + tracks
+ * + summary counts); pass a table name to limit the export to that dataset.
  */
 export function exportAsJson(table: 'all' | ExportTable = 'all'): string {
 	const db = getDb();
 	const records =
-		table === 'photos' || table === 'plays'
+		table === 'photos' || table === 'plays' || table === 'tracks'
 			? []
 			: (db.prepare('SELECT * FROM records ORDER BY artist ASC, title ASC').all() as Omit<RecordRow, 'genres'>[]).map(
 					withGenres
 				);
 	const photos =
-		table === 'records' || table === 'plays'
+		table === 'records' || table === 'plays' || table === 'tracks'
 			? []
 			: (db.prepare('SELECT * FROM photos ORDER BY record_id ASC, id ASC').all() as PhotoRow[]);
 	const plays =
-		table === 'records' || table === 'photos'
+		table === 'records' || table === 'photos' || table === 'tracks'
 			? []
 			: (db.prepare('SELECT * FROM plays ORDER BY record_id ASC, id ASC').all() as PlayRow[]);
+	const tracks =
+		table === 'records' || table === 'photos' || table === 'plays'
+			? []
+			: (db.prepare('SELECT * FROM record_tracks ORDER BY record_id ASC, id ASC').all() as TrackRow[]);
 	return JSON.stringify(
 		{
 			app: 'mynyl',
@@ -170,9 +196,11 @@ export function exportAsJson(table: 'all' | ExportTable = 'all'): string {
 			record_count: records.length,
 			photo_count: photos.length,
 			play_count: plays.length,
+			track_count: tracks.length,
 			records,
 			photos,
-			plays
+			plays,
+			tracks
 		},
 		null,
 		'\t'

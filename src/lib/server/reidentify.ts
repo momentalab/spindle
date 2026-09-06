@@ -9,7 +9,8 @@
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { MEDIA_DIR } from '$lib/server/paths';
-import { DiscogsError, downloadImage, getRelease, toSeed } from '$lib/server/discogs';
+import { seedTracklist, storeSnapshot } from '$lib/server/enrichment';
+import { DiscogsError, downloadImage, getRelease, toSeed, toSnapshot } from '$lib/server/discogs';
 import {
 	allocateMediaFilename,
 	findByBarcode,
@@ -30,14 +31,15 @@ export async function reidentifyRecord(recordId: number, newDiscogsId: number): 
 	// Picking the release the record already points at is a no-op.
 	if (existing.discogs_id === newDiscogsId) return existing;
 
-	let seed;
+	let raw: Awaited<ReturnType<typeof getRelease>>;
 	try {
-		seed = toSeed(await getRelease(newDiscogsId));
+		raw = await getRelease(newDiscogsId);
 	} catch (e) {
 		throw e instanceof DiscogsError
 			? e
 			: new Error('Could not load that release from Discogs.');
 	}
+	const seed = toSeed(raw);
 
 	const byDiscogs = findByDiscogsId(newDiscogsId);
 	if (byDiscogs && byDiscogs.id !== recordId) {
@@ -69,6 +71,17 @@ export async function reidentifyRecord(recordId: number, newDiscogsId: number): 
 		cover_remote_url: seed.cover_url
 	});
 	if (!updated) throw new Error('Record disappeared while saving.');
+
+	// The release was already fetched above; fold it into the tracklist (stars
+	// carried over by position+title, so re-pointing at another pressing of the
+	// same album keeps them) and refresh the detail snapshot — zero extra API
+	// calls. Wrapped so a seed hiccup can't undo the identity swap.
+	try {
+		seedTracklist(recordId, raw);
+		storeSnapshot(recordId, toSnapshot(raw, newDiscogsId));
+	} catch {
+		// Non-fatal: identity is saved; tracks/details recover via the page buttons.
+	}
 
 	let result = updated;
 	if (seed.cover_url) {

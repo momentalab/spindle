@@ -15,7 +15,12 @@
 	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from "$lib/discogs";
 	import { downscale, fmtSize } from "$lib/image";
 	import { STATUS_LABELS, joinLabels, joinStyles } from "$lib/types";
-	import type { PhotoRow, RecordDraft, SearchCandidate } from "$lib/types";
+	import type {
+		PhotoRow,
+		RecordDraft,
+		SearchCandidate,
+		TrackRow,
+	} from "$lib/types";
 	import type { ActionData, PageData } from "./$types";
 
 	let { data, form }: { data: PageData; form: ActionData | null } = $props();
@@ -422,7 +427,203 @@
 		if (sp.has("cover_saved")) return "cover_saved";
 		if (sp.has("acquired")) return "acquired";
 		if (sp.has("reidentified")) return "reidentified";
+		if (sp.has("tracks_loaded")) return "tracks_loaded";
+		if (sp.has("details_refreshed")) return "details_refreshed";
 		return null;
+	});
+
+	/* -------------------------------------------------------------- */
+	/* The tracklist: stars, inline edit, manual add.                 */
+	/* Every API response carries the full authoritative list, so the */
+	/* client just swaps it in — no partial state surgery.            */
+	/* -------------------------------------------------------------- */
+
+	let tracksOverride = $state<TrackRow[] | null>(null);
+	const tracks = $derived(tracksOverride ?? data.tracks);
+	const favCount = $derived(tracks.filter((t) => t.favorite === 1).length);
+	let tracksError = $state<string | null>(null);
+	let loadingTracks = $state(false); // ?/load_tracks in flight
+
+	// Deep link /records/<id>?track=<trackId> (from the /stats starred list):
+	// gold-tint that row and scroll it into view.
+	const trackHighlight = $derived(page.url.searchParams.get("track"));
+	$effect(() => {
+		if (trackHighlight === null) return;
+		if (!tracks.some((t) => String(t.id) === trackHighlight)) return;
+		void (async () => {
+			await new Promise((r) => requestAnimationFrame(r)); // let the row paint first
+			document
+				.getElementById(`track-${trackHighlight}`)
+				?.scrollIntoView({ behavior: "smooth", block: "center" });
+		})();
+	});
+
+	// Inline edit: one row at a time; three compact fields, save posts a PATCH.
+	let editingTrackId = $state<number | null>(null);
+	let editPos = $state("");
+	let editTitle = $state("");
+	let editDur = $state("");
+	let editSaving = $state(false);
+	let editError = $state<string | null>(null);
+
+	function startEditTrack(t: TrackRow): void {
+		editingTrackId = t.id;
+		editPos = t.position ?? "";
+		editTitle = t.title;
+		editDur = t.duration ?? "";
+		editError = null;
+	}
+
+	function cancelEditTrack(): void {
+		editingTrackId = null;
+		editError = null;
+	}
+
+	async function saveEditTrack(): Promise<void> {
+		if (editingTrackId === null) return;
+		const trackId = editingTrackId;
+		editSaving = true;
+		editError = null;
+		try {
+			const res = await fetch(
+				`/api/records/${data.record.id}/tracks/${trackId}`,
+				{
+					method: "PATCH",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						position: editPos,
+						title: editTitle,
+						duration: editDur,
+					}),
+				},
+			);
+			const json = (await res.json().catch(() => null)) as {
+				ok?: boolean;
+				tracks?: TrackRow[];
+				message?: string;
+			} | null;
+			if (!res.ok || !json?.ok)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
+			tracksOverride = json.tracks ?? tracks;
+			cancelEditTrack();
+		} catch (err) {
+			editError =
+				err instanceof Error ? err.message : "Could not save the track.";
+		} finally {
+			editSaving = false;
+		}
+	}
+
+	async function removeTrack(t: TrackRow): Promise<void> {
+		if (!confirm(`Delete "${t.title}" from the tracklist?`)) return;
+		const res = await fetch(`/api/records/${data.record.id}/tracks/${t.id}`, {
+			method: "DELETE",
+		});
+		const json = (await res.json().catch(() => null)) as {
+			ok?: boolean;
+			tracks?: TrackRow[];
+		} | null;
+		if (res.ok && json?.ok) tracksOverride = json.tracks ?? tracks;
+	}
+
+	// Manual add row (works with or without a Discogs link).
+	let addOpen = $state(false);
+	let addPos = $state("");
+	let addTitle = $state("");
+	let addDur = $state("");
+	let addSaving = $state(false);
+	let addError = $state<string | null>(null);
+
+	function openAddTrack(): void {
+		addOpen = true;
+		addPos = "";
+		addTitle = "";
+		addDur = "";
+		addError = null;
+	}
+
+	async function submitAddTrack(): Promise<void> {
+		if (!addTitle.trim()) {
+			addError = "Give the track a title.";
+			return;
+		}
+		addSaving = true;
+		addError = null;
+		try {
+			const res = await fetch(`/api/records/${data.record.id}/tracks`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					position: addPos,
+					title: addTitle,
+					duration: addDur,
+				}),
+			});
+			const json = (await res.json().catch(() => null)) as {
+				ok?: boolean;
+				tracks?: TrackRow[];
+				message?: string;
+			} | null;
+			if (!res.ok || !json?.ok)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
+			tracksOverride = json.tracks ?? tracks;
+			addOpen = false;
+		} catch (err) {
+			addError =
+				err instanceof Error ? err.message : "Could not add the track.";
+		} finally {
+			addSaving = false;
+		}
+	}
+
+	// Star toggle: optimistic flip, reconcile from the response, revert on failure.
+	const favToggling = $state<Set<number>>(new Set());
+	async function toggleFavorite(t: TrackRow): Promise<void> {
+		if (favToggling.has(t.id)) return;
+		favToggling.add(t.id);
+		const prev = tracksOverride ? [...tracksOverride] : null;
+		const nextFav: 0 | 1 = t.favorite === 1 ? 0 : 1;
+		tracksOverride = tracks.map((x) =>
+			x.id === t.id ? { ...x, favorite: nextFav } : x,
+		);
+		try {
+			const res = await fetch(`/api/records/${data.record.id}/tracks/${t.id}`, {
+				method: "PATCH",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ favorite: nextFav === 1 }),
+			});
+			const json = (await res.json().catch(() => null)) as {
+				ok?: boolean;
+				tracks?: TrackRow[];
+				message?: string;
+			} | null;
+			if (!res.ok || !json?.ok)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
+			tracksOverride = json.tracks ?? tracks;
+		} catch {
+			tracksOverride = prev; // null → fall back to the server list on revalidation
+		} finally {
+			favToggling.delete(t.id);
+		}
+	}
+
+	/* -------------------------------------------------------------- */
+	/* "From Discogs": the cached snapshot + refresh.                 */
+	/* -------------------------------------------------------------- */
+	let refreshingDetails = $state(false);
+	let detailsError = $state<string | null>(null);
+
+	const communityLine = $derived.by(() => {
+		const s = data.snapshot;
+		if (!s) return "";
+		const bits: string[] = [];
+		if (s.community.rating_avg !== null && s.community.rating_count !== null)
+			bits.push(
+				`${s.community.rating_avg} ★ from ${s.community.rating_count} ratings`,
+			);
+		if (s.community.have !== null) bits.push(`${s.community.have} have it`);
+		if (s.community.want !== null) bits.push(`${s.community.want} want it`);
+		return bits.join(" · ");
 	});
 
 	const statusTone: Record<string, "forest" | "plum" | "butter" | "muted"> = {
@@ -526,6 +727,12 @@
 	</div>
 {:else if flash === "reidentified"}
 	<div class="mt-6"><Banner variant="success">Re-identified.</Banner></div>
+{:else if flash === "tracks_loaded"}
+	<div class="mt-6">
+		<Banner variant="success">Tracklist loaded from Discogs.</Banner>
+	</div>
+{:else if flash === "details_refreshed"}
+	<div class="mt-6"><Banner variant="success">Details refreshed.</Banner></div>
 {/if}
 
 <!-- detail — a full catalogue spread. The cover track is capped at 100%
@@ -747,6 +954,460 @@
 	</div>
 </div>
 
+<!-- photos first — a user field, so it leads with your record before the
+	    Discogs-derived sections below it -->
+<section class="mt-16 border-t border-edge pt-10">
+	<h3
+		class="mb-5 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
+	>
+		Photographs — {photos.length}
+	</h3>
+
+	<!-- in-flight previews — the auto-upload shows its photos while they go up -->
+	{#if staging.length > 0}
+		<div class="mb-5 flex flex-wrap items-center gap-3">
+			<!-- key by index: blob URLs can be reused and same-named files would collide -->
+			{#each staging as s, i (i + `-${s.file.name}`)}
+				{#if s.url}
+					<img
+						src={s.url}
+						alt=""
+						class="aspect-square w-[72px] animate-pulse rounded-xs border border-hair object-cover opacity-60"
+					/>
+				{:else}
+					<div
+						class="flex aspect-square w-[72px] items-center justify-center rounded-xs border border-dashed border-edge text-faint"
+						aria-hidden="true"
+					>
+						?
+					</div>
+				{/if}
+			{/each}
+			<span
+				class="text-[10px] font-semibold uppercase tracking-[.2em] text-faint"
+				>Uploading {staging.length === 1
+					? "photo"
+					: `${staging.length} photos`}…</span
+			>
+		</div>
+	{/if}
+
+	<!-- the picker is a bare square label in both branches, so it lines up with the
+	     thumbnail row; uploads start on pick, there is no submit step. -->
+	{#if photos.length > 0 || staging.length > 0}
+		<!-- items-start: default stretch would elongate the square picker to match
+		     a captioned thumbnail in the same row. -->
+		<div class="flex flex-wrap items-start gap-4">
+			{#each photos as p (p.id)}
+				<figure class="group relative w-[180px]">
+					<!-- v= created_at: busts the image cache when two uploads re-encode to
+					     byte-identical JPEGs — without it the browser can serve the first
+					     photo for the second filename, looking like a replacement. -->
+					<img
+						src="/media/{p.filename}?v={p.created_at ?? p.id}"
+						alt={p.caption ?? "Record photograph"}
+						loading="lazy"
+						class="aspect-square w-full rounded-xs border border-hair object-cover"
+					/>
+					{#if p.caption}<figcaption
+							class="mt-2 font-display text-[12.5px] italic text-faint"
+						>
+							{p.caption}
+						</figcaption>{/if}
+					<button
+						aria-label="Delete photo"
+						class="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full border border-edge bg-paper text-[10px] text-muted transition-colors hover:border-rust hover:text-rust group-hover:flex"
+						onclick={() => void removePhoto(p.id)}>✕</button
+					>
+				</figure>
+			{/each}
+
+			<label
+				class={`group block w-[180px] shrink-0 cursor-pointer overflow-hidden rounded-xs border border-dashed border-edge transition-colors hover:border-accent ${uploading ? "pointer-events-none opacity-50" : ""}`}
+			>
+				<span
+					class="flex aspect-square w-full flex-col items-center justify-center gap-2 px-4 text-center text-faint transition-colors group-hover:text-accent"
+				>
+					<span class="text-xl leading-none" aria-hidden="true">+</span>
+					<span class="text-[10px] font-semibold uppercase tracking-[.2em]"
+						>Add photographs</span
+					>
+				</span>
+				<input
+					type="file"
+					multiple
+					accept="image/*"
+					onchange={onFilesPicked}
+					class="hidden"
+				/>
+			</label>
+		</div>
+	{:else}
+		<div class="flex flex-wrap items-start gap-5">
+			<label
+				class={`group block w-[180px] shrink-0 cursor-pointer overflow-hidden rounded-xs border border-dashed border-edge transition-colors hover:border-accent ${uploading ? "pointer-events-none opacity-50" : ""}`}
+			>
+				<span
+					class="flex aspect-square w-full flex-col items-center justify-center gap-2 px-4 text-center text-faint transition-colors group-hover:text-accent"
+				>
+					<span class="text-xl leading-none" aria-hidden="true">+</span>
+					<span class="text-[10px] font-semibold uppercase tracking-[.2em]"
+						>Add photographs</span
+					>
+				</span>
+				<input
+					type="file"
+					multiple
+					accept="image/*"
+					onchange={onFilesPicked}
+					class="hidden"
+				/>
+			</label>
+			<p class="max-w-xs font-display text-[13.5px] italic text-faint">
+				No photographs yet — add images of your physical record.
+			</p>
+		</div>
+	{/if}
+
+	{#if uploadError}<p class="mt-4 text-sm text-rust">{uploadError}</p>{/if}
+</section>
+
+<!-- the tracks: the songs, and which ones you keep coming back to -->
+<section class="mt-16 border-t border-edge pt-10">
+	<div class="flex flex-wrap items-end justify-between gap-3">
+		<div>
+			<h3 class="font-display text-3xl font-normal">The tracks</h3>
+			<p class="mt-2 font-display text-[13.5px] italic text-faint">
+				{#if tracks.length > 0}
+					{tracks.length}
+					{tracks.length === 1 ? "track" : "tracks"}
+					{#if favCount > 0}
+						· {favCount} starred
+					{/if}
+				{:else}
+					no tracklist on file yet
+				{/if}
+			</p>
+		</div>
+	</div>
+
+	{#if tracks.length > 0}
+		<div class="mt-6">
+			{#each tracks as t (t.id)}
+				{@const highlighted = String(t.id) === trackHighlight}
+				<div
+					id={`track-${t.id}`}
+					class={`group grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-hair py-2.5 transition-colors sm:grid-cols-[3rem_minmax(0,1fr)_4rem_auto] ${highlighted ? "bg-plum-soft" : ""}`}
+				>
+					<span
+						class="text-right text-[11px] uppercase tracking-[.18em] text-faint"
+					>
+						{t.position ?? String(tracks.indexOf(t) + 1)}
+					</span>
+
+					{#if editingTrackId === t.id}
+						<!-- inline edit — three compact fields; save posts a PATCH -->
+						<div
+							class="col-span-full col-start-1 row-start-1 flex flex-wrap items-center gap-2 sm:col-auto"
+						>
+							<input
+								class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-[13px] outline-none focus:border-accent"
+								bind:value={editPos}
+								placeholder="A1"
+								aria-label="Track position"
+							/>
+							<input
+								class="min-w-0 flex-1 border-b border-edge bg-transparent px-1 py-0.5 text-[14px] outline-none focus:border-accent"
+								bind:value={editTitle}
+								aria-label="Track title"
+							/>
+							<input
+								class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-right text-[13px] outline-none focus:border-accent"
+								bind:value={editDur}
+								placeholder="3:32"
+								aria-label="Track duration"
+							/>
+							<Button
+								variant="secondary"
+								size="sm"
+								disabled={editSaving}
+								onclick={() => void saveEditTrack()}
+							>
+								{editSaving ? "Saving…" : "Save"}
+							</Button>
+							<Button
+								variant="ghost"
+								size="sm"
+								disabled={editSaving}
+								onclick={cancelEditTrack}>Cancel</Button
+							>
+							{#if editError}<p class="w-full text-sm text-rust">
+									{editError}
+								</p>{/if}
+						</div>
+					{:else}
+						<button
+							type="button"
+							class="truncate text-left font-display text-[15px] transition-colors hover:underline"
+							title={t.title}
+							onclick={() => startEditTrack(t)}
+						>
+							{t.title}
+						</button>
+					{/if}
+
+					<span
+						class="hidden text-right text-[13px] italic text-faint sm:block"
+					>
+						{t.duration ?? ""}
+					</span>
+
+					<div class="flex items-center gap-1.5">
+						<button
+							type="button"
+							class={`flex h-7 w-7 items-center justify-center transition-colors ${t.favorite === 1 ? "text-accent" : "text-faint hover:text-accent"}`}
+							aria-label={t.favorite === 1
+								? `Unfavorite "${t.title}"`
+								: `Favorite "${t.title}"`}
+							disabled={favToggling.has(t.id)}
+							onclick={() => void toggleFavorite(t)}
+						>
+							<svg viewBox="0 0 16 16" class="h-4 w-4" aria-hidden="true">
+								<path
+									d="M8 1.8l1.9 3.9 4.2.6-3 3 .7 4.2L8 11.5l-3.8 2 .7-4.2-3-3 4.2-.6z"
+									fill={t.favorite === 1 ? "currentColor" : "none"}
+									stroke="currentColor"
+									stroke-width="1.1"
+									stroke-linejoin="round"
+								/>
+							</svg>
+						</button>
+						<button
+							type="button"
+							class="flex h-7 w-7 items-center justify-center text-faint opacity-0 transition-opacity hover:text-rust focus:opacity-100 group-hover:opacity-100"
+							aria-label={`Delete "${t.title}" from the tracklist`}
+							onclick={() => void removeTrack(t)}
+						>
+							<svg
+								viewBox="0 0 16 16"
+								class="h-3.5 w-3.5"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="1.25"
+								aria-hidden="true"
+							>
+								<path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke-linecap="square" />
+							</svg>
+						</button>
+					</div>
+				</div>
+			{/each}
+		</div>
+	{:else if data.record.discogs_id}
+		<!-- recovery surface: the list is empty (import-time Discogs failure, or it
+		     never had one) — offer the re-pull. Hidden once any track exists. -->
+		<div class="mt-6 flex flex-wrap items-center gap-4">
+			<form
+				method="POST"
+				action="?/load_tracks"
+				class="inline-flex"
+				use:enhance={() =>
+					async ({ result, update }) => {
+						loadingTracks = true;
+						tracksError = null;
+						if (result && "type" in result && result.type === "failure") {
+							tracksError =
+								(result.data as { error?: string } | undefined)?.error ??
+								"Could not load the tracklist.";
+						} else {
+							await update();
+						}
+						loadingTracks = false;
+					}}
+			>
+				<Button
+					type="submit"
+					variant="secondary"
+					size="sm"
+					disabled={loadingTracks}
+				>
+					{loadingTracks
+						? "Loading from Discogs…"
+						: "Load tracklist from Discogs"}
+				</Button>
+			</form>
+			{#if tracksError}<p class="text-sm text-rust">{tracksError}</p>{/if}
+		</div>
+	{/if}
+
+	<!-- manual add — always available (a record without a Discogs link lives here) -->
+	{#if addOpen}
+		<div class="mt-4 flex flex-wrap items-center gap-2">
+			<input
+				class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-[13px] outline-none focus:border-accent"
+				bind:value={addPos}
+				placeholder="A1"
+				aria-label="New track position"
+			/>
+			<input
+				class="min-w-0 flex-1 border-b border-edge bg-transparent px-1 py-0.5 text-[14px] outline-none focus:border-accent"
+				bind:value={addTitle}
+				placeholder="Track title"
+				aria-label="New track title"
+			/>
+			<input
+				class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-right text-[13px] outline-none focus:border-accent"
+				bind:value={addDur}
+				placeholder="3:32"
+				aria-label="New track duration"
+			/>
+			<Button
+				variant="secondary"
+				size="sm"
+				disabled={addSaving}
+				onclick={() => void submitAddTrack()}
+			>
+				{addSaving ? "Adding…" : "Add track"}
+			</Button>
+			<Button variant="ghost" size="sm" onclick={() => (addOpen = false)}
+				>Cancel</Button
+			>
+			{#if addError}<p class="w-full text-sm text-rust">{addError}</p>{/if}
+		</div>
+	{:else}
+		<div class="mt-4">
+			<Button variant="ghost" size="sm" onclick={openAddTrack}
+				>+ Add a track</Button
+			>
+		</div>
+	{/if}
+</section>
+
+<!-- from Discogs: the cached release details (offline-capable) -->
+{#if data.snapshot}
+	{@const s = data.snapshot}
+	<section class="mt-16 border-t border-edge pt-10">
+		<div class="flex flex-wrap items-end justify-between gap-3">
+			<div>
+				<h3 class="font-display text-3xl font-normal">From Discogs</h3>
+				<p class="mt-2 font-display text-[13.5px] italic text-faint">
+					cached {fmtPlayDate(s.fetched_at)}
+				</p>
+			</div>
+			{#if data.record.discogs_id}
+				<form
+					method="POST"
+					action="?/refresh_details"
+					class="inline-flex"
+					use:enhance={() =>
+						async ({ result, update }) => {
+							refreshingDetails = true;
+							detailsError = null;
+							if (result && "type" in result && result.type === "failure") {
+								detailsError =
+									(result.data as { error?: string } | undefined)?.error ??
+									"Could not refresh the details.";
+							} else {
+								await update();
+							}
+							refreshingDetails = false;
+						}}
+				>
+					<Button
+						type="submit"
+						variant="ghost"
+						size="sm"
+						disabled={refreshingDetails}
+					>
+						{refreshingDetails ? "Refreshing…" : "Refresh details"}
+					</Button>
+				</form>
+			{/if}
+		</div>
+		{#if detailsError}<p class="mt-3 text-sm text-rust">{detailsError}</p>{/if}
+
+		<dl class="mt-6 flex flex-col">
+			{#each [["Country", s.country ?? ""], ["Released", s.released_formatted && s.released_formatted !== data.record.year ? s.released_formatted : ""], ["Series", s.series.join(", ")], ["Community", communityLine]] as [string, string][] as [k, v] (k)}
+				{#if v}
+					<div
+						class="grid grid-cols-[88px_minmax(0,1fr)] gap-x-4 border-b border-hair py-2.5 sm:grid-cols-[150px_minmax(0,1fr)] sm:gap-x-6"
+					>
+						<dt
+							class="pt-0.5 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
+						>
+							{k}
+						</dt>
+						<dd class="break-words text-[15px] text-muted">{v}</dd>
+					</div>
+				{/if}
+			{/each}
+		</dl>
+
+		{#if s.notes}
+			<div class="mt-6 border-l-2 border-l-edge bg-surface px-5 py-4">
+				<p
+					class="mb-1.5 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
+				>
+					Notes, as Discogs has them
+				</p>
+				<p class="whitespace-pre-wrap text-[13.5px] leading-relaxed text-muted">
+					{s.notes}
+				</p>
+			</div>
+		{/if}
+
+		{#if s.credits.length > 0}
+			<div class="mt-7">
+				<p
+					class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
+				>
+					Credits
+				</p>
+				<ul class="mt-3 flex flex-col">
+					{#each s.credits as c (c.name + c.role + c.kind)}
+						<li
+							class="grid grid-cols-[1fr_auto] gap-x-4 border-b border-hair py-2 sm:grid-cols-[220px_minmax(0,1fr)]"
+						>
+							<span class="text-[10.5px] uppercase tracking-[.18em] text-faint"
+								>{c.role || (c.kind === "company" ? "Company" : "Guest")}</span
+							>
+							<span
+								class="break-words font-display text-[14.5px] text-muted sm:text-right"
+								>{c.name}</span
+							>
+						</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
+
+		{#if s.videos.length > 0}
+			<div class="mt-7">
+				<p
+					class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
+				>
+					Videos
+				</p>
+				<ul class="mt-3 flex flex-wrap gap-x-6 gap-y-2">
+					{#each s.videos as v (v.url)}
+						<li>
+							<a
+								href={v.url}
+								target="_blank"
+								rel="noopener noreferrer"
+								class="font-display text-[14px] italic text-muted underline underline-offset-4 transition-colors hover:text-accent"
+							>
+								▶ {v.title}{v.duration !== null &&
+									` (${Math.floor(v.duration / 60)}:${String(v.duration % 60).padStart(2, "0")})`}
+							</a>
+						</li>
+					{/each}
+				</ul>
+			</div>
+		{/if}
+	</section>
+{/if}
+
 <!-- edit form -->
 {#if editing}
 	<section class="mt-16 border-t border-edge pt-10">
@@ -963,123 +1624,6 @@
 		</div>
 	</section>
 {/if}
-
-<!-- photos — a quiet strip -->
-<section class="mt-16">
-	<h3
-		class="mb-5 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
-	>
-		Photographs — {photos.length}
-	</h3>
-
-	<!-- in-flight previews — the auto-upload shows its photos while they go up -->
-	{#if staging.length > 0}
-		<div class="mb-5 flex flex-wrap items-center gap-3">
-			<!-- key by index: blob URLs can be reused and same-named files would collide -->
-			{#each staging as s, i (i + `-${s.file.name}`)}
-				{#if s.url}
-					<img
-						src={s.url}
-						alt=""
-						class="aspect-square w-[72px] animate-pulse rounded-xs border border-hair object-cover opacity-60"
-					/>
-				{:else}
-					<div
-						class="flex aspect-square w-[72px] items-center justify-center rounded-xs border border-dashed border-edge text-faint"
-						aria-hidden="true"
-					>
-						?
-					</div>
-				{/if}
-			{/each}
-			<span
-				class="text-[10px] font-semibold uppercase tracking-[.2em] text-faint"
-				>Uploading {staging.length === 1
-					? "photo"
-					: `${staging.length} photos`}…</span
-			>
-		</div>
-	{/if}
-
-	<!-- the picker is a bare square label in both branches, so it lines up with the
-	     thumbnail row; uploads start on pick, there is no submit step. -->
-	{#if photos.length > 0 || staging.length > 0}
-		<!-- items-start: default stretch would elongate the square picker to match
-		     a captioned thumbnail in the same row. -->
-		<div class="flex flex-wrap items-start gap-4">
-			{#each photos as p (p.id)}
-				<figure class="group relative w-[180px]">
-					<!-- v= created_at: busts the image cache when two uploads re-encode to
-					     byte-identical JPEGs — without it the browser can serve the first
-					     photo for the second filename, looking like a replacement. -->
-					<img
-						src="/media/{p.filename}?v={p.created_at ?? p.id}"
-						alt={p.caption ?? "Record photograph"}
-						loading="lazy"
-						class="aspect-square w-full rounded-xs border border-hair object-cover"
-					/>
-					{#if p.caption}<figcaption
-							class="mt-2 font-display text-[12.5px] italic text-faint"
-						>
-							{p.caption}
-						</figcaption>{/if}
-					<button
-						aria-label="Delete photo"
-						class="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full border border-edge bg-paper text-[10px] text-muted transition-colors hover:border-rust hover:text-rust group-hover:flex"
-						onclick={() => void removePhoto(p.id)}>✕</button
-					>
-				</figure>
-			{/each}
-
-			<label
-				class={`group block w-[180px] shrink-0 cursor-pointer overflow-hidden rounded-xs border border-dashed border-edge transition-colors hover:border-accent ${uploading ? "pointer-events-none opacity-50" : ""}`}
-			>
-				<span
-					class="flex aspect-square w-full flex-col items-center justify-center gap-2 px-4 text-center text-faint transition-colors group-hover:text-accent"
-				>
-					<span class="text-xl leading-none" aria-hidden="true">+</span>
-					<span class="text-[10px] font-semibold uppercase tracking-[.2em]"
-						>Add photographs</span
-					>
-				</span>
-				<input
-					type="file"
-					multiple
-					accept="image/*"
-					onchange={onFilesPicked}
-					class="hidden"
-				/>
-			</label>
-		</div>
-	{:else}
-		<div class="flex flex-wrap items-start gap-5">
-			<label
-				class={`group block w-[180px] shrink-0 cursor-pointer overflow-hidden rounded-xs border border-dashed border-edge transition-colors hover:border-accent ${uploading ? "pointer-events-none opacity-50" : ""}`}
-			>
-				<span
-					class="flex aspect-square w-full flex-col items-center justify-center gap-2 px-4 text-center text-faint transition-colors group-hover:text-accent"
-				>
-					<span class="text-xl leading-none" aria-hidden="true">+</span>
-					<span class="text-[10px] font-semibold uppercase tracking-[.2em]"
-						>Add photographs</span
-					>
-				</span>
-				<input
-					type="file"
-					multiple
-					accept="image/*"
-					onchange={onFilesPicked}
-					class="hidden"
-				/>
-			</label>
-			<p class="max-w-xs font-display text-[13.5px] italic text-faint">
-				No photographs yet — add images of your physical record.
-			</p>
-		</div>
-	{/if}
-
-	{#if uploadError}<p class="mt-4 text-sm text-rust">{uploadError}</p>{/if}
-</section>
 
 <!-- big-photo confirm: files over 8MB ask before an aggressive re-encode + upload -->
 {#if bigFiles.length > 0}

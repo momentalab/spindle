@@ -123,6 +123,17 @@
     return qs ? `/stats?${qs}` : "/stats";
   }
 
+  /* ---- the starred songs: a 5-song preview; "show more" reveals the rest
+     (a full ledger can run into the hundreds). The count is per-load — it
+     resets if you navigate away and back, which is fine for a preview. ---- */
+  const STARRED_PREVIEW = 5;
+  let starredExpanded = $state(false);
+  const visibleStarredTracks = $derived(
+    starredExpanded
+      ? s.favorite_tracks_top
+      : s.favorite_tracks_top.slice(0, STARRED_PREVIEW),
+  );
+
   /* ---- D1 — the abstract: one line per idea. The key figures break out of
      the muted italic voice (upright, heavier, a touch larger) so the data leads. ---- */
   type Part = { t: string; h: boolean };
@@ -198,6 +209,18 @@
         seg(`${top.artist} — ${top.title}`, true),
         seg(
           `, with ${top.plays} ${top.plays === 1 ? "spin" : "spins"} logged.`,
+        ),
+      ]);
+    }
+
+    // line six — the most-starred album
+    const topStarred = s.favorite_albums_top[0];
+    if (topStarred) {
+      lines.push([
+        seg("Most starred on the shelf: "),
+        seg(`${topStarred.artist} — ${topStarred.title}`, true),
+        seg(
+          `, with ${topStarred.stars} ${topStarred.stars === 1 ? "song" : "songs"} starred.`,
         ),
       ]);
     }
@@ -611,12 +634,12 @@ sideways inside their own box with an edge fade hinting at more content. -->
               {#if href}
                 <a
                   {href}
-                  class="transition-colors duration-300 hover:text-accent"
+                  class="block truncate transition-colors duration-300 hover:text-accent"
                 >
                   <DecadeLabel label={r.label} />
                 </a>
               {:else}
-                <span class="text-muted">
+                <span class="block truncate text-muted">
                   <DecadeLabel label={r.label} />
                 </span>
               {/if}
@@ -893,7 +916,7 @@ back to the ledger voice. -->
         class="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4"
       >
         <h2 class="font-display text-[26px] font-normal leading-tight">
-          The spin log
+          Most spun
         </h2>
         <p
           class="max-w-md text-right font-display text-[13.5px] italic leading-relaxed text-faint"
@@ -958,6 +981,138 @@ back to the ledger voice. -->
           </a>
         {/each}
       </div>
+    </section>
+  {/if}
+
+  <!-- ══════════════ the starred — which albums you keep coming back to ══════════════ -->
+  {#if s.favorite_tracks_total > 0}
+    <section class="border-b border-hair py-10">
+      <div
+        class="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4"
+      >
+        <h2 class="font-display text-[26px] font-normal leading-tight">
+          Most starred
+        </h2>
+        <p
+          class="max-w-md text-right font-display text-[13.5px] italic leading-relaxed text-faint"
+        >
+          {s.favorite_tracks_total}
+          {s.favorite_tracks_total === 1 ? "song" : "songs"} starred across
+          {s.favorite_track_albums}
+          {s.favorite_track_albums === 1 ? "album" : "albums"} — ranked by how many
+          of each keep coming back.
+        </p>
+      </div>
+
+      <!-- the lead view: albums by star count, ranked ledger rows with covers -->
+      <div class="flex flex-col">
+        {#each s.favorite_albums_top as a, i (a.id)}
+          <a
+            href="/records/{a.id}"
+            class="group grid grid-cols-[20px_48px_minmax(0,1fr)_auto] items-center gap-3 border-b border-hair py-3.5 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[28px_64px_1fr_auto] sm:gap-5 sm:py-4"
+          >
+            <span
+              class="font-display text-[13px] italic text-faint sm:text-[15px]"
+              >{String(i + 1).padStart(2, "0")}</span
+            >
+            <span class="block h-12 w-12 shrink-0 sm:h-16 sm:w-16">
+              <CoverImage src={a.cover} alt="" loading="lazy" />
+            </span>
+            <span class="min-w-0">
+              <span
+                title={a.title}
+                class="block truncate font-display text-[16px] tracking-[.005em] transition-colors group-hover:text-accent sm:text-[20px]"
+              >
+                {a.title}
+              </span>
+              <span
+                title={a.artist}
+                class="mt-0.5 block truncate text-[13px] text-muted sm:text-[13.5px]"
+              >
+                {a.artist}
+              </span>
+            </span>
+            <span
+              class="flex shrink-0 items-center gap-1.5 font-display text-[13px] italic text-faint"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                class="h-3.5 w-3.5 text-accent"
+                aria-hidden="true"
+              >
+                <path
+                  d="M8 1.8l1.9 3.9 4.2.6-3 3 .7 4.2L8 11.5l-3.8 2 .7-4.2-3-3 4.2-.6z"
+                  fill="currentColor"
+                />
+              </svg>
+              {a.stars}
+              {a.stars === 1 ? "song" : "songs"}
+            </span>
+          </a>
+        {/each}
+      </div>
+
+      <!-- the songs themselves — quieter than the albums; a full tracklist can run long -->
+      <h3
+        class="mt-10 mb-4 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
+      >
+        The songs behind them
+      </h3>
+      <div class="flex flex-col">
+        {#each visibleStarredTracks as t (t.track_id)}
+          <a
+            href="/records/{t.record_id}?track={t.track_id}"
+            class="group grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 border-b border-hair py-2.5 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[44px_1fr_auto] sm:gap-5"
+          >
+            <span class="text-right font-display text-[12px] italic text-faint">
+              {t.position ?? "–"}
+            </span>
+            <span class="min-w-0">
+              <span
+                title={t.title}
+                class="block truncate font-display text-[14.5px] tracking-[.005em] transition-colors group-hover:text-accent sm:text-[15.5px]"
+              >
+                {t.title}
+              </span>
+              <span
+                title={`${t.artist} — ${t.album}`}
+                class="mt-0.5 block truncate text-[12px] text-faint"
+              >
+                {t.album} · {t.artist}
+              </span>
+            </span>
+            <svg
+              viewBox="0 0 16 16"
+              class="h-3 w-3 shrink-0 text-accent"
+              aria-hidden="true"
+            >
+              <path
+                d="M8 1.8l1.9 3.9 4.2.6-3 3 .7 4.2L8 11.5l-3.8 2 .7-4.2-3-3 4.2-.6z"
+                fill="currentColor"
+              />
+            </svg>
+          </a>
+        {/each}
+      </div>
+
+      {#if s.favorite_tracks_top.length > STARRED_PREVIEW}
+        <div class="mt-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            onclick={() => (starredExpanded = !starredExpanded)}
+          >
+            {#if starredExpanded}
+              Show less
+            {:else}
+              Show more ({s.favorite_tracks_top.length - STARRED_PREVIEW} more
+              {s.favorite_tracks_top.length - STARRED_PREVIEW === 1
+                ? "song"
+                : "songs"})
+            {/if}
+          </Button>
+        </div>
+      {/if}
     </section>
   {/if}
 
@@ -1206,7 +1361,7 @@ back to the ledger voice. -->
           )}
           {#if s.unpriced_entries > 0}
             <p class="mt-4 font-display text-[13px] italic text-faint">
-              · {s.unpriced_entries} unpriced on the shelf
+              {s.unpriced_entries} unpriced on the shelf
             </p>
           {/if}
         {:else}
@@ -1341,16 +1496,14 @@ back to the ledger voice. -->
             (label) => `/?q=${encodeURIComponent(label)}`,
           )}
           {@const top = s.top_artists[0]}
-          <p
-            class="mt-6 border-l-2 border-l-edge pl-4 font-display text-[13.5px] italic leading-relaxed text-faint"
-          >
-            {#if top.count > 1}
+          {#if top.count > 1}
+            <p
+              class="mt-6 border-l-2 border-l-edge pl-4 font-display text-[13.5px] italic leading-relaxed text-faint"
+            >
               1 in every {Math.max(Math.round(s.total / top.count), 2)} records is
               {top.label}.
-            {:else}
-              {top.label} leads the shelf.
-            {/if}
-          </p>
+            </p>
+          {/if}
         {:else}
           <p class="font-display text-[14px] italic text-muted">
             No artists catalogued yet.

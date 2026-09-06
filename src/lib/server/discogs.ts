@@ -12,7 +12,14 @@
  *   the UI falls back to manual entry. Local data is always fully usable.
  */
 import { env } from '$env/dynamic/private';
-import type { DiscogsSeed, LabelEntry, SearchCandidate } from '$lib/types';
+import type {
+	DiscogsSeed,
+	LabelEntry,
+	ReleaseCredit,
+	ReleaseSnapshot,
+	ReleaseVideo,
+	SearchCandidate
+} from '$lib/types';
 
 const API_BASE = 'https://api.discogs.com';
 const USER_AGENT = 'mynyl/0.1 (local vinyl collection tracker)';
@@ -143,6 +150,18 @@ export interface RawRelease {
 	images?: RawImage[];
 	thumb?: string;
 	uri?: string;
+	country?: string;
+	series?: string[];
+	notes?: string;
+	community?: {
+		want?: number | null;
+		have?: number | null;
+		rating?: { average?: number | null; count?: number | null } | null;
+	};
+	companies?: { name?: string; entity_type_name?: string }[];
+	extraartists?: { name?: string; anv?: string; role?: string }[];
+	videos?: { title?: string; duration?: number | null; uri?: string; embed?: boolean }[];
+	tracklist?: { position?: string; title?: string; duration?: string; type_?: string }[];
 }
 
 /** One Discogs search result — shared with the client pickers (see SearchCandidate). */
@@ -221,6 +240,61 @@ export function toSeed(release: RawRelease): DiscogsSeed {
 		format,
 		limited_edition,
 		cover_url
+	};
+}
+
+/**
+	* Map a raw release object to the cached detail snapshot stored per record
+	* (release_snapshots table). Pure function of the parsed payload — same
+	* normalization discipline as toSeed: trim, drop empties, round ratings to 2 dp.
+	*/
+export function toSnapshot(release: RawRelease, discogsId?: number): ReleaseSnapshot {
+	const clean = (v: string | null | undefined): string | null => {
+		const t = (v ?? '').trim();
+		return t ? t : null;
+	};
+
+	const avg = release.community?.rating?.average;
+	const count = release.community?.rating?.count;
+
+	// Companies first, extra-artists after — companies' role is their entity
+	// type ("Mastered At"), artists carry an explicit role; both fall back to ''.
+	const credits: ReleaseCredit[] = [];
+	for (const c of release.companies ?? []) {
+		const name = clean(c.name);
+		if (!name) continue;
+		credits.push({ name, role: clean(c.entity_type_name) ?? '', kind: 'company' });
+	}
+	for (const a of release.extraartists ?? []) {
+		const name = clean(a.anv ? `${a.name} (${a.anv})` : a.name);
+		if (!name) continue;
+		credits.push({ name, role: clean(a.role) ?? '', kind: 'artist' });
+	}
+
+	const videos: ReleaseVideo[] = (release.videos ?? [])
+		.filter((v) => v.uri && v.title?.trim())
+		.map((v) => ({
+			title: v.title!.trim(),
+			duration: typeof v.duration === 'number' && Number.isFinite(v.duration) ? v.duration : null,
+			url: v.uri!
+		}));
+
+	return {
+		discogs_id: discogsId ?? release.id,
+		country: clean(release.country),
+		series: (release.series ?? []).map((s) => s.trim()).filter(Boolean),
+		notes: clean(release.notes),
+		released_formatted: clean(release.released_formatted),
+		community: {
+			want: typeof release.community?.want === 'number' ? release.community!.want! : null,
+			have: typeof release.community?.have === 'number' ? release.community!.have! : null,
+			rating_avg:
+				typeof avg === 'number' && Number.isFinite(avg) ? Math.round(avg * 100) / 100 : null,
+			rating_count: typeof count === 'number' ? count : null
+		},
+		credits,
+		videos,
+		fetched_at: new Date().toISOString()
 	};
 }
 

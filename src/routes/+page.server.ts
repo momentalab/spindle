@@ -4,10 +4,11 @@
  */
 import { fail } from '@sveltejs/kit';
 import { acquireRecord, countRecords, distinctValues, findRecordById, listRecords, playCounts } from '$lib/server/records';
+import { favoriteCounts } from '$lib/server/tracks';
 import type { ListOptions, RecordStatus } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
-const SORT_COLUMNS = new Set(['artist', 'title', 'year', 'genre', 'label', 'acquired_at', 'updated_at']);
+const SORT_COLUMNS = new Set(['artist', 'title', 'year', 'genre', 'label', 'favorite_tracks', 'acquired_at', 'updated_at']);
 
 export const load: PageServerLoad = async ({ url }) => {
 	const search = url.searchParams.get('q') ?? '';
@@ -17,7 +18,8 @@ export const load: PageServerLoad = async ({ url }) => {
 	// local=1 — hide the Discogs section of the search results entirely.
 	const localOnly = url.searchParams.get('local') === '1';
 	const sort = (url.searchParams.get('sort') ?? 'artist') as ListOptions['sort'];
-	const dirParam = url.searchParams.get('dir') ?? 'asc';
+	// Starred sort reads most-starred first by default; an explicit ?dir= wins.
+	const dirParam = url.searchParams.get('dir') ?? (sort === 'favorite_tracks' ? 'desc' : 'asc');
 
 	// Shelf split: the wishlist is its own tab (?tab=wishlist); the legacy
 	// ?status=wanted deep link keeps working as an alias. On the collection
@@ -34,6 +36,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		label: label || undefined,
 		status: shelf === 'wishlist' ? 'wanted' : statusFilter,
 		exclude_status: shelf === 'collection' ? 'wanted' : undefined,
+		favorite_only: url.searchParams.get('fav') === '1',
 		sort: SORT_COLUMNS.has(sort) ? sort : 'artist',
 		dir: dirParam === 'desc' ? 'desc' : 'asc'
 	};
@@ -47,6 +50,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		// The header's quiet "N still wanted" pointer links across shelves.
 		wanted_total: countRecords('wanted'),
 		play_counts: playCounts(records.map((r) => r.id)),
+		track_counts: favoriteCounts(records.map((r) => r.id)),
 		filters: {
 			genres: distinctValues('genre'),
 			labels: distinctValues('label'),

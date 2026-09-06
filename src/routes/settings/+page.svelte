@@ -188,11 +188,13 @@
           { id: "records", label: "Records" },
           { id: "photos", label: "Photos" },
           { id: "plays", label: "Plays" },
+          { id: "tracks", label: "Tracks" },
         ]
       : [
           { id: "records", label: "Records" },
           { id: "photos", label: "Photos" },
           { id: "plays", label: "Plays" },
+          { id: "tracks", label: "Tracks" },
         ],
   );
 
@@ -380,10 +382,10 @@
   <p class="mt-4 text-[11px] italic leading-relaxed text-faint">
     {#if format === "csv"}
       CSV renders prices in dollars and covers as local URLs; “records” is the
-      whole index, “photos” and “plays” are their own tables.
+      whole index, “photos”, “plays” and “tracks” are their own tables.
     {:else}
-      JSON exports every column raw — “All tables” bundles records, photos and
-      plays in one file.
+      JSON exports every column raw — “All tables” bundles records, photos,
+      plays and tracks in one file.
     {/if}
   </p>
 </section>

@@ -68,6 +68,54 @@ export interface PlayRow {
 	played_at: string; // ISO datetime
 }
 
+/** One row of a record's tracklist (record_tracks table). Display order = insertion order (id). */
+export interface TrackRow {
+	id: number;
+	record_id: number;
+	/** Display code as Discogs gives it ('A1', '1') or user-typed — never used for ordering. */
+	position: string | null;
+	title: string;
+	/** '3:32' verbatim from Discogs (or user-typed); never parsed server-side. */
+	duration: string | null;
+	favorite: 0 | 1;
+}
+
+/** One credit row in a release snapshot (company or extra-artist). */
+export interface ReleaseCredit {
+	name: string;
+	role: string;
+	kind: 'company' | 'artist';
+}
+
+/** One video link in a release snapshot (Discogs embeds YouTube). */
+export interface ReleaseVideo {
+	title: string;
+	duration: number | null; // seconds, as Discogs gives it
+	url: string;
+}
+
+/**
+ * Cached, normalized Discogs release details for the record page. Stored as one
+ * latest-wins JSON row per record (release_snapshots table); fetched at import
+ * time and on demand, so the page renders fully offline.
+ */
+export interface ReleaseSnapshot {
+	discogs_id: number;
+	country: string | null;
+	series: string[];
+	notes: string | null;
+	released_formatted: string | null;
+	community: {
+		want: number | null;
+		have: number | null;
+		rating_avg: number | null;
+		rating_count: number | null;
+	};
+	credits: ReleaseCredit[];
+	videos: ReleaseVideo[];
+	fetched_at: string; // ISO datetime
+}
+
 /** Fields that the Discogs import seeds (before user edits). */
 export interface DiscogsSeed {
 	discogs_id: number;
@@ -140,6 +188,7 @@ export type SortColumn =
 	| 'year'
 	| 'genre'
 	| 'label'
+	| 'favorite_tracks'
 	| 'acquired_at'
 	| 'updated_at';
 
@@ -151,6 +200,8 @@ export interface ListOptions {
 	status?: RecordStatus | '';
 	/** Rows in this status are omitted — the home Collection shelf hides the wishlist. */
 	exclude_status?: RecordStatus;
+	/** Keep only records with at least one favorited track (?fav=1). */
+	favorite_only?: boolean;
 	sort: SortColumn;
 	dir: 'asc' | 'desc';
 }

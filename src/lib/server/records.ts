@@ -107,6 +107,8 @@ const SORTABLE: Record<ListOptions['sort'], string> = {
 	genre: 'rg0.genre',
 	// Labels likewise order by the first (lowest-id) label entry, rl0.label.
 	label: 'rl0.label',
+	// Scalar subquery; NULL-safe via the shared `IS NULL` prefix in listRecords.
+	favorite_tracks: '(SELECT COUNT(*) FROM record_tracks t WHERE t.record_id = r.id AND t.favorite = 1)',
 	acquired_at: 'acquired_at',
 	updated_at: 'updated_at'
 };
@@ -137,6 +139,9 @@ export function listRecords(opts: ListOptions): RecordRow[] {
 	if (opts.exclude_status) {
 		where.push('r.status != @exclude_status');
 		params.exclude_status = opts.exclude_status;
+	}
+	if (opts.favorite_only) {
+		where.push('EXISTS (SELECT 1 FROM record_tracks t WHERE t.record_id = r.id AND t.favorite = 1)');
 	}
 
 	const sortCol = SORTABLE[opts.sort] ?? 'r.artist';
@@ -509,6 +514,9 @@ export function deleteRecord(id: number): boolean {
 		filename: string;
 	}[];
 	db.prepare('DELETE FROM records WHERE id = ?').run(id); // cascades to photos
+
+	// The per-record "track fetch failed" marker (settings KV) orphans on delete.
+	db.prepare('DELETE FROM settings WHERE key = ?').run(`track_fetch_failed:${id}`);
 
 	// Remove media from disk (best effort).
 	for (const f of [rec.cover_filename, ...photos.map((p) => p.filename)].filter(Boolean) as string[]) {

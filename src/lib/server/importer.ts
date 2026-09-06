@@ -2,9 +2,15 @@
  * Import orchestration (server-only): create the local record, then pull the
  * cover art from Discogs to disk. Cover failure is non-fatal — the row keeps
  * its cover_remote_url as a fallback so the UI can still show something.
+ *
+ * A record with a discogs_id also gets its tracklist + detail snapshot seeded
+ * from Discogs here (non-fatal, same posture as the cover) — this is the
+ * single create chokepoint: barcode import, manual entry and the search-bar
+ * quick-add all route through here.
  */
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
+import { enrichFromDiscogs } from '$lib/server/enrichment';
 import { MEDIA_DIR } from '$lib/server/paths';
 import { downloadImage } from '$lib/server/discogs';
 import { allocateMediaFilename, createRecord, updateRecord, type NewRecordInput } from '$lib/server/records';
@@ -27,6 +33,15 @@ export async function importRecord(input: NewRecordInput): Promise<ImportResult>
 			coverSaved = true;
 		} catch {
 			// Non-fatal: the record is saved; cover stays as the remote URL fallback.
+		}
+	}
+
+	if (input.discogs_id) {
+		try {
+			await enrichFromDiscogs(record.id, input.discogs_id);
+		} catch {
+			// Non-fatal: the record is saved; tracks/details can be pulled later
+			// from the record page.
 		}
 	}
 

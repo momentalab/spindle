@@ -349,6 +349,33 @@ const migrations: Migration[] = [
 				 WHERE wanted_at IS NOT NULL AND length(wanted_at) > 10;
 			`);
 		}
+	},
+	{
+		version: 8,
+		description:
+			'tracklists + release snapshots: record_tracks (per-track rows with a favorite flag) and release_snapshots (one latest-wins cached Discogs details row per record)',
+		up(db) {
+			db.exec(`
+				CREATE TABLE IF NOT EXISTS record_tracks (
+					id INTEGER PRIMARY KEY AUTOINCREMENT,
+					record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE,
+					position TEXT,
+					title TEXT NOT NULL CHECK (TRIM(title) != ''),
+					duration TEXT,
+					favorite INTEGER NOT NULL DEFAULT 0 CHECK (favorite IN (0,1)),
+					created_at TEXT NOT NULL DEFAULT (datetime('now'))
+				);
+
+				CREATE INDEX IF NOT EXISTS idx_record_tracks_record_id ON record_tracks(record_id);
+
+				CREATE TABLE IF NOT EXISTS release_snapshots (
+					record_id INTEGER PRIMARY KEY REFERENCES records(id) ON DELETE CASCADE,
+					discogs_id INTEGER NOT NULL,
+					payload TEXT NOT NULL,
+					fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
+				);
+			`);
+		}
 	}
 ];
 
