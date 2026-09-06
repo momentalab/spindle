@@ -5,9 +5,11 @@
  *   reidentify   — repoint the record at a different Discogs release
  *   add_copy     — increment copies
  *   delete       — remove record (cascades photos + media files)
+ *   pick_cover   — override the cover with the artwork of ANY Discogs entry
+ *   reset_cover  — re-pull the cover from the record's own linked release
  */
 import { error, fail, redirect } from '@sveltejs/kit';
-import { repairCover } from '$lib/server/covers';
+import { pickCoverFromRelease, repairCover, resetCoverToDiscogs } from '$lib/server/covers';
 import { DiscogsError } from '$lib/server/discogs';
 import { ReidentifyConflictError, reidentifyRecord } from '$lib/server/reidentify';
 import {
@@ -123,6 +125,40 @@ export const actions: Actions = {
 			});
 		}
 		// Success: return nothing so SvelteKit revalidates the page data.
+	},
+
+	// Cover override from any Discogs entry — artwork only, identity untouched.
+	pick_cover: async ({ request, params }) => {
+		const id = Number.parseInt(params.id, 10);
+		if (!findRecordById(id)) error(404, 'Record not found');
+		const data = await request.formData();
+		const releaseId = Number.parseInt(String(data.get('release_id') ?? ''), 10);
+		if (!Number.isFinite(releaseId) || releaseId <= 0)
+			return fail(400, { error: 'No release was selected.' });
+		try {
+			await pickCoverFromRelease(id, releaseId);
+		} catch (e) {
+			const msg =
+				e instanceof DiscogsError ? e.message : 'Could not save that cover. Please try again.';
+			return fail(502, { error: msg });
+		}
+		redirect(303, `/records/${id}?cover_saved=1`);
+	},
+
+	// Undo an override: re-pull the cover from the record's own linked release.
+	reset_cover: async ({ params }) => {
+		const id = Number.parseInt(params.id, 10);
+		const rec = findRecordById(id);
+		if (!rec) error(404, 'Record not found');
+		if (!rec.discogs_id) return fail(400, { error: 'This record has no linked Discogs release.' });
+		try {
+			await resetCoverToDiscogs(id);
+		} catch (e) {
+			const msg =
+				e instanceof DiscogsError ? e.message : 'Could not save that cover. Please try again.';
+			return fail(502, { error: msg });
+		}
+		redirect(303, `/records/${id}?cover_saved=1`);
 	},
 
 	delete: async ({ params }) => {

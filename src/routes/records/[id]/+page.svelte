@@ -1,22 +1,21 @@
 <script lang="ts">
 	import { enhance } from "$app/forms";
+	import { goto, invalidateAll } from "$app/navigation";
 	import { page } from "$app/state";
 	import AcquireDialog from "$lib/components/AcquireDialog.svelte";
 	import RecordForm from "$lib/components/RecordForm.svelte";
+	import ReleasePicker from "$lib/components/ReleasePicker.svelte";
 	import Banner from "$lib/components/ui/Banner.svelte";
 	import Badge from "$lib/components/ui/Badge.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import CoverImage from "$lib/components/ui/CoverImage.svelte";
+	import Input from "$lib/components/ui/Input.svelte";
 	import { draftFromRow, emptyDraft } from "$lib/draft";
 	import { appTitle } from "$lib/index";
 	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from "$lib/discogs";
+	import { downscale, fmtSize } from "$lib/image";
 	import { STATUS_LABELS, joinLabels, joinStyles } from "$lib/types";
-	import type {
-		DiscogsSeed,
-		PhotoRow,
-		RecordDraft,
-		SearchCandidate,
-	} from "$lib/types";
+	import type { PhotoRow, RecordDraft, SearchCandidate } from "$lib/types";
 	import type { ActionData, PageData } from "./$types";
 
 	let { data, form }: { data: PageData; form: ActionData | null } = $props();
@@ -40,29 +39,12 @@
 	// Re-identify: re-run the barcode lookup and re-pick the release (a wrong pick
 	// at import time). Candidates come from /api/import — the same source as the
 	// import flow; selecting one posts its discogs_id to ?/reidentify and the
-	// server overwrites only the identity fields. "Details" lazily fetches the
-	// single release to reveal limited-edition status (absent from search results).
+	// server overwrites only the identity fields. The candidate list itself (with
+	// lazy "Details" expansion and per-row commit state) lives in ReleasePicker.
 	let reidOpen = $state(false);
 	let reidLoading = $state(false);
 	let reidError = $state<string | null>(null);
 	let reidCandidates = $state<SearchCandidate[] | null>(null);
-	let reidCommittingId = $state<number | null>(null);
-	let reidDetailId = $state<number | null>(null);
-	let reidDetails = $state<
-		Record<number, { seed: DiscogsSeed } | { error: string }>
-	>({});
-
-	function fmtCandidate(c: SearchCandidate): string {
-		return [
-			c.format?.filter((f) => f && !/^(album|mixed)$/i.test(f)).join(", "),
-			c.year,
-			[c.label?.join(", "), c.catno].filter(Boolean).join(" · "),
-			c.genre?.[0],
-			c.country,
-		]
-			.filter(Boolean)
-			.join(" · ");
-	}
 
 	async function openReidentify(): Promise<void> {
 		if (reidOpen) {
@@ -94,37 +76,109 @@
 		}
 	}
 
-	async function fetchReidDetail(id: number): Promise<void> {
-		if (reidDetails[id]) return;
-		reidDetailId = id;
-		try {
-			const res = await fetch(`/api/import?id=${id}`);
-			const json = (await res.json().catch(() => null)) as {
-				seed: DiscogsSeed;
-				message?: string;
-			} | null;
-			if (!res.ok || !json?.seed)
-				throw new Error(json?.message ?? `HTTP ${res.status}`);
-			reidDetails = { ...reidDetails, [id]: { seed: json.seed } };
-		} catch (e) {
-			reidDetails = {
-				...reidDetails,
-				[id]: {
-					error: e instanceof Error ? e.message : "Could not load details.",
-				},
-			};
-		} finally {
-			reidDetailId = null;
-		}
-	}
-
 	function closeReidentify(): void {
 		reidOpen = false;
 		reidCandidates = null;
 		reidError = null;
-		reidDetails = {};
-		reidCommittingId = null;
-		reidDetailId = null;
+	}
+
+	// Cover override: replace the artwork without touching the record's identity.
+	// (i) Pick the cover of ANY Discogs entry — the shared ReleasePicker posts the
+	// chosen release id to ?/pick_cover, which borrows only its primary image.
+	// (ii) Upload a local image — same pipeline as photographs (downscale, then
+	// POST /api/records/<id>/cover); on success invalidateAll() refetches the row
+	// and the ?cover_saved=1 flash fires.
+	let coverOpen = $state(false);
+	let coverLoading = $state(false);
+	let coverError = $state<string | null>(null);
+	let coverQuery = $state("");
+	let coverCandidates = $state<SearchCandidate[] | null>(null);
+
+	async function openCover(): Promise<void> {
+		if (coverOpen) {
+			closeCover();
+			return;
+		}
+		coverOpen = true;
+		coverError = null;
+		if (!coverCandidates)
+			coverQuery = `${data.record.artist} ${data.record.title}`.trim();
+		await searchCover(coverQuery);
+	}
+
+	async function searchCover(q: string): Promise<void> {
+		coverQuery = q;
+		coverLoading = true;
+		coverError = null;
+		const query = q.trim();
+		if (!query) {
+			coverCandidates = [];
+			coverLoading = false;
+			return;
+		}
+		try {
+			const res = await fetch(`/api/import?q=${encodeURIComponent(query)}`);
+			const json = (await res.json().catch(() => null)) as {
+				candidates?: SearchCandidate[];
+				message?: string;
+			} | null;
+			if (!res.ok || !json)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
+			coverCandidates = json.candidates ?? [];
+		} catch (e) {
+			coverError = e instanceof Error ? e.message : "Discogs search failed.";
+			coverCandidates = null;
+		} finally {
+			coverLoading = false;
+		}
+	}
+
+	function closeCover(): void {
+		coverOpen = false;
+		coverError = null;
+	}
+
+	async function onCoverPicked(): Promise<void> {
+		await invalidateAll();
+		closeCover();
+	}
+
+	async function onCoverFilePicked(e: Event): Promise<void> {
+		const input = e.target as HTMLInputElement;
+		const file = input.files?.[0];
+		input.value = ""; // allow re-picking the same file later
+		if (!file) return;
+		coverError = null;
+		if (file.size > UPLOAD_MAX_BYTES) {
+			coverError = `"${file.name}" is ${fmtSize(file.size)} — over the ${fmtSize(UPLOAD_MAX_BYTES)} limit.`;
+			return;
+		}
+		coverLoading = true;
+		try {
+			const encoded = await downscale(file, 1600);
+			const fd = new FormData();
+			fd.append("file", encoded);
+			const res = await fetch(`/api/records/${data.record.id}/cover`, {
+				method: "POST",
+				body: fd,
+			});
+			const json = (await res.json().catch(() => null)) as {
+				ok?: boolean;
+				message?: string;
+			} | null;
+			if (!res.ok || !json?.ok)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
+			closeCover();
+			// goto (not invalidateAll) so the ?cover_saved=1 flash lands on the spec sheet,
+			// matching the pick/restore paths. The navigation revalidates page data.
+			await goto(`/records/${data.record.id}?cover_saved=1`, {
+				replaceState: true,
+			});
+		} catch (err) {
+			coverError = err instanceof Error ? err.message : "Upload failed";
+		} finally {
+			coverLoading = false;
+		}
 	}
 
 	// Missing-cover repair (F2): re-pull the artwork from Discogs when this record
@@ -132,7 +186,7 @@
 	// action handles the download; on success `update()` revalidates and the local
 	// cover replaces the remote fallback.
 	let repairingCover = $state(false);
-	let coverError = $state<string | null>(null);
+	let repairError = $state<string | null>(null);
 	// The photo API is fetch-based, so uploads/deletes update `photosOverride`
 	// locally instead of revalidating page data. The server list stays the source
 	// of truth until an API response overrides it (the edit action never touches
@@ -153,94 +207,6 @@
 	const UPLOAD_MAX_BYTES = 25 * 1024 * 1024;
 	let bigFiles = $state<File[]>([]);
 	const bigSingle = $derived(bigFiles.length === 1 ? bigFiles[0] : null);
-
-	function loadImage(
-		file: File,
-	): Promise<{ url: string; el: HTMLImageElement }> {
-		return new Promise((resolve, reject) => {
-			const url = URL.createObjectURL(file);
-			const img = new Image();
-			img.onload = () => resolve({ url, el: img });
-			img.onerror = () => {
-				URL.revokeObjectURL(url);
-				reject(new Error(`${file.name} isn't a readable image`));
-			};
-			img.src = url;
-		});
-	}
-
-	// Re-encode to JPEG at maxSide (long edge) before upload, stepping quality —
-	// then width — down until under targetBytes. Falls back to the original File
-	// when it isn't a decodable image or compression can't get there.
-	async function downscale(
-		file: File,
-		maxSide: number,
-		targetBytes?: number,
-	): Promise<File> {
-		let source: { url: string; el: HTMLImageElement };
-		try {
-			source = await loadImage(file);
-		} catch (e) {
-			throw e; // unreadable image — surfaced as the upload error
-		}
-		const { url, el } = source;
-		try {
-			const scale = Math.min(
-				1,
-				maxSide / Math.max(el.naturalWidth, el.naturalHeight),
-			);
-			const alreadySmall =
-				scale === 1 &&
-				file.type === "image/jpeg" &&
-				(!targetBytes || file.size <= targetBytes);
-			if (alreadySmall) return file;
-			const canvas = document.createElement("canvas");
-			canvas.width = Math.max(1, Math.round(el.naturalWidth * scale));
-			canvas.height = Math.max(1, Math.round(el.naturalHeight * scale));
-			const ctx = canvas.getContext("2d");
-			if (!ctx) return file;
-			// White fill so transparent PNGs become white, not black, JPEGs.
-			ctx.fillStyle = "#fff";
-			ctx.fillRect(0, 0, canvas.width, canvas.height);
-			ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
-			const toJpeg = (q: number) =>
-				new Promise<Blob | null>((resolve) =>
-					canvas.toBlob(resolve, "image/jpeg", q),
-				);
-			const name = file.name.replace(/\.[^.]+$/, "") + ".jpg";
-			const limit = targetBytes ?? Infinity;
-			for (const q of [0.85, 0.72, 0.55]) {
-				const blob = await toJpeg(q);
-				if (!blob) break;
-				const out = new File([blob], name, { type: "image/jpeg" });
-				if (out.size <= limit) return out;
-			}
-			// Still over budget — halve the width a couple of times before giving up.
-			let side = Math.round(maxSide / 2);
-			while (side >= 400) {
-				canvas.width = side;
-				canvas.height = Math.max(
-					1,
-					Math.round(side * (el.naturalHeight / el.naturalWidth)),
-				);
-				ctx.drawImage(el, 0, 0, canvas.width, canvas.height);
-				const blob = await toJpeg(0.55);
-				if (!blob) break;
-				const out = new File([blob], name, { type: "image/jpeg" });
-				if (out.size <= limit) return out;
-				side = Math.round(side / 2);
-			}
-			return file; // let the server-side cap be the final arbiter
-		} finally {
-			URL.revokeObjectURL(url);
-		}
-	}
-
-	function fmtSize(bytes: number): string {
-		return bytes >= 1024 * 1024
-			? `${(bytes / 1024 / 1024).toFixed(1)} MB`
-			: `${Math.max(1, Math.round(bytes / 1024))} KB`;
-	}
 
 	function onFilesPicked(e: Event): void {
 		if (uploading) return;
@@ -582,14 +548,16 @@
 				Cover is remote — not yet saved.
 			{:else if !data.record.cover_filename}
 				No cover on file.
+			{:else if !data.record.cover_remote_url}
+				Manual cover.
 			{:else}
 				Front cover.
 			{/if}
 		</p>
 		{#if !data.record.cover_filename && (data.record.cover_remote_url || data.record.discogs_id)}
 			<div class="mt-4 flex flex-col gap-3">
-				{#if coverError}
-					<Banner variant="error">{coverError}</Banner>
+				{#if repairError}
+					<Banner variant="error">{repairError}</Banner>
 				{/if}
 				<form
 					method="POST"
@@ -598,9 +566,9 @@
 					use:enhance={() =>
 						async ({ result, update }) => {
 							repairingCover = true;
-							coverError = null;
+							repairError = null;
 							if (result && "type" in result && result.type === "failure") {
-								coverError =
+								repairError =
 									(result.data as { error?: string } | undefined)?.error ??
 									"Cover download failed.";
 							} else {
@@ -621,13 +589,20 @@
 			</div>
 		{/if}
 
-		<div class="mt-5 flex flex-wrap gap-2.5">
+		<div class="mt-5 flex flex-wrap items-center gap-2.5">
 			{#if data.record.limited_edition}<Badge tone="plum">Limited edition</Badge
 				>{/if}
 			{#if data.record.copies > 1}<span
 					class="font-display text-[13px] italic text-faint"
 					>{data.record.copies} copies</span
 				>{/if}
+		</div>
+
+		<!-- Cover override entry point — opens the Change cover panel below. -->
+		<div class="mt-5">
+			<Button variant="ghost" size="sm" onclick={() => void openCover()}>
+				{coverOpen ? "Close cover options" : "Change cover"}
+			</Button>
 		</div>
 	</div>
 
@@ -846,110 +821,146 @@
 				>
 			</div>
 		{:else if reidCandidates}
-			<ul class="mt-6 flex flex-col">
-				{#each reidCandidates as c (c.id)}
-					{@const selected = data.record.discogs_id === c.id}
-					<li class="border-b border-hair py-4">
-						<div
-							class="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-5 sm:grid-cols-[64px_minmax(0,1fr)_auto]"
-						>
-							<span class="block h-16 w-16 shrink-0">
-								<CoverImage src={c.thumb} alt="" />
-							</span>
-							<span class="min-w-0">
-								<span class="block truncate font-display text-[19px]"
-									>{c.title}</span
-								>
-								<span class="mt-0.5 block truncate text-[13px] text-muted">
-									{fmtCandidate(c)}
-								</span>
-								{#if reidDetailId === c.id}
-									<span class="mt-1 block italic text-faint"
-										>Loading details…</span
-									>
-								{:else}
-									{@const detail = reidDetails[c.id]}
-									{#if detail && "seed" in detail}
-										<span
-											class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-muted"
-										>
-											{#if detail.seed.limited_edition === 1}
-												<Badge tone="plum">Limited edition</Badge>
-											{/if}
-											{#if detail.seed.format}
-												<span class="truncate">{detail.seed.format}</span>
-											{/if}
-											<span class="whitespace-nowrap text-faint">
-												{detail.seed.year ?? "????"} · {joinLabels(
-													detail.seed.labels,
-												)}
-											</span>
-										</span>
-									{:else if detail && "error" in detail}
-										<span class="mt-1 block text-[12px] text-rust"
-											>{detail.error}</span
-										>
-									{/if}
-								{/if}
-							</span>
-							<span
-								class="col-start-2 flex flex-col items-start gap-2 sm:col-start-3 sm:items-end"
-							>
-								{#if selected}
-									<span
-										class="text-[10.5px] font-semibold uppercase tracking-[.2em] text-accent"
-									>
-										Current release
-									</span>
-								{:else if reidCommittingId === c.id}
-									<span
-										class="text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"
-									>
-										Saving…
-									</span>
-								{:else}
-									<form
-										method="POST"
-										action="?/reidentify"
-										class="inline-flex"
-										use:enhance={() =>
-											async ({ result, update }) => {
-												reidCommittingId = c.id;
-												try {
-													if (
-														result &&
-														"type" in result &&
-														result.type === "failure"
-													)
-														return; // keep the panel open on error
-													await update(); // follow the 303 to the flash banner
-												} finally {
-													reidCommittingId = null;
-												}
-												closeReidentify();
-											}}
-									>
-										<input type="hidden" name="discogs_id" value={c.id} />
-										<Button type="submit" size="sm" variant="secondary"
-											>Select</Button
-										>
-									</form>
-								{/if}
-								{#if !selected && !reidDetails[c.id] && reidDetailId !== c.id}
-									<button
-										type="button"
-										class="text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint underline-offset-4 transition-colors hover:text-accent"
-										onclick={() => void fetchReidDetail(c.id)}
-									>
-										Details
-									</button>
-								{/if}
-							</span>
-						</div>
-					</li>
-				{/each}
-			</ul>
+			<ReleasePicker
+				candidates={reidCandidates}
+				selectedId={data.record.discogs_id}
+				action="?/reidentify"
+				commitLabel="Select"
+				onCommitted={closeReidentify}
+			/>
 		{/if}
+	</section>
+{/if}
+
+<!-- change cover — override the artwork without touching the record's identity -->
+{#if coverOpen}
+	<section class="mt-16 border-t border-edge pt-10">
+		<div class="flex flex-wrap items-start justify-between gap-4">
+			<div>
+				<h3 class="font-display text-3xl font-normal">Change cover</h3>
+				<p
+					class="mt-2 max-w-xl font-display text-[13.5px] italic leading-relaxed text-faint"
+				>
+					Replace the artwork only — none of the picked entry's data touches
+					this record, and nothing changes for the record itself.
+				</p>
+			</div>
+			<Button variant="ghost" size="sm" onclick={closeCover}>Close</Button>
+		</div>
+
+		{#if form?.error}
+			<div class="mt-6">
+				<Banner variant="error">{form.error}</Banner>
+			</div>
+		{/if}
+
+		{#if coverError}
+			<div class="mt-6">
+				<Banner variant="error">{coverError}</Banner>
+			</div>
+		{/if}
+
+		<!-- (i) borrow the artwork of any other Discogs entry -->
+		<div class="mt-8">
+			<h4
+				class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
+			>
+				From another Discogs entry
+			</h4>
+			<form
+				class="mt-3 flex max-w-md items-end gap-3"
+				onsubmit={(e) => {
+					e.preventDefault();
+					void searchCover(coverQuery);
+				}}
+			>
+				<div class="min-w-0 flex-1">
+					<Input
+						name="cover_query"
+						placeholder="Search artist, title or catno…"
+						bind:value={coverQuery}
+					/>
+				</div>
+				<Button
+					type="submit"
+					variant="secondary"
+					size="sm"
+					disabled={coverLoading}
+				>
+					{coverLoading ? "Searching…" : "Search"}
+				</Button>
+			</form>
+
+			{#if coverLoading}
+				<p class="mt-6 font-display text-[14px] italic text-faint">
+					Looking up on Discogs…
+				</p>
+			{:else if coverCandidates && coverCandidates.length === 0}
+				<div class="mt-6">
+					<Banner variant="info">No Discogs results for that search.</Banner>
+				</div>
+			{:else if coverCandidates}
+				<ReleasePicker
+					candidates={coverCandidates}
+					selectedLabel="Current cover"
+					action="?/pick_cover"
+					commitLabel="Use this cover"
+					fieldName="release_id"
+					onCommitted={() => void onCoverPicked()}
+				/>
+			{/if}
+		</div>
+
+		<!-- (ii) upload a local image, or restore the linked release's artwork -->
+		<div class="mt-10 border-t border-hair pt-8">
+			<h4
+				class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint"
+			>
+				Or your own image
+			</h4>
+			<div class="mt-4 flex flex-wrap items-center gap-4">
+				<label
+					class={`group block w-[180px] shrink-0 cursor-pointer overflow-hidden rounded-xs border border-dashed border-edge transition-colors hover:border-accent ${coverLoading ? "pointer-events-none opacity-50" : ""}`}
+				>
+					<span
+						class="flex aspect-square w-full flex-col items-center justify-center gap-2 px-4 text-center text-faint transition-colors group-hover:text-accent"
+					>
+						<span class="text-xl leading-none" aria-hidden="true">+</span>
+						<span class="text-[10px] font-semibold uppercase tracking-[.2em]"
+							>{coverLoading ? "Uploading…" : "Upload cover image"}</span
+						>
+					</span>
+					<input
+						type="file"
+						accept="image/*"
+						onchange={(e) => void onCoverFilePicked(e)}
+						class="hidden"
+					/>
+				</label>
+				{#if data.record.discogs_id}
+					<form
+						method="POST"
+						action="?/reset_cover"
+						class="inline-flex"
+						use:enhance={() =>
+							async ({ result, update }) => {
+								if (result && "type" in result && result.type === "failure") {
+									coverError =
+										(result.data as { error?: string } | undefined)?.error ??
+										"Could not restore the cover.";
+									return; // keep the panel open on error
+								}
+								await update(); // 303 to the ?cover_saved=1 flash
+								closeCover();
+							}}
+					>
+						<Button type="submit" variant="ghost" size="sm">
+							Restore linked release cover
+						</Button>
+					</form>
+				{/if}
+			</div>
+		</div>
 	</section>
 {/if}
 

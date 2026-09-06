@@ -1,16 +1,28 @@
 /**
- * Cover repair (server-only): find records whose cover never made it to disk and
- * re-download one from Discogs on demand.
+ * Cover management (server-only): repair, override and restore.
  *
- * A record "needs a cover" when it has no local `cover_filename` AND we know where
- * to fetch from: the stored `cover_remote_url` (import-time fallback) or its
- * `discogs_id` (we can always re-look-up the release's primary image).
+ * A record's cover state lives in two columns: `cover_filename` (local file in
+ * data/media/, primary) and `cover_remote_url` (Discogs URI, fallback — kept so
+ * the art is re-recoverable if the local file is ever lost). All three write
+ * paths go through storeCoverFor(), which enforces that invariant.
+ *
+ *  - repairCover()          — heal a record whose cover never made it to disk.
+ *  - pickCoverFromRelease() — borrow the artwork of ANY Discogs entry (a cover
+ *                             override; the record's identity is untouched).
+ *  - resetCoverToDiscogs()  — re-pull the cover of the record's own linked
+ *                             release (undo an override when discogs_id exists).
  */
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { MEDIA_DIR } from '$lib/server/paths';
-import { getRelease, downloadImage, type RawRelease } from '$lib/server/discogs';
-import { allocateMediaFilename, findRecordById, listRecords, updateRecord } from '$lib/server/records';
+import { DiscogsError, downloadImage, getRelease, type RawRelease } from '$lib/server/discogs';
+import {
+	allocateMediaFilename,
+	findRecordById,
+	listRecords,
+	rmMediaFile,
+	updateRecord
+} from '$lib/server/records';
 import type { RecordRow } from '$lib/types';
 
 export interface CoverRepairRow extends RecordRow {
@@ -28,6 +40,32 @@ export function listMissingCovers(): CoverRepairRow[] {
 		}));
 }
 
+/** The primary image of a release object (or the first image when no primary is flagged). */
+function primaryImageUri(release: RawRelease): string | null {
+	const images = release.images ?? [];
+	return images.find((i) => i.type === 'primary')?.uri ?? images[0]?.uri ?? null;
+}
+
+/**
+ * Download an image URL and store it as the record's cover file, replacing any
+ * current cover (the superseded local file is removed). Also records `remoteUrl`
+ * as the fallback so the art stays re-recoverable. Returns the updated row.
+ */
+async function storeCoverFor(
+	id: number,
+	previousFilename: string | null,
+	imageUrl: string,
+	remoteUrl: string | null
+): Promise<RecordRow> {
+	const { bytes } = await downloadImage(imageUrl);
+	const filename = allocateMediaFilename(id, 'cover');
+	writeFileSync(path.join(MEDIA_DIR, filename), bytes);
+	const updated = updateRecord(id, { cover_filename: filename, cover_remote_url: remoteUrl });
+	if (!updated) throw new Error('Record disappeared while saving its cover.');
+	if (previousFilename && previousFilename !== filename) rmMediaFile(previousFilename);
+	return updated;
+}
+
 /**
  * Re-fetch a cover for a single record and store it locally. Returns the updated row,
  * or throws (Error with a user-safe message) when no source is reachable.
@@ -41,19 +79,49 @@ export async function repairCover(id: number): Promise<RecordRow> {
 	if (rec.cover_remote_url) {
 		url = rec.cover_remote_url;
 	} else if (rec.discogs_id) {
-		const release: RawRelease = await getRelease(rec.discogs_id);
-		const images = release.images ?? [];
-		url =
-			images.find((i) => i.type === 'primary')?.uri ?? images[0]?.uri ?? null;
+		url = primaryImageUri(await getRelease(rec.discogs_id));
 	}
 	if (!url) {
 		throw new Error('No cover source available — this record has no remote URL or Discogs ID.');
 	}
+	return storeCoverFor(id, rec.cover_filename, url, rec.cover_remote_url ?? url);
+}
 
-	const { bytes } = await downloadImage(url);
-	const filename = allocateMediaFilename(rec.id, 'cover');
-	writeFileSync(path.join(MEDIA_DIR, filename), bytes);
-	const updated = updateRecord(id, { cover_filename: filename });
-	if (!updated) throw new Error('Record disappeared while saving its cover.');
-	return updated;
+/**
+ * Cover override from any Discogs entry: fetch the release, download its primary
+ * artwork and store it as this record's cover. ONLY the two cover columns change —
+ * no identity fields, no conflict checks (this is a deliberate contrast with
+ * re-identification). The borrowed URI doubles as the remote fallback.
+ */
+export async function pickCoverFromRelease(recordId: number, releaseId: number): Promise<RecordRow> {
+	const rec = findRecordById(recordId);
+	if (!rec) throw new Error('Record not found.');
+
+	let release: RawRelease;
+	try {
+		release = await getRelease(releaseId);
+	} catch (e) {
+		throw e instanceof DiscogsError
+			? e
+			: new Error('Could not load that release from Discogs.');
+	}
+	const url = primaryImageUri(release);
+	if (!url) throw new Error('That release has no cover images on Discogs.');
+
+	return storeCoverFor(recordId, rec.cover_filename, url, url);
+}
+
+/**
+ * Undo an override: re-pull the cover of the record's own linked release.
+ * Requires a discogs_id (the UI hides the button otherwise).
+ */
+export async function resetCoverToDiscogs(recordId: number): Promise<RecordRow> {
+	const rec = findRecordById(recordId);
+	if (!rec) throw new Error('Record not found.');
+	if (!rec.discogs_id) throw new Error('This record has no linked Discogs release to pull a cover from.');
+
+	const url = primaryImageUri(await getRelease(rec.discogs_id));
+	if (!url) throw new Error("The linked release has no cover images on Discogs.");
+
+	return storeCoverFor(recordId, rec.cover_filename, url, url);
 }
