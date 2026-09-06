@@ -316,11 +316,19 @@
     "var(--chart-mauve)",
   ] as const;
 
-  /** Stable hue per legend genre (rank order) — shared by the genre spider and C5. */
+  /** Stable hue per genre (by_genre rank order) — shared by the genre spider
+     and C5. Rank comes from by_genre (which holds *every* genre, dated or not);
+     the old cross-tab-derived ranking left undated genres uncolored. */
+  const genreHue = $derived(
+    new Map(
+      s.by_genre.map(
+        (r, i) => [r.label, CATEGORICAL[i % CATEGORICAL.length]] as const,
+      ),
+    ),
+  );
   const catColor = (label: string): string => {
     if (label === "Other") return "var(--hair)";
-    const i = crossLegend.indexOf(label);
-    return CATEGORICAL[i % CATEGORICAL.length] ?? "var(--hair)";
+    return genreHue.get(label) ?? "var(--faint)";
   };
 
   /** Ordinal shade: rank i of total → 38% (lightest) up to full strength of the hue. */
@@ -396,8 +404,9 @@
 
   /* ---- C1' / C4 — spider (radar) geometry, area-based: one filled kite per
      category (center → value vertex → flanking chord midpoints); the kites tile
-     the value polygon exactly and the dots pin its vertices. ≥18 axes switch to
-     radial labels so dense webs never collide; <3 can't close a web → text. ---- */
+     the value polygon exactly and the dots pin its vertices. Once upright label
+     blocks can't fit around the label ring, labels go radial along the spokes;
+     <3 axes can't close a web → text. ---- */
   interface SpiderSlice {
     label: string;
     lines: string[];
@@ -430,13 +439,16 @@
   ): SpiderGeom | null => {
     const n = rows.length;
     if (n < 3) return null;
-    const dense = n >= 18;
-    const wide = dense || big;
+    // Nine upright label blocks is the most the small frame's ring fits;
+    // anything more gets the big frame too.
+    const wide = n > 8 || big;
     const W = wide ? 620 : 480;
     const H = wide ? 520 : 340;
     const cx = W / 2;
     const cy = H / 2;
     const R = wide ? 130 : 92;
+    // ~76px per upright label block: radial once the ring can't hold them.
+    const dense = n > Math.floor((2 * Math.PI * (R + 16)) / 76);
     const max = rows.reduce((m, r) => Math.max(m, r.num), 0);
     const axisA = (i: number) => (i / n) * Math.PI * 2 - Math.PI / 2;
     const pol = (a: number, r: number) => ({
@@ -458,8 +470,8 @@
       return { x2: f(p.x), y2: f(p.y) };
     });
     const wrap = (label: string): string[] => {
-      const soft = n >= 10 ? 10 : 15; // shorter lines once axes crowd the rim
-      const hard = dense ? 13 : n >= 10 ? 14 : 20;
+      const soft = dense ? 10 : 15;
+      const hard = dense ? 13 : 20;
       if (label.length <= soft) return [label];
       const half = Math.floor(label.length / 2);
       let sp = label.indexOf(" ", half);
