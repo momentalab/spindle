@@ -83,6 +83,24 @@ export interface DiscogsSeed {
 	cover_url: string | null;
 }
 
+/** One candidate release from a Discogs search, as rendered in picker UIs. */
+export interface SearchCandidate {
+	id: number;
+	title: string;
+	type?: string;
+	resource_url?: string;
+	year?: string;
+	catno?: string;
+	barcode?: string[];
+	thumb?: string;
+	format?: string[];
+	label?: string[];
+	genre?: string[];
+	style?: string[];
+	country?: string;
+	community?: { want: number; have: number };
+}
+
 /** Editable draft of a record (all-string form state + one boolean), shared by import/manual/edit. */
 export interface RecordDraft {
 	discogs_id: string;

@@ -1,12 +1,15 @@
 /**
  * Record detail: all fields + photo gallery.
  * Actions (named only — SvelteKit forbids mixing named + default actions):
- *   edit      — update the record's fields (form)
- *   add_copy  — increment copies
- *   delete    — remove record (cascades photos + media files)
+ *   edit         — update the record's fields (form)
+ *   reidentify   — repoint the record at a different Discogs release
+ *   add_copy     — increment copies
+ *   delete       — remove record (cascades photos + media files)
  */
 import { error, fail, redirect } from '@sveltejs/kit';
 import { repairCover } from '$lib/server/covers';
+import { DiscogsError } from '$lib/server/discogs';
+import { ReidentifyConflictError, reidentifyRecord } from '$lib/server/reidentify';
 import {
 	acquireRecord,
 	addCopy,
@@ -79,10 +82,30 @@ export const actions: Actions = {
 		const updated = updateRecord(id, patch);
 		if (!updated) error(404, 'Record not found');
 		// Returning nothing = success: SvelteKit revalidates and stays on the page.
-		return null;
-	},
-
-	add_copy: async ({ params }) => {
+			return null;
+		},
+	
+		reidentify: async ({ request, params }) => {
+			const id = Number.parseInt(params.id, 10);
+			if (!findRecordById(id)) error(404, 'Record not found');
+			const data = await request.formData();
+			const discogsId = Number.parseInt(String(data.get('discogs_id') ?? ''), 10);
+			if (!Number.isFinite(discogsId) || discogsId <= 0)
+				return fail(400, { error: 'No release was selected.' });
+			try {
+				await reidentifyRecord(id, discogsId);
+			} catch (e) {
+				if (e instanceof ReidentifyConflictError) return fail(409, { error: e.message });
+				const msg =
+					e instanceof DiscogsError
+						? e.message
+						: 'Could not re-identify this record. Please try again.';
+				return fail(502, { error: msg });
+			}
+			redirect(303, `/records/${id}?reidentified=1`);
+		},
+	
+		add_copy: async ({ params }) => {
 		const id = Number.parseInt(params.id, 10);
 		if (!findRecordById(id)) error(404, 'Record not found');
 		addCopy(id);

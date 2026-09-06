@@ -11,7 +11,12 @@
 	import { appTitle } from "$lib/index";
 	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from "$lib/discogs";
 	import { STATUS_LABELS, joinLabels, joinStyles } from "$lib/types";
-	import type { PhotoRow, RecordDraft } from "$lib/types";
+	import type {
+		DiscogsSeed,
+		PhotoRow,
+		RecordDraft,
+		SearchCandidate,
+	} from "$lib/types";
 	import type { ActionData, PageData } from "./$types";
 
 	let { data, form }: { data: PageData; form: ActionData | null } = $props();
@@ -31,6 +36,96 @@
 	// the 303 then navigates back, the record flips out of "wanted" and the
 	// dialog unmounts with the ?acquired=1 flash on the spec sheet.
 	let acquireOpen = $state(false);
+
+	// Re-identify: re-run the barcode lookup and re-pick the release (a wrong pick
+	// at import time). Candidates come from /api/import — the same source as the
+	// import flow; selecting one posts its discogs_id to ?/reidentify and the
+	// server overwrites only the identity fields. "Details" lazily fetches the
+	// single release to reveal limited-edition status (absent from search results).
+	let reidOpen = $state(false);
+	let reidLoading = $state(false);
+	let reidError = $state<string | null>(null);
+	let reidCandidates = $state<SearchCandidate[] | null>(null);
+	let reidCommittingId = $state<number | null>(null);
+	let reidDetailId = $state<number | null>(null);
+	let reidDetails = $state<
+		Record<number, { seed: DiscogsSeed } | { error: string }>
+	>({});
+
+	function fmtCandidate(c: SearchCandidate): string {
+		return [
+			c.format?.filter((f) => f && !/^(album|mixed)$/i.test(f)).join(", "),
+			c.year,
+			[c.label?.join(", "), c.catno].filter(Boolean).join(" · "),
+			c.genre?.[0],
+			c.country,
+		]
+			.filter(Boolean)
+			.join(" · ");
+	}
+
+	async function openReidentify(): Promise<void> {
+		if (reidOpen) {
+			closeReidentify();
+			return;
+		}
+		reidOpen = true;
+		reidError = null;
+		if (reidCandidates) return; // already loaded from a previous visit
+		reidLoading = true;
+		try {
+			const r = data.record;
+			const url = r.barcode
+				? `/api/import?barcode=${r.barcode}`
+				: `/api/import?q=${encodeURIComponent(`${r.artist} ${r.title}`)}`;
+			const res = await fetch(url);
+			const json = (await res.json().catch(() => null)) as {
+				candidates?: SearchCandidate[];
+				message?: string;
+			} | null;
+			if (!res.ok || !json)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
+			reidCandidates = json.candidates ?? [];
+		} catch (e) {
+			reidError = e instanceof Error ? e.message : "Discogs lookup failed.";
+			reidCandidates = null;
+		} finally {
+			reidLoading = false;
+		}
+	}
+
+	async function fetchReidDetail(id: number): Promise<void> {
+		if (reidDetails[id]) return;
+		reidDetailId = id;
+		try {
+			const res = await fetch(`/api/import?id=${id}`);
+			const json = (await res.json().catch(() => null)) as {
+				seed: DiscogsSeed;
+				message?: string;
+			} | null;
+			if (!res.ok || !json?.seed)
+				throw new Error(json?.message ?? `HTTP ${res.status}`);
+			reidDetails = { ...reidDetails, [id]: { seed: json.seed } };
+		} catch (e) {
+			reidDetails = {
+				...reidDetails,
+				[id]: {
+					error: e instanceof Error ? e.message : "Could not load details.",
+				},
+			};
+		} finally {
+			reidDetailId = null;
+		}
+	}
+
+	function closeReidentify(): void {
+		reidOpen = false;
+		reidCandidates = null;
+		reidError = null;
+		reidDetails = {};
+		reidCommittingId = null;
+		reidDetailId = null;
+	}
 
 	// Missing-cover repair (F2): re-pull the artwork from Discogs when this record
 	// only has a remote fallback (or a discogs_id to look one up). The ?/repair_cover
@@ -360,6 +455,7 @@
 		if (sp.has("added_copy")) return "added_copy";
 		if (sp.has("cover_saved")) return "cover_saved";
 		if (sp.has("acquired")) return "acquired";
+		if (sp.has("reidentified")) return "reidentified";
 		return null;
 	});
 
@@ -462,6 +558,8 @@
 	<div class="mt-6">
 		<Banner variant="success">Cover saved.</Banner>
 	</div>
+{:else if flash === "reidentified"}
+	<div class="mt-6"><Banner variant="success">Re-identified.</Banner></div>
 {/if}
 
 <!-- detail — a full catalogue spread. The cover track is capped at 100%
@@ -632,6 +730,9 @@
 			>
 				{editing ? "Cancel editing" : "Edit record"}
 			</Button>
+			<Button variant="ghost" size="sm" onclick={() => void openReidentify()}>
+				Re-identify
+			</Button>
 			<!-- inline-flex, not inline: a display:inline wrapper form ignores
 			     margins and collapses its height, which is what made rows of
 			     buttons stack with no vertical spacing. -->
@@ -697,6 +798,158 @@
 				submitLabel="Save changes"
 			/>
 		</form>
+	</section>
+{/if}
+
+<!-- re-identify — re-pick the release this record points at (wrong pick at import) -->
+{#if reidOpen}
+	<section class="mt-16 border-t border-edge pt-10">
+		<div class="flex flex-wrap items-start justify-between gap-4">
+			<div>
+				<h3 class="font-display text-3xl font-normal">Re-identify</h3>
+				<p
+					class="mt-2 max-w-xl font-display text-[13.5px] italic leading-relaxed text-faint"
+				>
+					{#if data.record.barcode}
+						Barcode {data.record.barcode} — pick the release this record actually
+						is.
+					{:else}
+						No barcode on file — searched "{data.record.artist}
+						{data.record.title}" instead.
+					{/if}
+					Identifying details and cover are replaced; your copy's condition, price
+					and notes are kept.
+				</p>
+			</div>
+			<Button variant="ghost" size="sm" onclick={closeReidentify}>Close</Button>
+		</div>
+
+		{#if form?.error}
+			<div class="mt-6">
+				<Banner variant="error">{form.error}</Banner>
+			</div>
+		{/if}
+
+		{#if reidLoading}
+			<p class="mt-8 font-display text-[14px] italic text-faint">
+				Looking up on Discogs…
+			</p>
+		{:else if reidError}
+			<div class="mt-8">
+				<Banner variant="warn">Discogs lookup: {reidError}</Banner>
+			</div>
+		{:else if reidCandidates && reidCandidates.length === 0}
+			<div class="mt-8">
+				<Banner variant="info"
+					>No Discogs results — fix the identifying fields in "Edit details"
+					instead.</Banner
+				>
+			</div>
+		{:else if reidCandidates}
+			<ul class="mt-6 flex flex-col">
+				{#each reidCandidates as c (c.id)}
+					{@const selected = data.record.discogs_id === c.id}
+					<li class="border-b border-hair py-4">
+						<div
+							class="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-5 sm:grid-cols-[64px_minmax(0,1fr)_auto]"
+						>
+							<span class="block h-16 w-16 shrink-0">
+								<CoverImage src={c.thumb} alt="" />
+							</span>
+							<span class="min-w-0">
+								<span class="block truncate font-display text-[19px]"
+									>{c.title}</span
+								>
+								<span class="mt-0.5 block truncate text-[13px] text-muted">
+									{fmtCandidate(c)}
+								</span>
+								{#if reidDetailId === c.id}
+									<span class="mt-1 block italic text-faint"
+										>Loading details…</span
+									>
+								{:else}
+									{@const detail = reidDetails[c.id]}
+									{#if detail && "seed" in detail}
+										<span
+											class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-muted"
+										>
+											{#if detail.seed.limited_edition === 1}
+												<Badge tone="plum">Limited edition</Badge>
+											{/if}
+											{#if detail.seed.format}
+												<span class="truncate">{detail.seed.format}</span>
+											{/if}
+											<span class="whitespace-nowrap text-faint">
+												{detail.seed.year ?? "????"} · {joinLabels(
+													detail.seed.labels,
+												)}
+											</span>
+										</span>
+									{:else if detail && "error" in detail}
+										<span class="mt-1 block text-[12px] text-rust"
+											>{detail.error}</span
+										>
+									{/if}
+								{/if}
+							</span>
+							<span
+								class="col-start-2 flex flex-col items-start gap-2 sm:col-start-3 sm:items-end"
+							>
+								{#if selected}
+									<span
+										class="text-[10.5px] font-semibold uppercase tracking-[.2em] text-accent"
+									>
+										Current release
+									</span>
+								{:else if reidCommittingId === c.id}
+									<span
+										class="text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"
+									>
+										Saving…
+									</span>
+								{:else}
+									<form
+										method="POST"
+										action="?/reidentify"
+										class="inline-flex"
+										use:enhance={() =>
+											async ({ result, update }) => {
+												reidCommittingId = c.id;
+												try {
+													if (
+														result &&
+														"type" in result &&
+														result.type === "failure"
+													)
+														return; // keep the panel open on error
+													await update(); // follow the 303 to the flash banner
+												} finally {
+													reidCommittingId = null;
+												}
+												closeReidentify();
+											}}
+									>
+										<input type="hidden" name="discogs_id" value={c.id} />
+										<Button type="submit" size="sm" variant="secondary"
+											>Select</Button
+										>
+									</form>
+								{/if}
+								{#if !selected && !reidDetails[c.id] && reidDetailId !== c.id}
+									<button
+										type="button"
+										class="text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint underline-offset-4 transition-colors hover:text-accent"
+										onclick={() => void fetchReidDetail(c.id)}
+									>
+										Details
+									</button>
+								{/if}
+							</span>
+						</div>
+					</li>
+				{/each}
+			</ul>
+		{/if}
 	</section>
 {/if}
 

@@ -12,7 +12,7 @@
  *   the UI falls back to manual entry. Local data is always fully usable.
  */
 import { env } from '$env/dynamic/private';
-import type { DiscogsSeed, LabelEntry } from '$lib/types';
+import type { DiscogsSeed, LabelEntry, SearchCandidate } from '$lib/types';
 
 const API_BASE = 'https://api.discogs.com';
 const USER_AGENT = 'mynyl/0.1 (local vinyl collection tracker)';
@@ -145,17 +145,8 @@ export interface RawRelease {
 	uri?: string;
 }
 
-export interface SearchResultItem {
-	id: number;
-	title: string;
-	type: string;
-	resource_url?: string;
-	year?: string;
-	catno?: string;
-	barcode?: string[];
-	thumb?: string;
-	community?: { want: number; have: number };
-}
+/** One Discogs search result — shared with the client pickers (see SearchCandidate). */
+export type SearchResultItem = SearchCandidate;
 interface SearchResponse {
 	pagination?: { items?: number; page?: number; pages?: number };
 	results?: SearchResultItem[];
