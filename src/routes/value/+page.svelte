@@ -196,58 +196,65 @@
 <!-- Quiet ledger table: one row per group — cost, market, the delta between.
      The numbers read better in a table than a chart here; no graph needed. -->
 {#snippet moneyTable(rows: ValueBarRow[], decadeLabels: boolean)}
-  <table class="w-full border-collapse text-left">
-    <thead>
-      <tr
-        class="border-b border-edge text-[10px] uppercase tracking-[.18em] text-faint"
-      >
-        <th class="py-2 pr-4 font-semibold"
-          >{decadeLabels ? "Decade" : "Group"}</th
+  <!-- The wrapper is the floor: on the narrowest phones the table scrolls
+       inside itself instead of pushing the page sideways. At ≥360 px the
+       tightened mobile columns (group width, no Records count) fit without it. -->
+  <div class="overflow-x-auto">
+    <table class="w-full border-collapse text-left">
+      <thead>
+        <tr
+          class="border-b border-edge text-[10px] uppercase tracking-[.18em] text-faint"
         >
-        <th class="py-2 pr-4 font-semibold">Records</th>
-        <th class="py-2 pr-4 text-right font-semibold">Cost</th>
-        <th class="py-2 pr-4 text-right font-semibold">Market</th>
-        <th class="py-2 text-right font-semibold">Δ</th>
-      </tr>
-    </thead>
-    <tbody>
-      {#each rows as r (r.label)}
-        {@const d = groupDelta(r)}
-        <tr class="border-b border-hair">
-          <td
-            class="max-w-[220px] truncate py-2.5 pr-4 font-display text-[14.5px] tracking-[.005em]"
-            title={r.label}
+          <th class="py-2 pr-3 font-semibold sm:pr-4"
+            >{decadeLabels ? "Decade" : "Group"}</th
           >
-            {#if decadeLabels}
-              <DecadeLabel label={r.label} />
-            {:else}
-              {r.label}
-            {/if}
-          </td>
-          <td class="py-2.5 pr-4 text-[12px] tabular-nums text-muted"
-            >{r.count}</td
-          >
-          <td
-            class="py-2.5 pr-4 text-right text-[13px] tabular-nums text-muted"
-          >
-            {money(r.cost_cents)}
-          </td>
-          <td
-            class="py-2.5 pr-4 text-right font-display text-[14.5px] tabular-nums"
-          >
-            {money(r.market_cents)}
-          </td>
-          <td
-            class={`py-2.5 text-right font-display text-[13.5px] tabular-nums ${
-              d === null ? "text-faint" : d >= 0 ? "text-forest" : "text-rust"
-            }`}
-          >
-            {pct(d)}
-          </td>
+          <th class="hidden py-2 pr-4 font-semibold sm:table-cell">Records</th>
+          <th class="py-2 pr-3 text-right font-semibold sm:pr-4">Cost</th>
+          <th class="py-2 pr-3 text-right font-semibold sm:pr-4">Market</th>
+          <th class="py-2 text-right font-semibold">Δ</th>
         </tr>
-      {/each}
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        {#each rows as r (r.label)}
+          {@const d = groupDelta(r)}
+          <tr class="border-b border-hair">
+            <td
+              class="max-w-[120px] truncate py-2.5 pr-3 font-display text-[14.5px] tracking-[.005em] sm:max-w-[220px] sm:pr-4"
+              title={r.label}
+            >
+              {#if decadeLabels}
+                <DecadeLabel label={r.label} />
+              {:else}
+                {r.label}
+              {/if}
+            </td>
+            <td
+              class="hidden py-2.5 pr-4 text-[12px] tabular-nums text-muted sm:table-cell"
+            >
+              {r.count}
+            </td>
+            <td
+              class="py-2.5 pr-3 text-right text-[13px] tabular-nums text-muted sm:pr-4"
+            >
+              {money(r.cost_cents)}
+            </td>
+            <td
+              class="py-2.5 pr-3 text-right font-display text-[14.5px] tabular-nums sm:pr-4"
+            >
+              {money(r.market_cents)}
+            </td>
+            <td
+              class={`py-2.5 text-right font-display text-[13.5px] tabular-nums ${
+                d === null ? "text-faint" : d >= 0 ? "text-forest" : "text-rust"
+              }`}
+            >
+              {pct(d)}
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  </div>
 {/snippet}
 
 <!-- Sparkline: the record's priced history as one hairline (green rising / rust falling).
@@ -384,7 +391,7 @@
     class="grid grid-cols-2 gap-x-6 gap-y-8 border-b border-hair py-9 md:grid-cols-3 lg:grid-cols-5"
   >
     <div>
-      <div class="font-display text-[40px] leading-none">
+      <div class="font-display text-[28px] leading-none sm:text-[40px]">
         {money(s.cost_basis_cents)}
       </div>
       <div
@@ -394,7 +401,7 @@
       </div>
     </div>
     <div>
-      <div class="font-display text-[40px] leading-none">
+      <div class="font-display text-[28px] leading-none sm:text-[40px]">
         {money(s.market_value_cents)}
       </div>
       <div
@@ -404,7 +411,9 @@
       </div>
     </div>
     <div>
-      <div class={`font-display text-[40px] leading-none ${gainerTone}`}>
+      <div
+        class={`font-display text-[28px] leading-none sm:text-[40px] ${gainerTone}`}
+      >
         {s.unrealized_cents !== null ? money(s.unrealized_cents) : "—"}
       </div>
       <div
@@ -416,7 +425,9 @@
       </div>
     </div>
     <div>
-      <div class={`font-display text-[40px] leading-none ${realizedTone}`}>
+      <div
+        class={`font-display text-[28px] leading-none sm:text-[40px] ${realizedTone}`}
+      >
         {money(s.realized_cents)}
       </div>
       <div
@@ -426,7 +437,9 @@
       </div>
     </div>
     <div>
-      <div class="font-display text-[40px] leading-none">{s.history_rows}</div>
+      <div class="font-display text-[28px] leading-none sm:text-[40px]">
+        {s.history_rows}
+      </div>
       <div
         class="mt-2 text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
       >
