@@ -437,9 +437,13 @@
 			const p = pol(axisA(i), R);
 			return { x2: f(p.x), y2: f(p.y) };
 		});
-		const wrap = (label: string): string[] => {
-			const soft = dense ? 10 : 15;
-			const hard = dense ? 13 : 20;
+		const wrap = (label: string, reserve = 0): string[] => {
+			// Dense webs ride the value inline on the last label line, so the clip
+			// budget reserves its width — the tightest frame holds ~94 units past
+			// R+8 (label chars ≈ 7u, value chars ≈ 6u, 4u gap).
+			const budget = dense ? Math.max(5, Math.floor((90 - reserve * 6) / 7)) : 20;
+			const soft = dense ? Math.min(10, budget) : 15;
+			const hard = budget;
 			if (label.length <= soft) return [label];
 			const half = Math.floor(label.length / 2);
 			let sp = label.indexOf(' ', half);
@@ -454,7 +458,7 @@
 			const sin = Math.sin(a);
 			const rad = max > 0 ? Math.max((r.num / max) * R, 3) : 3;
 			const d = pol(a, rad);
-			const lines = wrap(r.label);
+			const lines = wrap(r.label, dense ? r.display.length : 0);
 			// Kite flanks meet at the chord midpoints → the fills tile the polygon exactly.
 			const prev = rows[(i - 1 + n) % n];
 			const nxt = rows[(i + 1) % n];
@@ -476,7 +480,8 @@
 			};
 			if (dense) {
 				// Label runs outward along its own spoke; flipped on the left half so
-				// text never reads upside down. Values stay in tooltip/aria.
+				// text never reads upside down. The value rides inline on the last
+				// line — wrap() above reserves its width for the frame margin.
 				const P = pol(a, R + 8);
 				const flip = cos < -0.15;
 				return {
@@ -631,17 +636,14 @@ back to the ledger voice. -->
 							y={li * 12 - ((sl.lines.length - 1) * 12) / 2}
 							text-anchor={sl.anchor}
 							style:fill={sl.color}
-							class="text-[10px] font-semibold uppercase tracking-[.05em]">{line}</text
+							class="text-[10px] font-semibold uppercase tracking-[.05em]"
+							>{line}{#if li === sl.lines.length - 1}<tspan
+									dx="4"
+									class="fill-faint font-display font-normal italic text-[10.5px] normal-case tracking-normal"
+									>{sl.display}</tspan
+								>{/if}</text
 						>
 					{/each}
-					<!-- Value rides the radial run as its final line, in the muted
-					     voice of the non-dense value. -->
-					<text
-						transform={`translate(${sl.px} ${sl.py}) rotate(${sl.rot})`}
-						y={((sl.lines.length - 1) * 12) / 2 + 12}
-						text-anchor={sl.anchor}
-						class="fill-faint font-display italic text-[10.5px]">{sl.display}</text
-					>
 				{:else}
 					{#each sl.lines as line, li (li)}
 						<text

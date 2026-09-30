@@ -729,18 +729,20 @@
 		{/if}
 	</div>
 {:else if view === 'index'}
-	<!-- the catalogue: numbered entries, no cards. Each row is a flex wrapper:
-	     the whole line is the anchor; the play chip sits beside it as a sibling
-	     (a <button> may not live inside an <a>). -->
+	<!-- the catalogue: numbered entries, no cards. The title line is the anchor;
+	     status + play sit on a second line below it — in the title's column their
+	     varying widths squeezed long titles past recognition and kept the columns
+	     out of vertical alignment row to row (a <button> may not live inside an
+	     <a>, so the second line is its own element). -->
 	<div class="mt-2 flex flex-col">
 		{#each displayRecords as rec, i (rec.id)}
 			<div
-				class="entry group relative flex items-center border-b border-hair"
+				class="entry group relative border-b border-hair transition-[padding] duration-200 group-hover:pl-2"
 				style="animation-delay: {Math.min(i * 30, 300)}ms"
 			>
 				<a
 					href="/records/{rec.id}"
-					class="grid min-w-0 flex-1 grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 py-5 transition-[padding] duration-200 group-hover:pl-2 sm:grid-cols-[56px_72px_minmax(0,1fr)_auto] sm:gap-6"
+					class="grid min-w-0 grid-cols-[44px_minmax(0,1fr)] items-center gap-x-3 pr-4 pt-5 sm:grid-cols-[56px_72px_minmax(0,1fr)] sm:gap-x-6 sm:pr-6"
 				>
 					<!-- Number is dropped below sm so the row can never force a
 					     horizontal scroll on narrow phones. -->
@@ -762,16 +764,18 @@
 								>{/if}
 						</span>
 					</span>
-					<span class="flex shrink-0 flex-col items-end gap-1.5 text-right">
-						<Badge tone={statusTone[rec.status]}>{STATUS_LABELS[rec.status]}</Badge>
-						{@render starBadge(rec)}
-						{#if rec.copies > 1}<span class="font-display text-[13px] italic text-faint">{rec.copies} copies</span>{/if}
-					</span>
 				</a>
-				<span class="shrink-0 py-5 pl-2 pr-4 sm:pr-6"
-					>{@render playControl(rec)}
-					{@render acquireChip(rec)}</span
-				>
+				<!-- pl mirrors the grid template above (cover 44 + gap 12 / + number 56 +
+					     two sm gaps) so the meta line starts under the title. -->
+				<div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 pb-5 pl-[56px] pr-4 pt-1 sm:pl-[176px] sm:pr-6">
+					<Badge tone={statusTone[rec.status]}>{STATUS_LABELS[rec.status]}</Badge>
+					{@render starBadge(rec)}
+					{#if rec.copies > 1}<span class="font-display text-[13px] italic text-faint">{rec.copies} copies</span>{/if}
+					<span class="ml-auto flex items-center gap-2 sm:gap-3">
+						{@render playControl(rec)}
+						{@render acquireChip(rec)}
+					</span>
+				</div>
 			</div>
 		{/each}
 	</div>
