@@ -13,6 +13,8 @@
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
 		"smoke:db": "esbuild scripts/smoke-db.ts --bundle --platform=node --format=cjs \"--alias:$lib=./src/lib\" --external:better-sqlite3 --outfile=.smoke.cjs && node .smoke.cjs && rm -f .smoke.cjs"
 	},
 	"devDependencies": {
@@ -24,6 +26,8 @@
 		"@types/better-sqlite3": "^9.6.0",
 		"@types/node": "^26.3.0",
 		"@types/unzipper": "^0.10.11",
+		"prettier": "^3.6.2",
+		"prettier-plugin-svelte": "^3.4.0",
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
 		"tailwindcss": "^4.3.0",

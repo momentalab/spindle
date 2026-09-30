@@ -1,0 +1,6 @@
+.svelte-kit
+build
+.output
+data
+package.json
+package-lock.json
