@@ -59,12 +59,11 @@
 	);
 	const sourceRows = $derived(metricRows(s.by_source).map((r) => ({ ...r, color: CATEGORICAL[3] })));
 	/* C4 — styles on the spider: one mauve hue, deepest at the top style so rank
-     reads as fill strength, the way decades read as position. */
+     reads as fill strength, the way decades read as position. Metric-aware like
+     the genre web — counts by default, spend under the 'value' toggle. */
 	const styleRows = $derived(
-		s.by_style.map((r, i) => ({
-			label: r.label,
-			num: r.count,
-			display: String(r.count),
+		metricRows(s.by_style).map((r, i) => ({
+			...r,
 			color: stepShade('var(--chart-mauve)', Math.max(s.by_style.length - 1 - i, 0), Math.max(s.by_style.length, 1))
 		}))
 	);
@@ -340,7 +339,15 @@
 			W,
 			H,
 			padB,
-			dots: s.scatter.map((d) => ({ x: x(d.x), y: y(d.y), label: d.label }))
+			/* Ticks read P (left) → M (right), but the dot's index runs M→P
+			   (CONDITIONS order) — flip it for column and shade alike: worst grade
+			   sits left in the lightest moss, best grade right in the deepest. */
+			dots: s.scatter.map((d) => ({
+				x: x(CONDITIONS.length - 1 - d.x),
+				y: y(d.y),
+				label: d.label,
+				fill: stepShade('var(--chart-moss)', CONDITIONS.length - 1 - d.x, CONDITIONS.length)
+			}))
 		};
 	});
 	const condTicks = ['M', 'NM', 'VG+', 'VG', 'G+', 'G', 'F', 'P'].reverse();
@@ -626,6 +633,14 @@ back to the ledger voice. -->
 							class="text-[10px] font-semibold uppercase tracking-[.05em]">{line}</text
 						>
 					{/each}
+					<!-- Value rides the radial run as its final line, in the muted
+					     voice of the non-dense value. -->
+					<text
+						transform={`translate(${sl.px} ${sl.py}) rotate(${sl.rot})`}
+						y={((sl.lines.length - 1) * 12) / 2 + 12}
+						text-anchor={sl.anchor}
+						class="fill-faint font-display italic text-[10.5px]">{sl.display}</text
+					>
 				{:else}
 					{#each sl.lines as line, li (li)}
 						<text
@@ -1192,13 +1207,7 @@ back to the ledger voice. -->
 							stroke-width="1"
 						/>
 						{#each scatterGeom.dots as d (d.label)}
-							<circle
-								cx={d.x}
-								cy={d.y}
-								r="2.2"
-								fill={stepShade('var(--chart-moss)', d.x, CONDITIONS.length)}
-								opacity="0.75"
-							>
+							<circle cx={d.x} cy={d.y} r="2.2" fill={d.fill} opacity="0.75">
 								<title>{d.label}</title>
 							</circle>
 						{/each}

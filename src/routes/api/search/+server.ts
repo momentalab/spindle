@@ -85,7 +85,9 @@ export async function POST({ request }): Promise<Response> {
 		condition_sleeve: null,
 		price_paid: null,
 		acquired_at: new Date().toISOString().slice(0, 10),
-		source: 'discogs',
+		// Blank source — quick-add knows the details came from Discogs, not
+		// where the user got the record. Reads as 'Unrecorded' in /stats.
+		source: null,
 		status,
 		// wanted rows get wanted_at stamped + acquired_at nulled by createRecord's invariants.
 		wanted_at: null,

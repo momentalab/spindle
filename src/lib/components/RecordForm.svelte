@@ -218,7 +218,7 @@
 		<!-- hidden carriers -->
 		<input type="hidden" name="discogs_id" value={draft.discogs_id} />
 		<input type="hidden" name="cover_url" value={draft.cover_url} />
-		{#if draft.source === 'discogs'}
+		{#if draft.discogs_id}
 			<p class="border-l-2 border-l-accent bg-surface px-4 py-3 text-xs text-muted">
 				Sourced from Discogs — edits you make here are yours; they won't be overwritten by a re-import.
 			</p>

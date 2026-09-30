@@ -66,7 +66,7 @@ export interface PriceBand {
 }
 
 export interface ScatterDot {
-	x: number; // index into CONDITIONS (P→M order)
+	x: number; // index into CONDITIONS (M→P order: 0 = M … last = P)
 	y: number; // price_paid, cents
 	label: string; // 'Artist — Title · $24.50 · NM'
 }
@@ -165,7 +165,7 @@ export interface CollectionStats {
 	condition_media: StatBarRow[]; // C3 — Goldmine order M→P, non-zero only
 	condition_sleeve: StatBarRow[];
 	condition_report: { graded: number; nm_or_better_pct: number | null }; // C3 headline
-	by_style: StatBarRow[]; // C4
+	by_style: ValBarRow[]; // C4
 	cross_tab: CrossTabRow[]; // C5 — one row per dated decade, ascending
 	duplicates: {
 		entries: number;
@@ -204,12 +204,20 @@ const DAY_MS = 86400000;
 /** C2 — fixed display order for the format spectrum. */
 const FORMAT_ORDER = ['7"', '10"', 'LP', 'Box', 'CD', 'Other'] as const;
 
-/** Keep the longest tail readable: top `cap` + a single "Other" bucket. */
-function topN(rows: StatBarRow[], cap: number = TOP_N): StatBarRow[] {
+/** Cap the long tail into one 'Other' row whose spend is the sum of the
+collapsed tail, so the value metric stays additive. */
+function topN(rows: ValBarRow[], cap: number = TOP_N): ValBarRow[] {
 	if (rows.length <= cap) return rows;
 	const head = [...rows].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)).slice(0, cap);
-	const restCount = rows.slice(cap).reduce((sum, r) => sum + r.count, 0);
-	return [...head, { label: 'Other', count: restCount }];
+	const rest = rows.slice(cap);
+	return [
+		...head,
+		{
+			label: 'Other',
+			count: rest.reduce((sum, r) => sum + r.count, 0),
+			value_cents: rest.reduce((sum, r) => sum + r.value_cents, 0)
+		}
+	];
 }
 /** C4 — the radar's axis budget: a long tail costs no horizontal space there, so styles get far more room than the bar charts' TOP_N before an "Other" bucket appears (25 axes is about the densest a readable web gets). */
 const STYLE_TOP_N = 24;
@@ -728,13 +736,15 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 			db
 				.prepare(
 					`
-			SELECT rs.style AS label, COUNT(*) AS count
+			SELECT rs.style AS label, COUNT(*) AS count,
+			       SUM(CASE WHEN r.status = 'in_collection' THEN COALESCE(r.price_paid, 0) * r.copies ELSE 0 END) AS value_cents
 			FROM record_styles rs
 			JOIN records r ON r.id = rs.record_id
+			WHERE r.status != 'wanted'
 			GROUP BY rs.style
 		`
 				)
-				.all() as StatBarRow[]
+				.all() as ValBarRow[]
 		).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)),
 		STYLE_TOP_N
 	);

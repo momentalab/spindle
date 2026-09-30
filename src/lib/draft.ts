@@ -55,7 +55,10 @@ export function draftFromSeed(seed: DiscogsSeed): RecordDraft {
 		label: joinLabels(seed.labels ?? []),
 		format: seed.format ?? '',
 		limited_edition: seed.limited_edition === 1,
-		source: 'discogs',
+		// Source stays blank — the seed tells us where the *details* came from,
+		// not where the user got the record. The form's Discogs note keys off
+		// discogs_id, not this field.
+		source: '',
 		cover_url: seed.cover_url ?? ''
 	};
 }
