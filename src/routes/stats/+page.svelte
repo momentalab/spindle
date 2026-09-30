@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import type { PageData } from "./$types";
   import type { StatsMetric, StatsWindow } from "$lib/server/stats";
   import Button from "$lib/components/ui/Button.svelte";
@@ -456,6 +457,20 @@
     spokes: { x2: number; y2: number }[]; // axes, drawn under the fill
     slices: SpiderSlice[];
   }
+  /* On phones the landscape frames reserve so much horizontal label margin
+     that the web itself renders tiny (a ~130 px radar on a 350 px screen).
+     Below sm we re-derive squarer frames — same radii, far less margin — so
+     the chart fills the narrow container instead of shrinking into it. */
+  let compact = $state(false);
+  $effect(() => {
+    if (!browser) return;
+    // globalThis: this file shadows `window` with a StatsWindow constant.
+    const mq = globalThis.matchMedia("(max-width: 639px)");
+    const set = () => (compact = mq.matches);
+    set();
+    mq.addEventListener("change", set);
+    return () => mq.removeEventListener("change", set);
+  });
   const spiderGeom = (
     rows: { label: string; num: number; display: string; color?: string }[],
     big = false,
@@ -465,11 +480,14 @@
     // Nine upright label blocks is the most the small frame's ring fits;
     // anything more gets the big frame too.
     const wide = n > 8 || big;
-    const W = wide ? 620 : 480;
-    const H = wide ? 520 : 340;
+    // Compact frames are square; both label modes were checked against the
+    // margins (upright blocks ≤ ~75 units past R+16, dense radial text ≤
+    // ~91 units past R+8) so nothing clips at the smaller widths.
+    const W = compact ? (wide ? 460 : 400) : wide ? 620 : 480;
+    const H = compact ? W : wide ? 520 : 340;
     const cx = W / 2;
     const cy = H / 2;
-    const R = wide ? 130 : 92;
+    const R = compact ? (wide ? 130 : 98) : wide ? 130 : 92;
     // ~76px per upright label block: radial once the ring can't hold them.
     const dense = n > Math.floor((2 * Math.PI * (R + 16)) / 76);
     const max = rows.reduce((m, r) => Math.max(m, r.num), 0);
