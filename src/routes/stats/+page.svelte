@@ -951,7 +951,7 @@ back to the ledger voice. -->
         {#each s.most_played as p, i (p.id)}
           <a
             href="/records/{p.id}"
-            class="group grid grid-cols-[20px_48px_minmax(0,1fr)_auto] items-center gap-3 border-b border-hair py-3.5 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[28px_64px_1fr_auto] sm:gap-5 sm:py-4"
+            class="group grid grid-cols-[20px_48px_minmax(0,1fr)_auto] items-center gap-3 border-b border-hair py-3.5 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[28px_64px_minmax(0,1fr)_auto] sm:gap-5 sm:py-4"
           >
             <span
               class="font-display text-[13px] italic text-faint sm:text-[15px]"
@@ -1027,7 +1027,7 @@ back to the ledger voice. -->
         {#each s.favorite_albums_top as a, i (a.id)}
           <a
             href="/records/{a.id}"
-            class="group grid grid-cols-[20px_48px_minmax(0,1fr)_auto] items-center gap-3 border-b border-hair py-3.5 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[28px_64px_1fr_auto] sm:gap-5 sm:py-4"
+            class="group grid grid-cols-[20px_48px_minmax(0,1fr)_auto] items-center gap-3 border-b border-hair py-3.5 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[28px_64px_minmax(0,1fr)_auto] sm:gap-5 sm:py-4"
           >
             <span
               class="font-display text-[13px] italic text-faint sm:text-[15px]"
@@ -1080,7 +1080,7 @@ back to the ledger voice. -->
         {#each visibleStarredTracks as t (t.track_id)}
           <a
             href="/records/{t.record_id}?track={t.track_id}"
-            class="group grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 border-b border-hair py-2.5 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[44px_1fr_auto] sm:gap-5"
+            class="group grid grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-3 border-b border-hair py-2.5 transition-[padding] duration-200 hover:pl-2 sm:grid-cols-[44px_minmax(0,1fr)_auto] sm:gap-5"
           >
             <span class="text-right font-display text-[12px] italic text-faint">
               {t.position ?? "–"}
