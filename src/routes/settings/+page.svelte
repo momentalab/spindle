@@ -12,8 +12,8 @@
 
   /* ------------------------------------------------------------------ */
   /* Preferences — client-owned, in localStorage (never the database).   */
-  /* The theme key is the same `mynyl-theme` the masthead ThemeToggle    */
-  /* and the app.html boot script use, so all three stay in agreement.   */
+  /* The theme key is the same `mynyl-theme` the app.html boot script    */
+  /* uses, so the two stay in agreement.                                 */
   /* ------------------------------------------------------------------ */
 
   type ThemeId = "light" | "dark" | "system";
@@ -47,8 +47,7 @@
 
   // Applies the live theme choice to the document + storage. Runs on mount
   // (re-asserts what the app.html boot script already painted — harmless) and
-  // re-runs on every change: a segmented-control click, or the observer below
-  // mirroring a masthead ThemeToggle flip back into `theme`.
+  // re-runs on every segmented-control change.
   $effect(() => {
     if (!browser) return;
     applyTheme(theme);
@@ -66,19 +65,8 @@
     };
     mq.addEventListener("change", onMq);
 
-    // The masthead toggle can change the class from here — mirror it back.
-    const mo = new MutationObserver(() => {
-      const next = readStoredTheme();
-      if (next !== theme) theme = next;
-    });
-    mo.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
     return () => {
       mq.removeEventListener("change", onMq);
-      mo.disconnect();
     };
   });
 
@@ -384,8 +372,9 @@
       CSV renders prices in dollars and covers as local URLs; “records” is the
       whole index, “photos”, “plays” and “tracks” are their own tables.
     {:else}
-      JSON exports every column raw — “All tables” bundles records, photos,
-      plays and tracks in one file.
+      JSON exports every column raw (prices in cents), with `price_paid_usd` /
+      `sale_price_usd` in two-decimal dollars alongside — “All tables” bundles
+      records, photos, plays and tracks in one file.
     {/if}
   </p>
 </section>
