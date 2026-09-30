@@ -7,114 +7,114 @@ Published Time: Fri, 21 Aug 2026 14:48:29 GMT
 Markdown Content:
 [![Image 1](https://www.discogs.com/images/discogs-white.png)API](https://www.discogs.com/developers/#)
 
-*   [Changelog](https://www.discogs.com/forum/thread/521520689469733cfcfd2089)
-*   [API Forum](https://www.discogs.com/forum/topic/1082)
-*   [Create an App](https://www.discogs.com/settings/developers)
-*   [API Terms of Use](https://support.discogs.com/hc/articles/360009334593-API-Terms-of-Use)
+- [Changelog](https://www.discogs.com/forum/thread/521520689469733cfcfd2089)
+- [API Forum](https://www.discogs.com/forum/topic/1082)
+- [Create an App](https://www.discogs.com/settings/developers)
+- [API Terms of Use](https://support.discogs.com/hc/articles/360009334593-API-Terms-of-Use)
 
 [Back to top](https://www.discogs.com/developers/#top)
 
-*   [Home](https://www.discogs.com/developers/#page:home)
-    *   [Quickstart](https://www.discogs.com/developers/#page:home,header:home-quickstart)
-    *   [General Information](https://www.discogs.com/developers/#page:home,header:home-general-information)
-    *   [Rate Limiting](https://www.discogs.com/developers/#page:home,header:home-rate-limiting)
-    *   [Pagination](https://www.discogs.com/developers/#page:home,header:home-pagination)
-    *   [Versioning and Media Types](https://www.discogs.com/developers/#page:home,header:home-versioning-and-media-types)
-    *   [FAQ](https://www.discogs.com/developers/#page:home,header:home-faq)
+- [Home](https://www.discogs.com/developers/#page:home)
+  - [Quickstart](https://www.discogs.com/developers/#page:home,header:home-quickstart)
+  - [General Information](https://www.discogs.com/developers/#page:home,header:home-general-information)
+  - [Rate Limiting](https://www.discogs.com/developers/#page:home,header:home-rate-limiting)
+  - [Pagination](https://www.discogs.com/developers/#page:home,header:home-pagination)
+  - [Versioning and Media Types](https://www.discogs.com/developers/#page:home,header:home-versioning-and-media-types)
+  - [FAQ](https://www.discogs.com/developers/#page:home,header:home-faq)
 
-*   [Authentication](https://www.discogs.com/developers/#page:authentication)
-    *   [Discogs Auth Flow](https://www.discogs.com/developers/#page:authentication,header:authentication-discogs-auth-flow)
-    *   [OAuth Flow](https://www.discogs.com/developers/#page:authentication,header:authentication-oauth-flow)
-    *   [Request Token URL](https://www.discogs.com/developers/#page:authentication,header:authentication-request-token-url)
-    *   [Access Token URL](https://www.discogs.com/developers/#page:authentication,header:authentication-access-token-url)
+- [Authentication](https://www.discogs.com/developers/#page:authentication)
+  - [Discogs Auth Flow](https://www.discogs.com/developers/#page:authentication,header:authentication-discogs-auth-flow)
+  - [OAuth Flow](https://www.discogs.com/developers/#page:authentication,header:authentication-oauth-flow)
+  - [Request Token URL](https://www.discogs.com/developers/#page:authentication,header:authentication-request-token-url)
+  - [Access Token URL](https://www.discogs.com/developers/#page:authentication,header:authentication-access-token-url)
 
-*   [Database](https://www.discogs.com/developers/#page:database)
-    *   [Release](https://www.discogs.com/developers/#page:database,header:database-release)
-    *   [Release Rating By User](https://www.discogs.com/developers/#page:database,header:database-release-rating-by-user)
-    *   [Get Release Rating By User](https://www.discogs.com/developers/#page:database,header:database-release-rating-by-user-get)
-    *   [Update Release Rating By User](https://www.discogs.com/developers/#page:database,header:database-release-rating-by-user-put)
-    *   [Delete Release Rating By User](https://www.discogs.com/developers/#page:database,header:database-release-rating-by-user-delete)
+- [Database](https://www.discogs.com/developers/#page:database)
+  - [Release](https://www.discogs.com/developers/#page:database,header:database-release)
+  - [Release Rating By User](https://www.discogs.com/developers/#page:database,header:database-release-rating-by-user)
+  - [Get Release Rating By User](https://www.discogs.com/developers/#page:database,header:database-release-rating-by-user-get)
+  - [Update Release Rating By User](https://www.discogs.com/developers/#page:database,header:database-release-rating-by-user-put)
+  - [Delete Release Rating By User](https://www.discogs.com/developers/#page:database,header:database-release-rating-by-user-delete)
 
-*   [Community Release Rating](https://www.discogs.com/developers/#page:database,header:database-community-release-rating)
-*   [Release Stats](https://www.discogs.com/developers/#page:database,header:database-release-stats)
-*   [Master Release](https://www.discogs.com/developers/#page:database,header:database-master-release)
-*   [Master Release Versions](https://www.discogs.com/developers/#page:database,header:database-master-release-versions)
-*   [Artist](https://www.discogs.com/developers/#page:database,header:database-artist)
-*   [Artist Releases](https://www.discogs.com/developers/#page:database,header:database-artist-releases)
-*   [Label](https://www.discogs.com/developers/#page:database,header:database-label)
-*   [All Label Releases](https://www.discogs.com/developers/#page:database,header:database-all-label-releases)
-*   [Search](https://www.discogs.com/developers/#page:database,header:database-search)
-*   [Videos](https://www.discogs.com/developers/#page:database,header:database-videos)
+- [Community Release Rating](https://www.discogs.com/developers/#page:database,header:database-community-release-rating)
+- [Release Stats](https://www.discogs.com/developers/#page:database,header:database-release-stats)
+- [Master Release](https://www.discogs.com/developers/#page:database,header:database-master-release)
+- [Master Release Versions](https://www.discogs.com/developers/#page:database,header:database-master-release-versions)
+- [Artist](https://www.discogs.com/developers/#page:database,header:database-artist)
+- [Artist Releases](https://www.discogs.com/developers/#page:database,header:database-artist-releases)
+- [Label](https://www.discogs.com/developers/#page:database,header:database-label)
+- [All Label Releases](https://www.discogs.com/developers/#page:database,header:database-all-label-releases)
+- [Search](https://www.discogs.com/developers/#page:database,header:database-search)
+- [Videos](https://www.discogs.com/developers/#page:database,header:database-videos)
 
-*   [Images](https://www.discogs.com/developers/#page:images)
+- [Images](https://www.discogs.com/developers/#page:images)
 
-*   [Marketplace](https://www.discogs.com/developers/#page:marketplace)
-    *   [Inventory](https://www.discogs.com/developers/#page:marketplace,header:marketplace-inventory)
-    *   [Listing](https://www.discogs.com/developers/#page:marketplace,header:marketplace-listing)
-    *   [Get listing](https://www.discogs.com/developers/#page:marketplace,header:marketplace-listing-get)
-    *   [Edit A Listing](https://www.discogs.com/developers/#page:marketplace,header:marketplace-listing-post)
-    *   [Delete A Listing](https://www.discogs.com/developers/#page:marketplace,header:marketplace-listing-delete)
+- [Marketplace](https://www.discogs.com/developers/#page:marketplace)
+  - [Inventory](https://www.discogs.com/developers/#page:marketplace,header:marketplace-inventory)
+  - [Listing](https://www.discogs.com/developers/#page:marketplace,header:marketplace-listing)
+  - [Get listing](https://www.discogs.com/developers/#page:marketplace,header:marketplace-listing-get)
+  - [Edit A Listing](https://www.discogs.com/developers/#page:marketplace,header:marketplace-listing-post)
+  - [Delete A Listing](https://www.discogs.com/developers/#page:marketplace,header:marketplace-listing-delete)
 
-*   [New Listing](https://www.discogs.com/developers/#page:marketplace,header:marketplace-new-listing)
-*   [Order](https://www.discogs.com/developers/#page:marketplace,header:marketplace-order)
-*   [Get Order](https://www.discogs.com/developers/#page:marketplace,header:marketplace-order-get)
-*   [Edit An Order](https://www.discogs.com/developers/#page:marketplace,header:marketplace-order-post)
-*   [List Orders](https://www.discogs.com/developers/#page:marketplace,header:marketplace-list-orders)
-*   [List Order Messages](https://www.discogs.com/developers/#page:marketplace,header:marketplace-list-order-messages)
-*   [List Order Messages](https://www.discogs.com/developers/#page:marketplace,header:marketplace-list-order-messages-get)
-*   [Add New Message](https://www.discogs.com/developers/#page:marketplace,header:marketplace-list-order-messages-post)
-*   [Fee](https://www.discogs.com/developers/#page:marketplace,header:marketplace-fee)
-*   [Fee with currency](https://www.discogs.com/developers/#page:marketplace,header:marketplace-fee-with-currency)
-*   [Price Suggestions](https://www.discogs.com/developers/#page:marketplace,header:marketplace-price-suggestions)
-*   [Release Statistics](https://www.discogs.com/developers/#page:marketplace,header:marketplace-release-statistics)
-*   [Inventory Export](https://www.discogs.com/developers/#page:inventory-export)
-    *   [Export your inventory](https://www.discogs.com/developers/#page:inventory-export,header:inventory-export-export-your-inventory)
-    *   [Get recent exports](https://www.discogs.com/developers/#page:inventory-export,header:inventory-export-get-recent-exports)
-    *   [Get an export](https://www.discogs.com/developers/#page:inventory-export,header:inventory-export-get-an-export)
-    *   [Download an export](https://www.discogs.com/developers/#page:inventory-export,header:inventory-export-download-an-export)
+- [New Listing](https://www.discogs.com/developers/#page:marketplace,header:marketplace-new-listing)
+- [Order](https://www.discogs.com/developers/#page:marketplace,header:marketplace-order)
+- [Get Order](https://www.discogs.com/developers/#page:marketplace,header:marketplace-order-get)
+- [Edit An Order](https://www.discogs.com/developers/#page:marketplace,header:marketplace-order-post)
+- [List Orders](https://www.discogs.com/developers/#page:marketplace,header:marketplace-list-orders)
+- [List Order Messages](https://www.discogs.com/developers/#page:marketplace,header:marketplace-list-order-messages)
+- [List Order Messages](https://www.discogs.com/developers/#page:marketplace,header:marketplace-list-order-messages-get)
+- [Add New Message](https://www.discogs.com/developers/#page:marketplace,header:marketplace-list-order-messages-post)
+- [Fee](https://www.discogs.com/developers/#page:marketplace,header:marketplace-fee)
+- [Fee with currency](https://www.discogs.com/developers/#page:marketplace,header:marketplace-fee-with-currency)
+- [Price Suggestions](https://www.discogs.com/developers/#page:marketplace,header:marketplace-price-suggestions)
+- [Release Statistics](https://www.discogs.com/developers/#page:marketplace,header:marketplace-release-statistics)
+- [Inventory Export](https://www.discogs.com/developers/#page:inventory-export)
+  - [Export your inventory](https://www.discogs.com/developers/#page:inventory-export,header:inventory-export-export-your-inventory)
+  - [Get recent exports](https://www.discogs.com/developers/#page:inventory-export,header:inventory-export-get-recent-exports)
+  - [Get an export](https://www.discogs.com/developers/#page:inventory-export,header:inventory-export-get-an-export)
+  - [Download an export](https://www.discogs.com/developers/#page:inventory-export,header:inventory-export-download-an-export)
 
-*   [Inventory Upload](https://www.discogs.com/developers/#page:inventory-upload)
-    *   [Add inventory](https://www.discogs.com/developers/#page:inventory-upload,header:inventory-upload-add-inventory)
-    *   [Change inventory](https://www.discogs.com/developers/#page:inventory-upload,header:inventory-upload-change-inventory)
-    *   [Delete inventory](https://www.discogs.com/developers/#page:inventory-upload,header:inventory-upload-delete-inventory)
-    *   [Get recent uploads](https://www.discogs.com/developers/#page:inventory-upload,header:inventory-upload-get-recent-uploads)
-    *   [Get an upload](https://www.discogs.com/developers/#page:inventory-upload,header:inventory-upload-get-an-upload)
+- [Inventory Upload](https://www.discogs.com/developers/#page:inventory-upload)
+  - [Add inventory](https://www.discogs.com/developers/#page:inventory-upload,header:inventory-upload-add-inventory)
+  - [Change inventory](https://www.discogs.com/developers/#page:inventory-upload,header:inventory-upload-change-inventory)
+  - [Delete inventory](https://www.discogs.com/developers/#page:inventory-upload,header:inventory-upload-delete-inventory)
+  - [Get recent uploads](https://www.discogs.com/developers/#page:inventory-upload,header:inventory-upload-get-recent-uploads)
+  - [Get an upload](https://www.discogs.com/developers/#page:inventory-upload,header:inventory-upload-get-an-upload)
 
-*   [User Identity](https://www.discogs.com/developers/#page:user-identity)
-    *   [Identity](https://www.discogs.com/developers/#page:user-identity,header:user-identity-identity)
-    *   [Profile](https://www.discogs.com/developers/#page:user-identity,header:user-identity-profile)
-    *   [Get Profile](https://www.discogs.com/developers/#page:user-identity,header:user-identity-profile-get)
-    *   [Edit Profile](https://www.discogs.com/developers/#page:user-identity,header:user-identity-profile-post)
+- [User Identity](https://www.discogs.com/developers/#page:user-identity)
+  - [Identity](https://www.discogs.com/developers/#page:user-identity,header:user-identity-identity)
+  - [Profile](https://www.discogs.com/developers/#page:user-identity,header:user-identity-profile)
+  - [Get Profile](https://www.discogs.com/developers/#page:user-identity,header:user-identity-profile-get)
+  - [Edit Profile](https://www.discogs.com/developers/#page:user-identity,header:user-identity-profile-post)
 
-*   [User Submissions](https://www.discogs.com/developers/#page:user-identity,header:user-identity-user-submissions)
-*   [User Contributions](https://www.discogs.com/developers/#page:user-identity,header:user-identity-user-contributions)
-*   [User Collection](https://www.discogs.com/developers/#page:user-collection)
-    *   [Collection](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection)
-    *   [Get Collection Folders](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-get)
-    *   [Create Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-post)
+- [User Submissions](https://www.discogs.com/developers/#page:user-identity,header:user-identity-user-submissions)
+- [User Contributions](https://www.discogs.com/developers/#page:user-identity,header:user-identity-user-contributions)
+- [User Collection](https://www.discogs.com/developers/#page:user-collection)
+  - [Collection](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection)
+  - [Get Collection Folders](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-get)
+  - [Create Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-post)
 
-*   [Collection Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-folder)
-*   [Get Folders](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-folder-get)
-*   [Edit Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-folder-post)
-*   [Delete Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-folder-delete)
-*   [Collection Items By Release](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-items-by-release)
-*   [Collection Items By Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-items-by-folder)
-*   [Add To Collection Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-add-to-collection-folder)
-*   [Change Rating Of Release](https://www.discogs.com/developers/#page:user-collection,header:user-collection-change-rating-of-release)
-*   [Delete Instance From Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-delete-instance-from-folder)
-*   [List Custom Fields](https://www.discogs.com/developers/#page:user-collection,header:user-collection-list-custom-fields)
-*   [Edit Fields Instance](https://www.discogs.com/developers/#page:user-collection,header:user-collection-edit-fields-instance)
-*   [Collection Value](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-value)
-*   [User Wantlist](https://www.discogs.com/developers/#page:user-wantlist)
-    *   [Wantlist](https://www.discogs.com/developers/#page:user-wantlist,header:user-wantlist-wantlist)
-    *   [Add To Wantlist](https://www.discogs.com/developers/#page:user-wantlist,header:user-wantlist-add-to-wantlist)
-    *   [Add To Wantlist](https://www.discogs.com/developers/#page:user-wantlist,header:user-wantlist-add-to-wantlist-put)
-    *   [Edit Release In Wantlist](https://www.discogs.com/developers/#page:user-wantlist,header:user-wantlist-add-to-wantlist-post)
-    *   [Delete Release From Wantlist](https://www.discogs.com/developers/#page:user-wantlist,header:user-wantlist-add-to-wantlist-delete)
+- [Collection Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-folder)
+- [Get Folders](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-folder-get)
+- [Edit Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-folder-post)
+- [Delete Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-folder-delete)
+- [Collection Items By Release](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-items-by-release)
+- [Collection Items By Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-items-by-folder)
+- [Add To Collection Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-add-to-collection-folder)
+- [Change Rating Of Release](https://www.discogs.com/developers/#page:user-collection,header:user-collection-change-rating-of-release)
+- [Delete Instance From Folder](https://www.discogs.com/developers/#page:user-collection,header:user-collection-delete-instance-from-folder)
+- [List Custom Fields](https://www.discogs.com/developers/#page:user-collection,header:user-collection-list-custom-fields)
+- [Edit Fields Instance](https://www.discogs.com/developers/#page:user-collection,header:user-collection-edit-fields-instance)
+- [Collection Value](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-value)
+- [User Wantlist](https://www.discogs.com/developers/#page:user-wantlist)
+  - [Wantlist](https://www.discogs.com/developers/#page:user-wantlist,header:user-wantlist-wantlist)
+  - [Add To Wantlist](https://www.discogs.com/developers/#page:user-wantlist,header:user-wantlist-add-to-wantlist)
+  - [Add To Wantlist](https://www.discogs.com/developers/#page:user-wantlist,header:user-wantlist-add-to-wantlist-put)
+  - [Edit Release In Wantlist](https://www.discogs.com/developers/#page:user-wantlist,header:user-wantlist-add-to-wantlist-post)
+  - [Delete Release From Wantlist](https://www.discogs.com/developers/#page:user-wantlist,header:user-wantlist-add-to-wantlist-delete)
 
-*   [User Lists](https://www.discogs.com/developers/#page:user-lists)
-    *   [User Lists](https://www.discogs.com/developers/#page:user-lists,header:user-lists-user-lists)
-    *   [List](https://www.discogs.com/developers/#page:user-lists,header:user-lists-list)
+- [User Lists](https://www.discogs.com/developers/#page:user-lists)
+  - [User Lists](https://www.discogs.com/developers/#page:user-lists,header:user-lists-user-lists)
+  - [List](https://www.discogs.com/developers/#page:user-lists,header:user-lists-list)
 
 [https://api.discogs.com](https://api.discogs.com/)
 
@@ -130,7 +130,7 @@ Our [monthly data dumps](https://www.discogs.com/data/) are available under the 
 
 If you utilize the Discogs API, you are subject to the [API Terms of Use.](https://support.discogs.com/hc/articles/360009334593-API-Terms-of-Use) Please also ensure that any application you develop follows the Discogs [Application Name and Description Policy.](https://www.discogs.com/help/doc/naming-your-application)
 
-* * *
+---
 
 ## Quickstart[](https://www.discogs.com/developers/#page:home,header:home-quickstart)
 
@@ -142,15 +142,15 @@ curl https://api.discogs.com/releases/249504 --user-agent "FooBarApp/3.0"
 
 For community-maintained client libraries and example code, see the links below:
 
-| Language | Type | Maintainer | URL |
-| --- | --- | --- | --- |
-| Node.js | Client | bartve | [https://github.com/bartve/disconnect](https://github.com/bartve/disconnect) |
-| PHP | Client | ricbra | [https://github.com/ricbra/php-discogs-api](https://github.com/ricbra/php-discogs-api) |
-| Python | Client | joalla | [https://github.com/joalla/discogs_client](https://github.com/joalla/discogs_client) |
-| Python | Example | jesseward | [https://github.com/jesseward/discogs-oauth-example](https://github.com/jesseward/discogs-oauth-example) |
-| Ruby | Client | buntine | [https://github.com/buntine/discogs](https://github.com/buntine/discogs) |
+| Language | Type    | Maintainer | URL                                                                                                      |
+| -------- | ------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| Node.js  | Client  | bartve     | [https://github.com/bartve/disconnect](https://github.com/bartve/disconnect)                             |
+| PHP      | Client  | ricbra     | [https://github.com/ricbra/php-discogs-api](https://github.com/ricbra/php-discogs-api)                   |
+| Python   | Client  | joalla     | [https://github.com/joalla/discogs_client](https://github.com/joalla/discogs_client)                     |
+| Python   | Example | jesseward  | [https://github.com/jesseward/discogs-oauth-example](https://github.com/jesseward/discogs-oauth-example) |
+| Ruby     | Client  | buntine    | [https://github.com/buntine/discogs](https://github.com/buntine/discogs)                                 |
 
-* * *
+---
 
 ## General Information[](https://www.discogs.com/developers/#page:home,header:home-general-information)
 
@@ -189,18 +189,18 @@ Content-Type: text/javascript
 
 ```javascript
 callbackname({
-    "meta": { 
-        "status": 200, 
-    }, 
-    "data": {
-        "id": 1,
-        "name": "Persuader, The"
-        // ... and so on 
-    } 
-})
+	meta: {
+		status: 200
+	},
+	data: {
+		id: 1,
+		name: 'Persuader, The'
+		// ... and so on
+	}
+});
 ```
 
-* * *
+---
 
 ## Rate Limiting[](https://www.discogs.com/developers/#page:home,header:home-rate-limiting)
 
@@ -222,7 +222,7 @@ Your application should take our global limit into account and throttle its requ
 
 In the future, we may update these rate limits at any time in order to provide service for all users.
 
-* * *
+---
 
 ## Pagination[](https://www.discogs.com/developers/#page:home,header:home-pagination)
 
@@ -246,26 +246,26 @@ Link: <https://api.discogs.com/artists/1/releases?page=3&per_page=75>; rel=next,
 And a pagination object in the response body:
 
 ```javascript
-{ 
-    "pagination": { 
-        "page": 2, 
-        "pages": 30, 
-        "items": 2255, 
-        "per_page": 75, 
+{
+    "pagination": {
+        "page": 2,
+        "pages": 30,
+        "items": 2255,
+        "per_page": 75,
         "urls":
-            { 
+            {
                 "first": "https://api.discogs.com/artists/1/releases?page=1&per_page=75",
-                "prev": "https://api.discogs.com/artists/1/releases?page=1&per_page=75", 
-                "next": "https://api.discogs.com/artists/1/releases?page=3&per_page=75", 
+                "prev": "https://api.discogs.com/artists/1/releases?page=1&per_page=75",
+                "next": "https://api.discogs.com/artists/1/releases?page=3&per_page=75",
                 "last": "https://api.discogs.com/artists/1/releases?page=30&per_page=75"
-            } 
-    }, 
+            }
+    },
     "releases":
-        [ ... ] 
+        [ ... ]
 }
 ```
 
-* * *
+---
 
 ## Versioning and Media Types[](https://www.discogs.com/developers/#page:home,header:home-versioning-and-media-types)
 
@@ -285,31 +285,31 @@ If you are requesting information from an endpoint that may have text formatting
 
 If no Accept header is supplied, or if the Accept header differs from one of the three previous options, we default to `application/vnd.discogs.v2.discogs+json`.
 
-* * *
+---
 
 ## FAQ[](https://www.discogs.com/developers/#page:home,header:home-faq)
 
-1.   **Why am I getting an empty response from the server?**
+1.  **Why am I getting an empty response from the server?**
 
 This generally happens when you forget to add a User-Agent header to your requests.
 
-2.   **How do I get updates about the API?**
+2.  **How do I get updates about the API?**
 
 Subscribe to our [API Announcements forum thread](https://www.discogs.com/forum/thread/521520689469733cfcfd2089). For larger, breaking changes, we will send out an email notice to all developers with a registered Discogs application.
 
-3.   **Where can I register a Discogs application?**
+3.  **Where can I register a Discogs application?**
 
 You can register a Discogs application on the [Developer Settings](https://www.discogs.com/settings/developers).
 
-4.   **If I have a question/issue with the API, should I file a Support Request?**
+4.  **If I have a question/issue with the API, should I file a Support Request?**
 
 It's generally best to start out with a forum post on the [API topic](https://www.discogs.com/forum/topic/1082) since other developers may have had similar issues and can point you in the right direction. If the issue requires privacy, then a support request is the best way to go.
 
-5.   **I'm getting a 404 response when trying to fetch images; what gives?**
+5.  **I'm getting a 404 response when trying to fetch images; what gives?**
 
 This may seem obvious, but make sure you aren't doing anything to change the URL. The URLs returned are signed URLs, so trying to change one part of the URL (e.g., Release ID number) will generally not work.
 
-6.   **What are the authentication requirements for requesting images?**
+6.  **What are the authentication requirements for requesting images?**
 
 Please see the [Images documentation page](https://www.discogs.com/developers/#page:images).
 
@@ -353,21 +353,21 @@ Something went wrong on our end while attempting to process your request. The re
 
 [Next](https://www.discogs.com/developers/#page:authentication)[Previous](https://www.discogs.com/developers/#)
 
-* * *
+---
 
 # Authentication[](https://www.discogs.com/developers/#page:authentication)
 
 This section describes the various methods of authenticating with the Discogs API.
 
-* * *
+---
 
 ## Registration [¶](https://www.discogs.com/developers/#header-registration-1)
 
 In order to access protected endpoints, you’ll need to register for either a consumer key and secret or user token, depending on your situation:
 
-*   To easily access your own user account information, use a **User token**.
+- To easily access your own user account information, use a **User token**.
 
-*   To get access to an endpoint that requires authentication and build 3rd party apps, use a **Consumer Key and Secret**.
+- To get access to an endpoint that requires authentication and build 3rd party apps, use a **Consumer Key and Secret**.
 
 To get one of these, sign up for a Discogs account if you don’t have one already, and go to your [Developer Settings](https://www.discogs.com/settings/developers). From there, you can create a new application/token or edit the metadata for an existing app.
 
@@ -375,7 +375,7 @@ When you create a new application, you’ll be granted a **Consumer Key** and **
 
 Generating a user token is as easy as clicking the **Generate token** button on the developer settings. Keep this token private, as it allows users to access your information.
 
-* * *
+---
 
 ## OAuth Endpoints [¶](https://www.discogs.com/developers/#header-oauth-endpoints-1)
 
@@ -383,21 +383,21 @@ The OAuth 1.0a flow involves three server-side endpoints:
 
 Request token URL: `https://api.discogs.com/oauth/request_token`
 
- Authorize URL: `https://www.discogs.com/oauth/authorize`
+Authorize URL: `https://www.discogs.com/oauth/authorize`
 
- Access token URL: `https://api.discogs.com/oauth/access_token`
+Access token URL: `https://api.discogs.com/oauth/access_token`
 
 For convenience, these are also listed on the Edit Application page.
 
 Once authenticated, you can test that everything’s working correctly by requesting the [Identity](https://www.discogs.com/developers/#page:user-identity,header:user-identity-identity) resource.
 
-* * *
+---
 
 ## Discogs Auth Flow[](https://www.discogs.com/developers/#page:authentication,header:authentication-discogs-auth-flow)
 
 If you do not plan on building an app which others can log into on their behalf, you should use this authentication method as it is much simpler and is still secure. Discogs Auth requires that requests be made over HTTPS, as you are sending your app’s key/secret or token in the request.
 
- To send requests with Discogs Auth, you have two options: sending your credentials in the query string with `key` and `secret` parameters or a `token` parameter, for example:
+To send requests with Discogs Auth, you have two options: sending your credentials in the query string with `key` and `secret` parameters or a `token` parameter, for example:
 
 ```http
 curl "https://api.discogs.com/database/search?q=Nirvana&key=foo123&secret=bar456"
@@ -423,24 +423,24 @@ curl "https://api.discogs.com/database/search?q=Nirvana" -H "Authorization: Disc
 
 What differentiates the `key`/`secret` pair option from the `token` option? Let’s look at this table:
 
-| Credentials in request | Rate limiting? | Image URLs? | Authenticated as user? |
-| --- | --- | --- | --- |
-| None | 🐢 Low tier | ❌ No | ❌ No |
-| Only Consumer key/secret | 🐰 High tier | ✔️ Yes | ❌ No |
-| Full OAuth 1.0a with access token/secret ([see below](https://www.discogs.com/developers/#page:authentication,header:authentication-oauth-flow)) | 🐰 High tier | ✔️ Yes | ✔️ Yes, on behalf of any user 🌍 |
-| Personal access token | 🐰 High tier | ✔️ Yes | ✔️ Yes, for token holder only 👩 |
+| Credentials in request                                                                                                                           | Rate limiting? | Image URLs? | Authenticated as user?           |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------- | ----------- | -------------------------------- |
+| None                                                                                                                                             | 🐢 Low tier    | ❌ No       | ❌ No                            |
+| Only Consumer key/secret                                                                                                                         | 🐰 High tier   | ✔️ Yes      | ❌ No                            |
+| Full OAuth 1.0a with access token/secret ([see below](https://www.discogs.com/developers/#page:authentication,header:authentication-oauth-flow)) | 🐰 High tier   | ✔️ Yes      | ✔️ Yes, on behalf of any user 🌍 |
+| Personal access token                                                                                                                            | 🐰 High tier   | ✔️ Yes      | ✔️ Yes, for token holder only 👩 |
 
 In other words:
 
-*   Using the `key` and `secret` will get you [image](https://www.discogs.com/developers/#page:images) URLs. These are unavailable to unauthenticated requests.
+- Using the `key` and `secret` will get you [image](https://www.discogs.com/developers/#page:images) URLs. These are unavailable to unauthenticated requests.
 
-*   Using the `key` and `secret` will up your [rate limit](https://www.discogs.com/developers/#page:home,header:home-rate-limiting), unlike unauthenticated requests.
+- Using the `key` and `secret` will up your [rate limit](https://www.discogs.com/developers/#page:home,header:home-rate-limiting), unlike unauthenticated requests.
 
-*   **BUT** using the `key` and `secret` does **not** identify the requester as any particular user, and as such will **not** grant access to any resources users should be able to see on their own account (e.g. marketplace orders, private inventory fields, private collections). You will need to use either of the `token` options for these resources.
+- **BUT** using the `key` and `secret` does **not** identify the requester as any particular user, and as such will **not** grant access to any resources users should be able to see on their own account (e.g. marketplace orders, private inventory fields, private collections). You will need to use either of the `token` options for these resources.
 
 That’s it! Continue sending the key/secret pair or user token with the rest of your requests.
 
-* * *
+---
 
 ## OAuth Flow[](https://www.discogs.com/developers/#page:authentication,header:authentication-oauth-flow)
 
@@ -535,7 +535,7 @@ To test that you are ready to send authenticated requests, send a GET request to
 GET https://api.discogs.com/oauth/identity
 ```
 
-* * *
+---
 
 ## OAuth Endpoints [¶](https://www.discogs.com/developers/#header-oauth-endpoints-2)
 
@@ -549,13 +549,16 @@ Request token
 
 `/oauth/request_token`
 
-*   **Request**Toggle
-*    
+- **Request**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/x-www-form-urlencodedAuthorization: OAuth oauth_consumer_key="your_consumer_key", oauth_nonce="random_string_or_timestamp", oauth_signature="your_consumer_secret&", oauth_signature_method="PLAINTEXT", oauth_timestamp="current_timestamp", oauth_callback="your_callback"User-Agent: some_user_agent`
-*   **Response`200`**Toggle
-*    
+
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `oauth_token: abc123oauth_token_secret: xyz789oauth_callback_confirmed: 'true'`
@@ -570,20 +573,23 @@ Access token
 
 `/oauth/access_token`
 
-*   **Request**Toggle
-*    
+- **Request**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/x-www-form-urlencodedAuthorization: OAuth oauth_consumer_key="your_consumer_key", oauth_nonce="random_string_or_timestamp", oauth_token="oauth_token_received_from_step_2" oauth_signature="your_consumer_secret&", oauth_signature_method="PLAINTEXT", oauth_timestamp="current_timestamp", oauth_verifier="users_verifier"User-Agent: some_user_agent`
-*   **Response`200`**Toggle
-*    
+
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `oauth_token: abc123oauth_token_secret: xyz789`
 
 [Next](https://www.discogs.com/developers/#page:database)[Previous](https://www.discogs.com/developers/#page:home)
 
-* * *
+---
 
 # Database[](https://www.discogs.com/developers/#page:database)
 
@@ -599,20 +605,22 @@ Get Release
 
 Get a release
 
-*   **Parameters**
-*   release_id`number`(required)**Example:**249504
-The Release ID
+- **Parameters**
+- release_id`number`(required)**Example:**249504
+  The Release ID
 
 curr_abbr`string`(optional)**Example:**USD
-Currency for marketplace data. Defaults to the authenticated users currency. Must be one of the following: 
+Currency for marketplace data. Defaults to the authenticated users currency. Must be one of the following:
 
 `USD``GBP``EUR``CAD``AUD``JPY``CHF``MXN``BRL``NZD``SEK``ZAR`
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 6223Date: Tue, 01 Jul 2014 00:59:34 GMTX-Varnish: 1465474310Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -787,11 +795,14 @@ Currency for marketplace data. Defaults to the authenticated users currency. Mus
     "year": 1987
 }
 ```
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 404 Not FoundReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 33Date: Tue, 01 Jul 2014 01:03:20 GMTX-Varnish: 1465521729Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -812,18 +823,20 @@ Get Release Rating By User
 
 Retrieves the release’s rating for a given user.
 
-*   **Parameters**
-*   release_id`number`(required)**Example:**249504
-The Release ID
+- **Parameters**
+- release_id`number`(required)**Example:**249504
+  The Release ID
 
 username`string`(required)**Example:**memory
 The username of the rating you are trying to request.
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 6223Date: Tue, 01 Jul 2014 00:59:34 GMTX-Varnish: 1465474310Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -842,9 +855,9 @@ Update Release Rating By User
 
 Updates the release’s rating for a given user. [Authentication](https://www.discogs.com/developers/#page:authentication) as the user is required.
 
-*   **Parameters**
-*   release_id`number`(required)**Example:**249504
-The Release ID
+- **Parameters**
+- release_id`number`(required)**Example:**249504
+  The Release ID
 
 username`string`(required)**Example:**memory
 The username of the rating you are trying to request.
@@ -852,11 +865,13 @@ The username of the rating you are trying to request.
 rating`int`(required)**Example:**5
 The new rating for a release between 1 and 5.
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 6223Date: Tue, 01 Jul 2014 00:59:34 GMTX-Varnish: 1465474310Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -875,9 +890,9 @@ Delete Release Rating By User
 
 Deletes the release’s rating for a given user. [Authentication](https://www.discogs.com/developers/#page:authentication) as the user is required.
 
-*   **Parameters**
-*   release_id`number`(required)**Example:**249504
-The Release ID
+- **Parameters**
+- release_id`number`(required)**Example:**249504
+  The Release ID
 
 username`string`(required)**Example:**memory
 The username of the rating you are trying to request.
@@ -894,15 +909,17 @@ Get Community Release Rating
 
 Retrieves the community release rating average and count.
 
-*   **Parameters**
-*   release_id`number`(required)**Example:**249504
-The Release ID
+- **Parameters**
+- release_id`number`(required)**Example:**249504
+  The Release ID
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 6223Date: Tue, 01 Jul 2014 00:59:34 GMTX-Varnish: 1465474310Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -927,15 +944,17 @@ Get Release Stats
 
 Retrieves the release’s “have” and “want” counts.
 
-*   **Parameters**
-*   release_id`number`(required)**Example:**249504
-The Release ID
+- **Parameters**
+- release_id`number`(required)**Example:**249504
+  The Release ID
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 35Date: Mon, 31 Aug 2020 23:22:16 GMTX-Varnish: 1465474310Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -957,15 +976,17 @@ Get Master
 
 Get a master release
 
-*   **Parameters**
-*   master_id`number`(required)**Example:**1000
-The Master ID
+- **Parameters**
+- master_id`number`(required)**Example:**1000
+  The Master ID
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 7083Date: Tue, 01 Jul 2014 01:11:23 GMTX-Varnish: 1465622695Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1058,11 +1079,14 @@ The Master ID
   "data_quality": "Correct"
 }
 ```
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 404 Not FoundReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 40Date: Tue, 01 Jul 2014 01:11:21 GMTX-Varnish: 1465622316Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1081,9 +1105,9 @@ Get all Master versions
 
 Retrieves a list of all Releases that are versions of this master. Accepts [Pagination](https://www.discogs.com/developers/#page:home,header:home-pagination) parameters.
 
-*   **Parameters**
-*   master_id`number`(required)**Example:**1000
-The Master ID
+- **Parameters**
+- master_id`number`(required)**Example:**1000
+  The Master ID
 
 page`number`(optional)**Example:**3
 The page you want to request
@@ -1104,7 +1128,7 @@ country`string`(optional)**Example:**Belgium
 The country to filter
 
 sort`string`(optional)**Example:**released
-Sort items by this field: 
+Sort items by this field:
 
 `released` (i.e. year of the release)
 
@@ -1121,11 +1145,13 @@ Sort items by this field:
 sort_order`string`(optional)**Example:**asc
 Sort items in a particular order (one of `asc`, `desc`)
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 2834Date: Tue, 01 Jul 2014 01:16:01 GMTX-Varnish: 1465678820Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1216,11 +1242,14 @@ Sort items in a particular order (one of `asc`, `desc`)
   ]
 }
 ```
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 404 Not FoundReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 40Date: Tue, 01 Jul 2014 01:20:23 GMTX-Varnish: 1465732620Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1241,15 +1270,17 @@ Get Artist
 
 Get an artist
 
-*   **Parameters**
-*   artist_id`number`(required)**Example:**108713
-The Artist ID
+- **Parameters**
+- artist_id`number`(required)**Example:**108713
+  The Artist ID
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 1258Date: Tue, 01 Jul 2014 01:06:53 GMTX-Varnish: 1465566651Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1319,11 +1350,14 @@ The Artist ID
   ],
 }
 ```
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 404 Not FoundReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 32Date: Tue, 01 Jul 2014 01:08:31 GMTX-Varnish: 1465587583Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1336,7 +1370,7 @@ The Artist ID
 
 Returns a list of Releases and Masters associated with the Artist.
 
- Accepts [Pagination](https://www.discogs.com/developers/#page:home,header:home-pagination).
+Accepts [Pagination](https://www.discogs.com/developers/#page:home,header:home-pagination).
 
 Get an Artist's Releases
 
@@ -1346,12 +1380,12 @@ Get an Artist's Releases
 
 Get an artist’s releases
 
-*   **Parameters**
-*   artist_id`number`(required)**Example:**108713
-The Artist ID
+- **Parameters**
+- artist_id`number`(required)**Example:**108713
+  The Artist ID
 
 sort`string`(optional)**Example:**year
-Sort items by this field: 
+Sort items by this field:
 
 `year` (i.e. year of the release)
 
@@ -1362,11 +1396,13 @@ Sort items by this field:
 sort_order`string`(optional)**Example:**asc
 Sort items in a particular order (one of `asc`, `desc`)
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 1258Date: Tue, 01 Jul 2014 01:06:53 GMTX-Varnish: 1465566651Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1417,11 +1453,14 @@ Sort items in a particular order (one of `asc`, `desc`)
   ]
 }
 ```
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 404 Not FoundReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 32Date: Tue, 01 Jul 2014 01:08:31 GMTX-Varnish: 1465587583Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1442,15 +1481,17 @@ Get Label
 
 Get a label
 
-*   **Parameters**
-*   label_id`number`(required)**Example:**1
-The Label ID
+- **Parameters**
+- label_id`number`(required)**Example:**1
+  The Label ID
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 2834Date: Tue, 01 Jul 2014 01:16:01 GMTX-Varnish: 1465678820Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1492,11 +1533,14 @@ The Label ID
   "data_quality": "Needs Vote"
 }
 ```
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 404 Not FoundReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 30Date: Tue, 01 Jul 2014 01:17:27 GMTX-Varnish: 1465696276Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1515,9 +1559,9 @@ Get all Label Releases
 
 Returns a list of Releases associated with the label. Accepts [Pagination](https://www.discogs.com/developers/#page:home,header:home-pagination) parameters.
 
-*   **Parameters**
-*   label_id`number`(required)**Example:**1
-The Label ID
+- **Parameters**
+- label_id`number`(required)**Example:**1
+  The Label ID
 
 page`number`(optional)**Example:**3
 The page you want to request
@@ -1525,11 +1569,13 @@ The page you want to request
 per_page`number`(optional)**Example:**25
 The number of items per page
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 2834Date: Tue, 01 Jul 2014 01:16:01 GMTX-Varnish: 1465678820Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1581,11 +1627,14 @@ The number of items per page
   ]
 }
 ```
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 404 Not FoundReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 30Date: Tue, 01 Jul 2014 01:17:27 GMTX-Varnish: 1465696276Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1608,9 +1657,9 @@ Search
 
 Issue a search query
 
-*   **Parameters**
-*   query`string`(optional)**Example:**nirvana
-Your search query
+- **Parameters**
+- query`string`(optional)**Example:**nirvana
+  Your search query
 
 type`string`(optional)**Example:**release
 String. One of `release`, `master`, `artist`, `label`
@@ -1663,15 +1712,18 @@ Search submitter username.
 contributor`string`(optional)**Example:**jerome99
 Search contributor usernames.
 
-*   **Request**Toggle
-*   ##### Body
+- **Request**Toggle
+- ##### Body
 
 `GET https://api.discogs.com/database/search?release_title=nevermind&artist=nirvana&per_page=3&page=1`
-*   **Response`200`**Toggle
-*    
+
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonContent-Encoding: gzipServer: lighttpdContent-Length: 623Date: Tue, 15 Jul 2014 18:44:17 GMTX-Varnish: 1701844380 1701819611Age: 101Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1783,11 +1835,14 @@ Search contributor usernames.
   ]
 }
 ```
-*   **Response`500`**Toggle
-*    
+
+- **Response`500`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 500 Server ErrorReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 32Date: Tue, 01 Jul 2014 01:08:31 GMTX-Varnish: 1465587583Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1795,11 +1850,14 @@ Search contributor usernames.
   "message": "Query time exceeded. Please try a simpler query."
 }
 ```
-*   **Response`500`**Toggle
-*    
+
+- **Response`500`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 500 Server ErrorReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 32Date: Tue, 01 Jul 2014 01:08:31 GMTX-Varnish: 1465587583Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -1814,7 +1872,7 @@ If your application integrates YouTube videos, then third party cookies may be u
 
 [Next](https://www.discogs.com/developers/#page:images)[Previous](https://www.discogs.com/developers/#page:authentication)
 
-* * *
+---
 
 # Images[](https://www.discogs.com/developers/#page:images)
 
@@ -1824,7 +1882,7 @@ It’s unlikely that you’ll ever have to construct an image URL; images keys o
 
 [Next](https://www.discogs.com/developers/#page:marketplace)[Previous](https://www.discogs.com/developers/#page:database)
 
-* * *
+---
 
 # Marketplace[](https://www.discogs.com/developers/#page:marketplace)
 
@@ -1832,11 +1890,11 @@ It’s unlikely that you’ll ever have to construct an image URL; images keys o
 
 Returns the list of listings in a user’s inventory. Accepts [Pagination parameters](https://www.discogs.com/developers/#page:home,header:home-pagination).
 
- Basic information about each listing and the corresponding release is provided, suitable for display in a list. For detailed information about the release, make another API call to fetch the corresponding Release.
+Basic information about each listing and the corresponding release is provided, suitable for display in a list. For detailed information about the release, make another API call to fetch the corresponding Release.
 
 If you are not authenticated as the inventory owner, only items that have a status of For Sale will be visible.
 
- If you are authenticated as the inventory owner you will get additional `weight`, `format_quantity`, `external_id`, `location`, and `quantity` keys. Note that `quantity` is a read-only field for NearMint users, who will see `1` for all quantity values, regardless of their actual count. If the user is authorized, the listing will contain a in_cart boolean field indicating whether or not this listing is in their cart.
+If you are authenticated as the inventory owner you will get additional `weight`, `format_quantity`, `external_id`, `location`, and `quantity` keys. Note that `quantity` is a read-only field for NearMint users, who will see `1` for all quantity values, regardless of their actual count. If the user is authorized, the listing will contain a in_cart boolean field indicating whether or not this listing is in their cart.
 
 Get inventory
 
@@ -1846,15 +1904,15 @@ Get inventory
 
 Get a seller’s inventory
 
-*   **Parameters**
-*   username`string`(required)**Example:**360vinyl
-The username for whose inventory you are fetching
+- **Parameters**
+- username`string`(required)**Example:**360vinyl
+  The username for whose inventory you are fetching
 
 status`string`(optional)**Example:**for sale
 Only show items with this status.
 
 sort`string`(optional)**Example:**price
-Sort items by this field: 
+Sort items by this field:
 
 `listed`
 
@@ -1877,8 +1935,9 @@ Sort items by this field:
 sort_order`string`(optional)**Example:**asc
 Sort items in a particular order (one of `asc`, `desc`)
 
-*   **Response`200`**Toggle
-*    Headers `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonLink: <https://api.discogs.com/users/360vinyl/inventory?per_page=50&page=18>; rel="last", <https://api.discogs.com/users/360vinyl/inventory?per_page=50&page=2>; rel="next"Server: lighttpdContent-Length: 36813Date: Tue, 15 Jul 2014 18:53:23 GMTX-Varnish: 1701983958Age: 0Via: 1.1 varnishConnection: keep-alive`
+- **Response`200`**Toggle
+- Headers `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonLink: <https://api.discogs.com/users/360vinyl/inventory?per_page=50&page=18>; rel="last", <https://api.discogs.com/users/360vinyl/inventory?per_page=50&page=2>; rel="next"Server: lighttpdContent-Length: 36813Date: Tue, 15 Jul 2014 18:53:23 GMTX-Varnish: 1701983958Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -2017,11 +2076,14 @@ Sort items in a particular order (one of `asc`, `desc`)
   ]
 }
 ```
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 404 Not FoundReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 33Date: Tue, 01 Jul 2014 01:03:20 GMTX-Varnish: 1465521729Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -2029,11 +2091,14 @@ Sort items in a particular order (one of `asc`, `desc`)
   "message": "The request resource was not found."
 }
 ```
-*   **Response`422`**Toggle
-*    
+
+- **Response`422`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 422 Unprocessable EntityReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 114Date: Tue, 15 Jul 2014 19:16:59 GMTX-Varnish: 1702310957Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -2046,7 +2111,7 @@ Sort items in a particular order (one of `asc`, `desc`)
 
 View the data associated with a listing.
 
- If the authorized user is the listing owner the listing will include the `weight`, `format_quantity`, `external_id`, `location`, and `quantity` keys. Note that `quantity` is a read-only field for NearMint users, who will see `1` for all quantity values, regardless of their actual count. If the user is authorized, the listing will contain a in_cart boolean field indicating whether or not this listing is in their cart.
+If the authorized user is the listing owner the listing will include the `weight`, `format_quantity`, `external_id`, `location`, and `quantity` keys. Note that `quantity` is a read-only field for NearMint users, who will see `1` for all quantity values, regardless of their actual count. If the user is authorized, the listing will contain a in_cart boolean field indicating whether or not this listing is in their cart.
 
 Get listing
 
@@ -2056,20 +2121,22 @@ Get listing
 
 The Listing resource allows you to view Marketplace listings.
 
-*   **Parameters**
-*   listing_id`number`(required)**Example:**172723812
-The ID of the listing you are fetching
+- **Parameters**
+- listing_id`number`(required)**Example:**172723812
+  The ID of the listing you are fetching
 
 curr_abbr`string`(optional)**Example:**USD
-Currency for marketplace data. Defaults to the authenticated users currency. Must be one of the following: 
+Currency for marketplace data. Defaults to the authenticated users currency. Must be one of the following:
 
 `USD``GBP``EUR``CAD``AUD``JPY``CHF``MXN``BRL``NZD``SEK``ZAR`
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 780Date: Tue, 15 Jul 2014 19:59:59 GMTX-Varnish: 1702965334Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -2129,11 +2196,14 @@ Currency for marketplace data. Defaults to the authenticated users currency. Mus
   "audio": false
 }
 ```
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 404 Not FoundReproxy-Status: yesAccess-Control-Allow-Origin: *Content-Type: application/jsonServer: lighttpdContent-Length: 33Date: Tue, 01 Jul 2014 01:03:20 GMTX-Varnish: 1465521729Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -2154,15 +2224,15 @@ If the listing’s status is not `For Sale`, `Draft`, or `Expired`, it cannot be
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the listing owner is required.
 
-*   **Parameters**
-*   listing_id`number`(required)**Example:**172723812
-The ID of the listing you are fetching
+- **Parameters**
+- listing_id`number`(required)**Example:**172723812
+  The ID of the listing you are fetching
 
 release_id`number`(required)**Example:**1
 The ID of the release you are posting
 
 condition`string`(required)**Example:**Mint
-The condition of the release you are posting. Must be one of the following: 
+The condition of the release you are posting. Must be one of the following:
 
 `Mint (M)`
 
@@ -2181,7 +2251,7 @@ The condition of the release you are posting. Must be one of the following:
 `Poor (P)`
 
 sleeve_condition`string`(optional)**Example:**Fair
-The condition of the sleeve of the item you are posting. Must be one of the following: 
+The condition of the sleeve of the item you are posting. Must be one of the following:
 
 `Mint (M)`
 
@@ -2225,12 +2295,14 @@ The weight, in grams, of this listing, for the purpose of calculating shipping. 
 format_quantity`number`(optional)**Example:**10.00
 The number of items this listing counts as, for the purpose of calculating shipping. This field is called “Counts As” on the Discogs website. Set this field to `auto` to have the quantity automatically estimated for you.
 
-*   **Request**Toggle
-*    
+- **Request**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`204`**
+
+- **Response`204`**
 
 Delete A Listing
 
@@ -2242,16 +2314,18 @@ Permanently remove a listing from the Marketplace.
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the listing owner is required.
 
-*   **Parameters**
-*   listing_id`number`(required)**Example:**172723812
-The ID of the listing you are fetching
+- **Parameters**
+- listing_id`number`(required)**Example:**172723812
+  The ID of the listing you are fetching
 
-*   **Request**Toggle
-*    
+- **Request**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`204`**
+
+- **Response`204`**
 
 ## New Listing[](https://www.discogs.com/developers/#page:marketplace,header:marketplace-new-listing)
 
@@ -2265,12 +2339,12 @@ Create a Marketplace listing.
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) is required; the listing will be added to the authenticated user’s Inventory.
 
-*   **Parameters**
-*   release_id`number`(required)**Example:**1
-The ID of the release you are posting
+- **Parameters**
+- release_id`number`(required)**Example:**1
+  The ID of the release you are posting
 
 condition`string`(required)**Example:**Mint
-The condition of the release you are posting. Must be one of the following: 
+The condition of the release you are posting. Must be one of the following:
 
 `Mint (M)`
 
@@ -2289,7 +2363,7 @@ The condition of the release you are posting. Must be one of the following:
 `Poor (P)`
 
 sleeve_condition`string`(optional)**Example:**Fair
-The condition of the sleeve of the item you are posting. Must be one of the following: 
+The condition of the sleeve of the item you are posting. Must be one of the following:
 
 `Mint (M)`
 
@@ -2333,13 +2407,15 @@ The weight, in grams, of this listing, for the purpose of calculating shipping. 
 format_quantity`number`(optional)**Example:**10.00
 The number of items this listing counts as, for the purpose of calculating shipping. This field is called “Counts As” on the Discogs website. Set this field to `auto` to have the quantity automatically estimated for you.
 
-*   **Request**Toggle
-*    
+- **Request**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`201`**Toggle
-*   ##### Body
+
+- **Response`201`**Toggle
+- ##### Body
 
 ```
 {
@@ -2347,8 +2423,9 @@ The number of items this listing counts as, for the purpose of calculating shipp
   "resource_url": "https://api.discogs.com/marketplace/listings/41578241"
 }
 ```
-*   **Response`403`**Toggle
-*   ##### Body
+
+- **Response`403`**Toggle
+- ##### Body
 
 ```
 {
@@ -2370,15 +2447,17 @@ View the data associated with an order.
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the seller is required.
 
-*   **Parameters**
-*   order_id`number`(required)**Example:**1-1
-The ID of the order you are fetching
+- **Parameters**
+- order_id`number`(required)**Example:**1-1
+  The ID of the order you are fetching
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 780Date: Tue, 15 Jul 2014 19:59:59 GMTX-Varnish: 1702965334Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -2451,11 +2530,14 @@ The ID of the order you are fetching
   }
 }
 ```
-*   **Response`401`**Toggle
-*    
+
+- **Response`401`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 401 UnauthorizedReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonWWW-Authenticate: OAuth realm="https://api.discogs.com"Server: lighttpdContent-Length: 61Date: Tue, 15 Jul 2014 20:37:49 GMTX-Varnish: 1703540564Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -2474,22 +2556,22 @@ Edit the data associated with an order.
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the seller is required.
 
- The response contains a `next_status` key – an array of valid next statuses for this order, which you can display to the user in (for example) a dropdown control. This also renders your application more resilient to any future changes in the order status logic.
+The response contains a `next_status` key – an array of valid next statuses for this order, which you can display to the user in (for example) a dropdown control. This also renders your application more resilient to any future changes in the order status logic.
 
- Changing the order status using this resource will always message the buyer with:
+Changing the order status using this resource will always message the buyer with:
 
 `Seller changed status from Old Status to New Status`
 
 and does not provide a facility for including a custom message along with the change. For more fine-grained control, use the Add a new message resource, which allows you to simultaneously add a message and change the order status.
 
- If the order status is neither cancelled, Payment Received, nor Shipped, you can change the shipping. Doing so will send an invoice to the buyer and set the order status to Invoice Sent. (For that reason, you cannot set the shipping and the order status in the same request.) Sellers can also set tracking information for an order by providing a `tracking` object with a tracking number and optionally a carrier. The tracking URL will be automatically generated based on the carrier.
+If the order status is neither cancelled, Payment Received, nor Shipped, you can change the shipping. Doing so will send an invoice to the buyer and set the order status to Invoice Sent. (For that reason, you cannot set the shipping and the order status in the same request.) Sellers can also set tracking information for an order by providing a `tracking` object with a tracking number and optionally a carrier. The tracking URL will be automatically generated based on the carrier.
 
-*   **Parameters**
-*   order_id`number`(required)**Example:**1-1
-The ID of the order you are fetching
+- **Parameters**
+- order_id`number`(required)**Example:**1-1
+  The ID of the order you are fetching
 
 status`string`(optional)**Example:**New Order
-The status of the Order you are updating. Must be one of the following: 
+The status of the Order you are updating. Must be one of the following:
 
 `New Order`
 
@@ -2509,7 +2591,7 @@ The status of the Order you are updating. Must be one of the following:
 
 `Cancelled (Per Buyer's Request)`
 
- the order’s current status
+the order’s current status
 
 Furthermore, the new status must be present in the order’s next_status list. For more information about order statuses, see Edit an order.
 
@@ -2523,13 +2605,15 @@ Set tracking information for the order. Only the seller can set tracking informa
 
     *   `carrier` (optional, string): The shipping carrier. Must be one of: `UPS`, `USPS`, `DHL`, `Deutsche Post`, `La Poste`, `Royal Mail`, `PostNL`, `DHL Germany`, `Other`. If not provided, defaults to no carrier specified.
 
-*   **Request**Toggle
-*    
+- **Request**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`200`**Toggle
-*   ##### Body
+
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -2599,16 +2683,18 @@ Set tracking information for the order. Only the seller can set tracking informa
   }
 }
 ```
-*   **Response`400`**Toggle
-*   ##### Body
+
+- **Response`400`**Toggle
+- ##### Body
 
 ```
 {
   "message": "Tracking number is required."
 }
 ```
-*   **Response`403`**Toggle
-*   ##### Body
+
+- **Response`403`**Toggle
+- ##### Body
 
 ```
 {
@@ -2628,9 +2714,9 @@ List Orders
 
 Returns a list of the authenticated user’s orders. Accepts [Pagination parameters](https://www.discogs.com/developers/#page:home,header:home-pagination).
 
-*   **Parameters**
-*   status`string`(optional)**Example:**1-1
-Only show orders with this status. Valid `status` keys are: 
+- **Parameters**
+- status`string`(optional)**Example:**1-1
+  Only show orders with this status. Valid `status` keys are:
 
 `All`
 
@@ -2665,14 +2751,14 @@ created_before`string`(optional)**Example:**2019-06-24T20:58:58Z
 Only show orders created before this ISO 8601 timestamp.
 
 archived`boolean`(optional)**Example:**true
-Only show orders with a specific archived status. If no key is provided, both statuses are returned. Valid `archived` keys are: 
+Only show orders with a specific archived status. If no key is provided, both statuses are returned. Valid `archived` keys are:
 
 `true`
 
 `false`
 
 sort`string`(optional)**Example:**1-1
-Sort items by this field (see below). Valid `sort` keys are: 
+Sort items by this field (see below). Valid `sort` keys are:
 
 `id`
 
@@ -2687,11 +2773,13 @@ Sort items by this field (see below). Valid `sort` keys are:
 sort_order`string`(optional)**Example:**1-1
 Sort items in a particular order (one of `asc`, `desc`)
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 780Date: Tue, 15 Jul 2014 19:59:59 GMTX-Varnish: 1702965334Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -2783,15 +2871,17 @@ Returns a list of the order’s messages with the most recent first. Accepts [Pa
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the seller is required.
 
-*   **Parameters**
-*   order_id`string`(required)**Example:**1-1
-The ID of the order you are fetching
+- **Parameters**
+- order_id`string`(required)**Example:**1-1
+  The ID of the order you are fetching
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 780Date: Tue, 15 Jul 2014 19:59:59 GMTX-Varnish: 1702965334Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -2938,25 +3028,27 @@ Add New Message
 
 Adds a new message to the order’s message log.
 
- When posting a new message, you can simultaneously change the order status. If you do, the message will automatically be prepended with:
+When posting a new message, you can simultaneously change the order status. If you do, the message will automatically be prepended with:
 
 `Seller changed status from Old Status to New Status`
 
- While `message` and `status` are each optional, one or both must be present.
+While `message` and `status` are each optional, one or both must be present.
 
-*   **Parameters**
-*   order_id`string`(required)**Example:**1-1
-The ID of the order you are fetching
+- **Parameters**
+- order_id`string`(required)**Example:**1-1
+  The ID of the order you are fetching
 
 message`string`(optional)**Example:**hello world status`string`(optional)**Example:**New Order
 
-*   **Request**Toggle
-*    
+- **Request**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`201`**Toggle
-*   ##### Body
+
+- **Response`201`**Toggle
+- ##### Body
 
 ```
 {
@@ -2973,8 +3065,9 @@ message`string`(optional)**Example:**hello world status`string`(optional)**Examp
   "subject": "Discogs Order #1-1, Stockholm"
 }
 ```
-*   **Response`403`**Toggle
-*   ##### Body
+
+- **Response`403`**Toggle
+- ##### Body
 
 ```
 {
@@ -2992,15 +3085,17 @@ Calculate Fee
 
 The Fee resource allows you to quickly calculate the fee for selling an item on the Marketplace.
 
-*   **Parameters**
-*   price`number`(optional)**Example:**10.00
-The price to calculate a fee from
+- **Parameters**
+- price`number`(optional)**Example:**10.00
+  The price to calculate a fee from
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 780Date: Tue, 15 Jul 2014 19:59:59 GMTX-Varnish: 1702965334Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -3020,20 +3115,22 @@ Calculate Fee
 
 The Fee resource allows you to quickly calculate the fee for selling an item on the Marketplace given a particular currency.
 
-*   **Parameters**
-*   price`number`(optional)**Example:**10.00
-The price to calculate a fee from
+- **Parameters**
+- price`number`(optional)**Example:**10.00
+  The price to calculate a fee from
 
 currency`string`(optional)**Example:**USD
-Defaults to `USD`. Must be one of the following: 
+Defaults to `USD`. Must be one of the following:
 
 `USD``GBP``EUR``CAD``AUD``JPY``CHF``MXN``BRL``NZD``SEK``ZAR`
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 780Date: Tue, 15 Jul 2014 19:59:59 GMTX-Varnish: 1702965334Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -3055,15 +3152,17 @@ Retrieve price suggestions for the provided Release ID. If no suggestions are av
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) is required, and the user needs to have filled out their seller settings. Suggested prices will be denominated in the user’s selling currency.
 
-*   **Parameters**
-*   release_id`number`(required)**Example:**1
-The release ID to calculate a price from.
+- **Parameters**
+- release_id`number`(required)**Example:**1
+  The release ID to calculate a price from.
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 780Date: Tue, 15 Jul 2014 19:59:59 GMTX-Varnish: 1702965334Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -3117,20 +3216,22 @@ Retrieve marketplace statistics for the provided Release ID. These statistics re
 
 Releases that have no items for sale in the marketplace will return a body with null data in the `lowest_price` and `num_for_sale` keys. Releases that are blocked for sale will also have null data for these keys.
 
-*   **Parameters**
-*   release_id`number`(required)**Example:**1
-The release ID whose stats are desired
+- **Parameters**
+- release_id`number`(required)**Example:**1
+  The release ID whose stats are desired
 
 curr_abbr`string`(optional)**Example:**USD
-Currency for marketplace data. Defaults to the authenticated users currency. Must be one of the following: 
+Currency for marketplace data. Defaults to the authenticated users currency. Must be one of the following:
 
 `USD``GBP``EUR``CAD``AUD``JPY``CHF``MXN``BRL``NZD``SEK``ZAR`
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 780Date: Tue, 15 Jul 2014 19:59:59 GMTX-Varnish: 1702965334Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -3146,7 +3247,7 @@ Currency for marketplace data. Defaults to the authenticated users currency. Mus
 
 [Next](https://www.discogs.com/developers/#page:inventory-export)[Previous](https://www.discogs.com/developers/#page:images)
 
-* * *
+---
 
 # Inventory Export[](https://www.discogs.com/developers/#page:inventory-export)
 
@@ -3160,18 +3261,23 @@ Export your inventory
 
 Request an export of your inventory as a CSV.
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/jsonLocation: https://api.discogs.com/inventory/export/599632`
-*   **Response`401`**Toggle
-*    
+
+- **Response`401`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`409`**Toggle
-*    
+
+- **Response`409`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
@@ -3186,11 +3292,13 @@ Get recent exports
 
 Get a list of all recent exports of your inventory. Accepts [Pagination parameters](https://www.discogs.com/developers/#page:home,header:home-pagination).
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
+
 ##### Body
 
 ```
@@ -3215,8 +3323,10 @@ Get a list of all recent exports of your inventory. Accepts [Pagination paramete
   }
 }
 ```
-*   **Response`401`**Toggle
-*    
+
+- **Response`401`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
@@ -3231,20 +3341,24 @@ Get an export
 
 Get details about the status of an inventory export.
 
-*   **Parameters**
-*   id`number`(required)
-Id of the export.
+- **Parameters**
+- id`number`(required)
+  Id of the export.
 
-*   **Request**Toggle
-*    
+- **Request**Toggle
+-
+
 ##### Headers
 
 `Content-Type: multipart/form-dataIf-Modified-Since: Thu, 27 Sep 2018 12:50:39 GMT`
-*   **Response`200`**Toggle
-*    
+
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/jsonLast-Modified: Thu, 27 Sep 2018 12:59:02 GMT`
+
 ##### Body
 
 ```
@@ -3258,14 +3372,18 @@ Id of the export.
   "id": 599632
 }
 ```
-*   **Response`304`**
-*   **Response`401`**Toggle
-*    
+
+- **Response`304`**
+- **Response`401`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
@@ -3280,29 +3398,34 @@ Download an export
 
 Download the results of an inventory export.
 
-*   **Parameters**
-*   id`number`(required)
-Id of the export.
+- **Parameters**
+- id`number`(required)
+  Id of the export.
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: text/csv; charset=utf-8Content-Disposition: attachment; filename=cburmeister-inventory-20180927-1259.csv`
-*   **Response`401`**Toggle
-*    
+
+- **Response`401`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
 
 [Next](https://www.discogs.com/developers/#page:inventory-upload)[Previous](https://www.discogs.com/developers/#page:marketplace)
 
-* * *
+---
 
 # Inventory Upload[](https://www.discogs.com/developers/#page:inventory-upload)
 
@@ -3335,80 +3458,89 @@ These listings will be marked “For Sale” immediately. Currency information w
 
 ### Required fields [¶](https://www.discogs.com/developers/#header-required-fields)
 
-*   `release_id` - Must be a number. This value corresponds with the Discogs database Release ID.
+- `release_id` - Must be a number. This value corresponds with the Discogs database Release ID.
 
-*   `price` - Must be a number.
+- `price` - Must be a number.
 
-*   `media_condition` - Must be a valid condition (see below).
+- `media_condition` - Must be a valid condition (see below).
 
 ### Optional fields [¶](https://www.discogs.com/developers/#header-optional-fields)
 
-*   `sleeve_condition` - Must be a valid condition (see below).
+- `sleeve_condition` - Must be a valid condition (see below).
 
-*   `comments``accept_offer` - Must be Y or N.
+- `comments``accept_offer` - Must be Y or N.
 
-*   `location` - Private free-text field to help identify an item’s physical location.
+- `location` - Private free-text field to help identify an item’s physical location.
 
-*   `external_id` - Private notes or IDs for your own reference.
+- `external_id` - Private notes or IDs for your own reference.
 
-*   `weight` - In grams. Must be a non-negative integer.
+- `weight` - In grams. Must be a non-negative integer.
 
-*   `format_quantity` - Number of items that this item counts as (for shipping).
+- `format_quantity` - Number of items that this item counts as (for shipping).
 
 ### Conditions [¶](https://www.discogs.com/developers/#header-conditions)
 
 When you specify a media condition, it must exactly match one of these:
 
-*   `Mint (M)`
+- `Mint (M)`
 
-*   `Near Mint (NM or M-)`
+- `Near Mint (NM or M-)`
 
-*   `Very Good Plus (VG+)`
+- `Very Good Plus (VG+)`
 
-*   `Very Good (VG)`
+- `Very Good (VG)`
 
-*   `Good Plus (G+)`
+- `Good Plus (G+)`
 
-*   `Good (G)`
+- `Good (G)`
 
-*   `Fair (F)`
+- `Fair (F)`
 
-*   `Poor (P)`
+- `Poor (P)`
 
 Sleeve condition may be any of the above, or:
 
-*   `Not Graded`
+- `Not Graded`
 
-*   `Generic`
+- `Generic`
 
-*   `No Cover`
+- `No Cover`
 
-*   **Parameters**
-*   upload`file`(required)
-The CSV file of items to add to your inventory.
+- **Parameters**
+- upload`file`(required)
+  The CSV file of items to add to your inventory.
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/jsonLocation: https://api.discogs.com/inventory/upload/599632`
-*   **Response`401`**Toggle
-*    
+
+- **Response`401`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`409`**Toggle
-*    
+
+- **Response`409`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`415`**Toggle
-*    
+
+- **Response`415`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`422`**Toggle
-*    
+
+- **Response`422`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
@@ -3442,82 +3574,91 @@ These listings will be marked “For Sale” immediately. Currency information w
 
 ### Required fields [¶](https://www.discogs.com/developers/#header-required-fields-1)
 
-*   `release_id` - Must be a number. This value corresponds with the Discogs database Release ID.
+- `release_id` - Must be a number. This value corresponds with the Discogs database Release ID.
 
-## Optional fields (at least one required) [¶](https://www.discogs.com/developers/#header-optional-fields-(at-least-one-required))
+## Optional fields (at least one required) [¶](<https://www.discogs.com/developers/#header-optional-fields-(at-least-one-required)>)
 
-*   `price` -
+- `price` -
 
-*   `media_condition` - Must be a valid condition (see below).
+- `media_condition` - Must be a valid condition (see below).
 
-*   `sleeve_condition` - Must be a valid condition (see below).
+- `sleeve_condition` - Must be a valid condition (see below).
 
-*   `comments`
+- `comments`
 
-*   `accept_offer` - Must be Y or N.
+- `accept_offer` - Must be Y or N.
 
-*   `external_id` - Private notes or IDs for your own reference.
+- `external_id` - Private notes or IDs for your own reference.
 
-*   `location` - Private free-text field to help identify an item’s physical location.
+- `location` - Private free-text field to help identify an item’s physical location.
 
-*   `weight` - In grams. Must be a non-negative integer.
+- `weight` - In grams. Must be a non-negative integer.
 
-*   `format_quantity` - Number of items that this item counts as (for shipping).
+- `format_quantity` - Number of items that this item counts as (for shipping).
 
 ### Conditions [¶](https://www.discogs.com/developers/#header-conditions-1)
 
 When you specify a media condition, it must exactly match one of these:
 
-*   `Mint (M)`
+- `Mint (M)`
 
-*   `Near Mint (NM or M-)`
+- `Near Mint (NM or M-)`
 
-*   `Very Good Plus (VG+)`
+- `Very Good Plus (VG+)`
 
-*   `Very Good (VG)`
+- `Very Good (VG)`
 
-*   `Good Plus (G+)`
+- `Good Plus (G+)`
 
-*   `Good (G)`
+- `Good (G)`
 
-*   `Fair (F)`
+- `Fair (F)`
 
-*   `Poor (P)`
+- `Poor (P)`
 
 Sleeve condition may be any of the above, or:
 
-*   `Not Graded`
+- `Not Graded`
 
-*   `Generic`
+- `Generic`
 
-*   `No Cover`
+- `No Cover`
 
-*   **Parameters**
-*   upload`file`(required)
-The CSV file of items to alter in your inventory.
+- **Parameters**
+- upload`file`(required)
+  The CSV file of items to alter in your inventory.
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/jsonLocation: https://api.discogs.com/inventory/upload/599632`
-*   **Response`401`**Toggle
-*    
+
+- **Response`401`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`409`**Toggle
-*    
+
+- **Response`409`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`415`**Toggle
-*    
+
+- **Response`415`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`422`**Toggle
-*    
+
+- **Response`422`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
@@ -3547,34 +3688,43 @@ listing_id
 
 ### Required fields [¶](https://www.discogs.com/developers/#header-required-fields-2)
 
-*   `listing_id` - Must be a number. This is the ID of the listing you wish to delete.
+- `listing_id` - Must be a number. This is the ID of the listing you wish to delete.
 
-*   **Parameters**
-*   upload`file`(required)
-The CSV file listing items to remove from your inventory.
+- **Parameters**
+- upload`file`(required)
+  The CSV file listing items to remove from your inventory.
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/jsonLocation: https://api.discogs.com/inventory/upload/599632`
-*   **Response`401`**Toggle
-*    
+
+- **Response`401`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`409`**Toggle
-*    
+
+- **Response`409`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`415`**Toggle
-*    
+
+- **Response`415`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`422`**Toggle
-*    
+
+- **Response`422`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
@@ -3589,11 +3739,13 @@ Get recent uploads
 
 Get a list of all recent inventory uploads. Accepts [Pagination parameters](https://www.discogs.com/developers/#page:home,header:home-pagination).
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
+
 ##### Body
 
 ```
@@ -3618,8 +3770,10 @@ Get a list of all recent inventory uploads. Accepts [Pagination parameters](http
   }
 }
 ```
-*   **Response`401`**Toggle
-*    
+
+- **Response`401`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
@@ -3634,20 +3788,24 @@ Get an upload
 
 Get details about the status of an inventory upload.
 
-*   **Parameters**
-*   id`number`(required)
-Id of the export.
+- **Parameters**
+- id`number`(required)
+  Id of the export.
 
-*   **Request**Toggle
-*    
+- **Request**Toggle
+-
+
 ##### Headers
 
 `Content-Type: multipart/form-dataIf-Modified-Since: Thu, 27 Sep 2018 09:20:28 GMT`
-*   **Response`200`**Toggle
-*    
+
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
+
 ##### Body
 
 ```
@@ -3661,21 +3819,25 @@ Id of the export.
   "id": 119615
 }
 ```
-*   **Response`304`**
-*   **Response`401`**Toggle
-*    
+
+- **Response`304`**
+- **Response`401`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
-*   **Response`404`**Toggle
-*    
+
+- **Response`404`**Toggle
+-
+
 ##### Headers
 
 `Content-Type: application/json`
 
 [Next](https://www.discogs.com/developers/#page:user-identity)[Previous](https://www.discogs.com/developers/#page:inventory-export)
 
-* * *
+---
 
 # User Identity[](https://www.discogs.com/developers/#page:user-identity)
 
@@ -3689,19 +3851,22 @@ Get Identity
 
 Retrieve basic information about the authenticated user.
 
- You can use this resource to find out who you’re authenticated as, and it also doubles as a good sanity check to ensure that you’re using OAuth correctly.
+You can use this resource to find out who you’re authenticated as, and it also doubles as a good sanity check to ensure that you’re using OAuth correctly.
 
- For more detailed information, make another request for the user’s Profile.
+For more detailed information, make another request for the user’s Profile.
 
-*   **Request**Toggle
-*   ##### Body
+- **Request**Toggle
+- ##### Body
 
 `GET https://api.discogs.com/oauth/identity`
-*   **Response`200`**Toggle
-*    
+
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonContent-Encoding: gzipContent-Location: https://api.discogs.com/oauth/identity?oauth_body_hash=some_hash&oauth_nonce=...Server: lighttpdContent-Length: 127Date: Tue, 15 Jul 2014 18:44:17 GMTX-Varnish: 1718276369Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -3712,11 +3877,14 @@ Retrieve basic information about the authenticated user.
   "consumer_name": "Your Application Name"
 }
 ```
-*   **Response`401`**Toggle
-*    
+
+- **Response`401`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 401 UnauthorizedReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonWWW-Authenticate: OAuth realm="https://api.discogs.com"Server: lighttpdContent-Length: 61Date: Wed, 16 Jul 2014 18:42:38 GMTX-Varnish: 1718433436Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -3735,19 +3903,21 @@ Get Profile
 
 Retrieve a user by username.
 
- If authenticated as the requested user, the `email` key will be visible, and the `num_list` count will include the user’s private lists.
+If authenticated as the requested user, the `email` key will be visible, and the `num_list` count will include the user’s private lists.
 
- If authenticated as the requested user or the user’s collection/wantlist is public, the `num_collection` / `num_wantlist` keys will be visible.
+If authenticated as the requested user or the user’s collection/wantlist is public, the `num_collection` / `num_wantlist` keys will be visible.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of whose profile you are requesting.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of whose profile you are requesting.
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Status: HTTP/1.1 200 OKReproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 858Date: Wed, 16 Jul 2014 18:46:21 GMTX-Varnish: 1718492795Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -3796,9 +3966,9 @@ Edit a user’s profile data.
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the user is required.
 
-*   **Parameters**
-*   username`string`(required)**Example:**vreon
-The username of the user.
+- **Parameters**
+- username`string`(required)**Example:**vreon
+  The username of the user.
 
 name`string`(optional)**Example:**Nicolas Cage
 The real name of the user.
@@ -3813,12 +3983,12 @@ profile`string`(optional)**Example:**I am a Discogs user!
 Biographical information about the user.
 
 curr_abbr`string`(optional)**Example:**USD
-Currency for marketplace data. Must be one of the following: 
+Currency for marketplace data. Must be one of the following:
 
 `USD``GBP``EUR``CAD``AUD``JPY``CHF``MXN``BRL``NZD``SEK``ZAR`
 
-*   **Response`200`**Toggle
-*   ##### Body
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -3847,8 +4017,9 @@ Currency for marketplace data. Must be one of the following:
   "rating_avg": 2.5
 }
 ```
-*   **Response`403`**Toggle
-*   ##### Body
+
+- **Response`403`**Toggle
+- ##### Body
 
 ```
 {
@@ -3868,12 +4039,12 @@ Get Submissions
 
 Retrieve a user’s submissions by username. Accepts [Pagination](https://www.discogs.com/developers/#page:home,header:home-pagination) parameters.
 
-*   **Parameters**
-*   username`string`(required)**Example:**shooezgirl
-The username of the submissions you are trying to fetch.
+- **Parameters**
+- username`string`(required)**Example:**shooezgirl
+  The username of the submissions you are trying to fetch.
 
-*   **Response`200`**Toggle
-*   ##### Body
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -4065,9 +4236,9 @@ Valid `sort_order` keys are:
 
 `desc`
 
-*   **Parameters**
-*   username`string`(required)**Example:**shooezgirl
-The username of the submissions you are trying to fetch.
+- **Parameters**
+- username`string`(required)**Example:**shooezgirl
+  The username of the submissions you are trying to fetch.
 
 sort`string`(optional)**Example:**artist
 Sort items by this field (see below for all valid `sort` keys.
@@ -4075,8 +4246,8 @@ Sort items by this field (see below for all valid `sort` keys.
 sort_order`string`(optional)**Example:**desc
 Sort items in a particular order (`asc` or `desc`)
 
-*   **Response`200`**Toggle
-*   ##### Body
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -4198,7 +4369,7 @@ Sort items in a particular order (`asc` or `desc`)
 
 [Next](https://www.discogs.com/developers/#page:user-collection)[Previous](https://www.discogs.com/developers/#page:inventory-upload)
 
-* * *
+---
 
 # User Collection[](https://www.discogs.com/developers/#page:user-collection)
 
@@ -4206,11 +4377,11 @@ Sort items in a particular order (`asc` or `desc`)
 
 The Collection resource allows you to view and manage a user’s collection.
 
- A collection is arranged into folders. Every user has two permanent folders already:
+A collection is arranged into folders. Every user has two permanent folders already:
 
 ID `0`, the “All” folder, which cannot have releases added to it, and
 
- ID `1`, the “Uncategorized” folder.
+ID `1`, the “Uncategorized” folder.
 
 Because it’s possible to own more than one copy of a release, each with its own notes, grading, and so on, each instance of a release in a folder has an instance ID.
 
@@ -4224,15 +4395,17 @@ Get Collection Folders
 
 Retrieve a list of folders in a user’s collection. If the collection has been made private by its owner, [authentication](https://www.discogs.com/developers/#page:authentication) as the collection owner is required. If you are not authenticated as the collection owner, only folder ID 0 (the “All” folder) will be visible (if the requested user’s collection is public).
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to retrieve.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to retrieve.
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Reproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 132Date: Wed, 16 Jul 2014 23:20:21 GMTX-Varnish: 1722533701Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -4264,15 +4437,15 @@ Create a new folder in a user’s collection.
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the collection owner is required.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to retrieve.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to retrieve.
 
 name`string`(optional)**Example:**My favorites
 The name of the newly-created folder.
 
-*   **Response`201`**Toggle
-*   ##### Body
+- **Response`201`**Toggle
+- ##### Body
 
 ```
 {
@@ -4295,18 +4468,20 @@ Retrieve metadata about a folder in a user’s collection.
 
 If `folder_id` is not `0`, [authentication](https://www.discogs.com/developers/#page:authentication) as the collection owner is required.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to request.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to request.
 
 folder_id`number`(required)**Example:**3
 The ID of the folder to request.
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Reproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 132Date: Wed, 16 Jul 2014 23:20:21 GMTX-Varnish: 1722533701Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -4328,15 +4503,15 @@ Edit a folder’s metadata. Folders `0` and `1` cannot be renamed.
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the collection owner is required.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to modify.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to modify.
 
 folder_id`number`(required)**Example:**3
 The ID of the folder to modify.
 
-*   **Response`200`**Toggle
-*   ##### Body
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -4357,14 +4532,14 @@ Delete a folder from a user’s collection. A folder must be empty before it can
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the collection owner is required.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to modify.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to modify.
 
 folder_id`number`(required)**Example:**3
 The ID of the folder to delete.
 
-*   **Response`204`**
+- **Response`204`**
 
 ## Collection Items By Release[](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-items-by-release)
 
@@ -4380,15 +4555,15 @@ The `release_id` must be non-zero.
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the collection owner is required if the owner’s collection is private.
 
-*   **Parameters**
-*   username`string`(required)**Example:**susan.salkeld
-The username of the collection you are trying to view.
+- **Parameters**
+- username`string`(required)**Example:**susan.salkeld
+  The username of the collection you are trying to view.
 
 release_id`number`(required)**Example:**7781525
 The ID of the release to request.
 
-*   **Response`200`**Toggle
-*   ##### Body
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -4582,9 +4757,9 @@ Valid `sort` keys are:
 
 `year`
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to request.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to request.
 
 folder_id`number`(required)**Example:**3
 The ID of the folder to request.
@@ -4595,11 +4770,13 @@ Sort items by this field (see below for all valid `sort` keys.
 sort_order`string`(optional)**Example:**desc
 Sort items in a particular order (`asc` or `desc`)
 
-*   **Response`200`**Toggle
-*    
+- **Response`200`**Toggle
+-
+
 ##### Headers
 
 `Reproxy-Status: yesAccess-Control-Allow-Origin: *Cache-Control: public, must-revalidateContent-Type: application/jsonServer: lighttpdContent-Length: 132Date: Wed, 16 Jul 2014 23:20:21 GMTX-Varnish: 1722533701Age: 0Via: 1.1 varnishConnection: keep-alive`
+
 ##### Body
 
 ```
@@ -4655,7 +4832,7 @@ Sort items in a particular order (`asc` or `desc`)
           }
         ],
         "genres": [
-            "Electronic", 
+            "Electronic",
             "Pop"
         ],
         "styles": [
@@ -4687,9 +4864,9 @@ The `folder_id` must be non-zero – you can use `1` for “Uncategorized”.
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the collection owner is required.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to modify.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to modify.
 
 folder_id`number`(required)**Example:**3
 The ID of the folder to modify.
@@ -4697,8 +4874,8 @@ The ID of the folder to modify.
 release_id`number`(required)**Example:**130076
 The ID of the release you are adding.
 
-*   **Response`201`**Toggle
-*   ##### Body
+- **Response`201`**Toggle
+- ##### Body
 
 ```
 {
@@ -4721,9 +4898,9 @@ This endpoint potentially takes 2 `folder_id` parameters: one in the URL (which 
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the collection owner is required.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to modify.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to modify.
 
 folder_id`number`(optional)**Example:**4
 The ID of the folder to modify (this parameter is set in the request body and is set if you want to move the instance to this folder).
@@ -4737,7 +4914,7 @@ The ID of the instance.
 rating`number`(optional)**Example:**5
 The rating of the instance you are supplying.
 
-*   **Response`204`**
+- **Response`204`**
 
 ## Delete Instance From Folder[](https://www.discogs.com/developers/#page:user-collection,header:user-collection-delete-instance-from-folder)
 
@@ -4753,9 +4930,9 @@ To move the release to the “Uncategorized” folder instead, use the `POST` me
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the collection owner is required.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to modify.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to modify.
 
 folder_id`number`(required)**Example:**3
 The ID of the folder to modify.
@@ -4766,9 +4943,9 @@ The ID of the release you are modifying.
 instance_id`number`(required)**Example:**1
 The ID of the instance.
 
-*   **Response`204`**
-*   **Response`403`**Toggle
-*   ##### Body
+- **Response`204`**
+- **Response`403`**Toggle
+- ##### Body
 
 ```
 {
@@ -4790,12 +4967,12 @@ If the collection has been made private by its owner, [authentication](https://w
 
 If you are not authenticated as the collection owner, only fields with public set to true will be visible.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to modify.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to modify.
 
-*   **Response`200`**Toggle
-*   ##### Body
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -4858,9 +5035,9 @@ Edit Fields
 
 Change the value of a notes field on a particular instance.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to modify.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to modify.
 
 value`string`(required)**Example:**foo
 The new value of the field. If the field’s type is `dropdown`, the `value` must match one of the values in the field’s list of options.
@@ -4877,7 +5054,7 @@ The ID of the instance.
 field_id`number`(required)**Example:**8
 The ID of the field.
 
-*   **Response`204`**
+- **Response`204`**
 
 ## Collection Value[](https://www.discogs.com/developers/#page:user-collection,header:user-collection-collection-value)
 
@@ -4891,12 +5068,12 @@ Returns the minimum, median, and maximum value of a user’s collection.
 
 [Authentication](https://www.discogs.com/developers/#page:authentication) as the collection owner is required.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the collection you are trying to modify.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the collection you are trying to modify.
 
-*   **Response`200`**Toggle
-*   ##### Body
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -4908,7 +5085,7 @@ The username of the collection you are trying to modify.
 
 [Next](https://www.discogs.com/developers/#page:user-wantlist)[Previous](https://www.discogs.com/developers/#page:user-identity)
 
-* * *
+---
 
 # User Wantlist[](https://www.discogs.com/developers/#page:user-wantlist)
 
@@ -4930,12 +5107,12 @@ If the wantlist has been made private by its owner, you must be authenticated as
 
 The `notes` field will be visible if you are authenticated as the wantlist owner.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the wantlist you are trying to fetch.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the wantlist you are trying to fetch.
 
-*   **Response`200`**Toggle
-*   ##### Body
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -5049,9 +5226,9 @@ Add To Wantlist
 
 `/users/{username}/wants/{release_id}{?notes,rating}`
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the wantlist you are trying to fetch.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the wantlist you are trying to fetch.
 
 release_id`number`(required)**Example:**130076
 The ID of the release you are adding.
@@ -5062,8 +5239,8 @@ User notes to associate with this release.
 rating`number`(optional)**Example:**5
 User’s rating of this release, from `0` (unrated) to `5` (best). Defaults to `0`.
 
-*   **Response`201`**Toggle
-*   ##### Body
+- **Response`201`**Toggle
+- ##### Body
 
 ```
 {
@@ -5118,9 +5295,9 @@ Edit Release In Wantlist
 
 `/users/{username}/wants/{release_id}{?notes,rating}`
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the wantlist you are trying to fetch.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the wantlist you are trying to fetch.
 
 notes`string`(optional)**Example:**My favorite release
 User notes to associate with this release.
@@ -5128,8 +5305,8 @@ User notes to associate with this release.
 rating`number`(optional)**Example:**5
 User’s rating of this release, from `0` (unrated) to `5` (best). Defaults to `0`.
 
-*   **Response`200`**Toggle
-*   ##### Body
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -5184,15 +5361,15 @@ Delete Release From Wantlist
 
 `/users/{username}/wants/{release_id}{?notes,rating}`
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the wantlist you are trying to fetch.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the wantlist you are trying to fetch.
 
-*   **Response`204`**
+- **Response`204`**
 
 [Next](https://www.discogs.com/developers/#page:user-lists)[Previous](https://www.discogs.com/developers/#page:user-collection)
 
-* * *
+---
 
 # User Lists[](https://www.discogs.com/developers/#page:user-lists)
 
@@ -5208,12 +5385,12 @@ Get Lists
 
 Returns a User’s Lists. Private Lists will only display when authenticated as the owner. Accepts [Pagination](https://www.discogs.com/developers/#page:home,header:home-pagination) parameters.
 
-*   **Parameters**
-*   username`string`(required)**Example:**rodneyfool
-The username of the Lists you are trying to fetch.
+- **Parameters**
+- username`string`(required)**Example:**rodneyfool
+  The username of the Lists you are trying to fetch.
 
-*   **Response`200`**Toggle
-*   ##### Body
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -5252,12 +5429,12 @@ Get List Items
 
 Returns items from a specified List. Private Lists will only display when authenticated as the owner.
 
-*   **Parameters**
-*   list_id`string`(required)**Example:**123
-The ID of the List you are trying to fetch.
+- **Parameters**
+- list_id`string`(required)**Example:**123
+  The ID of the List you are trying to fetch.
 
-*   **Response`200`**Toggle
-*   ##### Body
+- **Response`200`**Toggle
+- ##### Body
 
 ```
 {
@@ -5303,6 +5480,6 @@ The ID of the List you are trying to fetch.
 
 [Previous](https://www.discogs.com/developers/#page:user-wantlist)
 
-* * *
+---
 
 This page may not display correctly when opened as a local file. Instead, view it from a web server.

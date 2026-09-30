@@ -1,6 +1,6 @@
 <script lang="ts">
-	import "./layout.css";
-	import AppNav from "$lib/components/ui/AppNav.svelte";
+	import './layout.css';
+	import AppNav from '$lib/components/ui/AppNav.svelte';
 
 	let { children } = $props();
 </script>
@@ -15,14 +15,10 @@
 </svelte:head>
 
 <AppNav />
-<main
-	class="mx-auto min-h-[calc(100dvh-4.5rem)] w-full max-w-[1040px] px-7 pb-24 pt-14"
->
+<main class="mx-auto min-h-[calc(100dvh-4.5rem)] w-full max-w-[1040px] px-7 pb-24 pt-14">
 	{@render children()}
 </main>
 
 <footer class="border-t border-hair py-10 text-center">
-	<p class="text-[11px] uppercase tracking-[.22em] text-faint">
-		mynyl — a vinyl index
-	</p>
+	<p class="text-[11px] uppercase tracking-[.22em] text-faint">mynyl — a vinyl index</p>
 </footer>

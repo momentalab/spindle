@@ -36,19 +36,13 @@ process.env.DATA_DIR = DATA;
 
 const { getDb } = await import('../src/lib/server/db');
 const db = getDb(); // runs migration v6 on the copy
-const {
-	isLeadWordNormalizationOn,
-	setLeadWordNormalization,
-	normalizeLeadWord,
-	applyLeadWordToAllRecords
-} = await import('../src/lib/server/artist');
+const { isLeadWordNormalizationOn, setLeadWordNormalization, normalizeLeadWord, applyLeadWordToAllRecords } =
+	await import('../src/lib/server/artist');
 const { createRecord, updateRecord, findRecordById } = await import('../src/lib/server/records');
 import type { NewRecordInput } from '../src/lib/server/records';
 
-const fkClean = (): boolean =>
-	(db.prepare('PRAGMA foreign_key_check').all() as unknown[]).length === 0;
-const count = (t: string): number =>
-	(db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;
+const fkClean = (): boolean => (db.prepare('PRAGMA foreign_key_check').all() as unknown[]).length === 0;
+const count = (t: string): number => (db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;
 
 // --- pure transform ---------------------------------------------------------
 assert.equal(normalizeLeadWord('Beatles, The'), 'The Beatles');
@@ -57,9 +51,11 @@ assert.equal(normalizeLeadWord('The Beatles'), 'The Beatles'); // idempotent
 assert.equal(normalizeLeadWord('Daft Punk, The, Remaster'), 'Daft Punk, The, Remaster');
 
 // --- migration on the copy ---------------------------------------------------
-const versions = (db.prepare('SELECT version FROM schema_migrations ORDER BY version').all() as {
-	version: number;
-}[])
+const versions = (
+	db.prepare('SELECT version FROM schema_migrations ORDER BY version').all() as {
+		version: number;
+	}[]
+)
 	.map((r) => r.version)
 	.sort((a, b) => a - b);
 assert.deepEqual(versions, [1, 2, 3, 4, 5, 6]);
@@ -70,8 +66,7 @@ const before: Record<'records' | 'photos' | 'plays', number> = {
 	plays: count('plays')
 };
 // The migration must not have disturbed collection data or FKs.
-for (const t of ['records', 'photos', 'plays'] as const)
-	assert.equal(count(t), before[t], `row drift in ${t}`);
+for (const t of ['records', 'photos', 'plays'] as const) assert.equal(count(t), before[t], `row drift in ${t}`);
 assert.ok(fkClean(), 'foreign_key_check dirty after migration');
 
 // The copy inherits whatever the live DB holds (a real user preference) —
@@ -82,11 +77,7 @@ setLeadWordNormalization(true);
 assert.equal(isLeadWordNormalizationOn(), true);
 setLeadWordNormalization(false);
 assert.equal(isLeadWordNormalizationOn(), false);
-assert.equal(
-	count('settings'),
-	1,
-	'settings should hold exactly the one seeded key after upserts',
-);
+assert.equal(count('settings'), 1, 'settings should hold exactly the one seeded key after upserts');
 
 // --- write-time normalization through the real data access --------------------
 const base = (over: Partial<NewRecordInput>): NewRecordInput => ({
@@ -138,8 +129,9 @@ assert.equal(edited2?.artist, 'Eurythmics, The'); // verbatim while off
 // Trailing-lead rows: "Beatles, The", "Eurythmics, The" + whatever the live
 // copy carried. Compute the expectation from the current state rather than a
 // hard count so the script holds as the collection grows.
-const pendingBefore = (db.prepare('SELECT id, artist FROM records').all() as { id: number; artist: string }[])
-	.filter((r) => normalizeLeadWord(r.artist) !== r.artist);
+const pendingBefore = (db.prepare('SELECT id, artist FROM records').all() as { id: number; artist: string }[]).filter(
+	(r) => normalizeLeadWord(r.artist) !== r.artist
+);
 assert.ok(pendingBefore.length >= 2, 'expected at least the two trailing-lead test rows');
 
 const untouched = db
@@ -152,14 +144,14 @@ for (const r of pendingBefore) {
 	assert.equal(findRecordById(r.id)?.artist, normalizeLeadWord(r.artist));
 }
 // Untouched rows keep their updated_at — no spurious writes.
-const untouchedAfter = db.prepare(`SELECT id, updated_at FROM records WHERE id IN (${[...untouched.map((u) => u.id), 0].join(',')})`).all();
+const untouchedAfter = db
+	.prepare(`SELECT id, updated_at FROM records WHERE id IN (${[...untouched.map((u) => u.id), 0].join(',')})`)
+	.all();
 assert.ok(
 	untouched.every((u) =>
-		(untouchedAfter as { id: number; updated_at: string }[]).some(
-			(a) => a.id === u.id && a.updated_at === u.updated_at,
-		),
+		(untouchedAfter as { id: number; updated_at: string }[]).some((a) => a.id === u.id && a.updated_at === u.updated_at)
 	),
-	'backfill must not touch unrelated rows',
+	'backfill must not touch unrelated rows'
 );
 assert.equal(applyLeadWordToAllRecords(), 0, 'second run should change nothing');
 assert.ok(fkClean(), 'foreign_key_check dirty after backfill');

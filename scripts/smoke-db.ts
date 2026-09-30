@@ -39,16 +39,28 @@ db.prepare('INSERT INTO record_labels (record_id, label, catno) VALUES (?, ?, ?)
 	'TL-1'
 );
 
-const row = db.prepare('SELECT artist, title, limited_edition, copies, status FROM records WHERE id = ?').get(info.lastInsertRowid) as Record<string, unknown>;
+const row = db
+	.prepare('SELECT artist, title, limited_edition, copies, status FROM records WHERE id = ?')
+	.get(info.lastInsertRowid) as Record<string, unknown>;
 console.log('read back:', JSON.stringify(row));
 
-const genres = (db.prepare('SELECT genre FROM record_genres WHERE record_id = ? ORDER BY id').all(Number(info.lastInsertRowid)) as { genre: string }[]).map((g) => g.genre);
+const genres = (
+	db.prepare('SELECT genre FROM record_genres WHERE record_id = ? ORDER BY id').all(Number(info.lastInsertRowid)) as {
+		genre: string;
+	}[]
+).map((g) => g.genre);
 console.log('genres:', JSON.stringify(genres));
 
-const styles = (db.prepare('SELECT style FROM record_styles WHERE record_id = ? ORDER BY id').all(Number(info.lastInsertRowid)) as { style: string }[]).map((s) => s.style);
+const styles = (
+	db.prepare('SELECT style FROM record_styles WHERE record_id = ? ORDER BY id').all(Number(info.lastInsertRowid)) as {
+		style: string;
+	}[]
+).map((s) => s.style);
 console.log('styles:', JSON.stringify(styles));
 
-const labels = db.prepare('SELECT label, catno FROM record_labels WHERE record_id = ? ORDER BY id').all(Number(info.lastInsertRowid)) as { label: string; catno: string | null }[];
+const labels = db
+	.prepare('SELECT label, catno FROM record_labels WHERE record_id = ? ORDER BY id')
+	.all(Number(info.lastInsertRowid)) as { label: string; catno: string | null }[];
 console.log('labels:', JSON.stringify(labels));
 
 // photos FK + cascade check

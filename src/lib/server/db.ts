@@ -141,9 +141,7 @@ const migrations: Migration[] = [
 				id: number;
 				genre: string | null;
 			}[];
-			const insert = db.prepare(
-				'INSERT OR IGNORE INTO record_genres (record_id, genre) VALUES (?, ?)'
-			);
+			const insert = db.prepare('INSERT OR IGNORE INTO record_genres (record_id, genre) VALUES (?, ?)');
 			const backfill = db.transaction(() => {
 				for (const row of rows) {
 					if (!row.genre) continue;
@@ -201,12 +199,8 @@ const migrations: Migration[] = [
 				style: string | null;
 				label: string | null;
 			}[];
-			const insStyle = db.prepare(
-				'INSERT OR IGNORE INTO record_styles (record_id, style) VALUES (?, ?)'
-			);
-			const insLabel = db.prepare(
-				'INSERT OR IGNORE INTO record_labels (record_id, label, catno) VALUES (?, ?, ?)'
-			);
+			const insStyle = db.prepare('INSERT OR IGNORE INTO record_styles (record_id, style) VALUES (?, ?)');
+			const insLabel = db.prepare('INSERT OR IGNORE INTO record_labels (record_id, label, catno) VALUES (?, ?, ?)');
 			const backfill = db.transaction(() => {
 				for (const row of rows) {
 					for (const s of parseStyleList(row.style)) insStyle.run(row.id, s);
@@ -302,16 +296,13 @@ const migrations: Migration[] = [
 			// Any result row here is a migration bug — surface it as a hard failure.
 			const violations = (db.prepare('PRAGMA foreign_key_check').all() as unknown[]).length;
 			if (violations > 0) {
-				throw new Error(
-					`migration v5: foreign_key_check reported ${violations} violation(s) — aborting startup`
-				);
+				throw new Error(`migration v5: foreign_key_check reported ${violations} violation(s) — aborting startup`);
 			}
 		}
 	},
 	{
 		version: 6,
-		description:
-			'settings key/value store (data-affecting app preferences; seeded with the artist lead-word toggle)',
+		description: 'settings key/value store (data-affecting app preferences; seeded with the artist lead-word toggle)',
 		up(db) {
 			db.exec(`
 				CREATE TABLE IF NOT EXISTS settings (
@@ -392,9 +383,7 @@ function migrate(db: Database.Database): void {
 	}[];
 	const done = new Set(applied.map((r) => r.version));
 
-	const insert = db.prepare(
-		'INSERT INTO schema_migrations (version, description) VALUES (?, ?)'
-	);
+	const insert = db.prepare('INSERT INTO schema_migrations (version, description) VALUES (?, ?)');
 	for (const m of migrations) {
 		if (done.has(m.version)) continue;
 		if (m.raw) {

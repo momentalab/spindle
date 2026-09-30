@@ -8,13 +8,7 @@ import { error, json } from '@sveltejs/kit';
 import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { MEDIA_DIR } from '$lib/server/paths';
-import {
-	addPhoto,
-	allocateMediaFilename,
-	deletePhoto,
-	findRecordById,
-	listPhotos
-} from '$lib/server/records';
+import { addPhoto, allocateMediaFilename, deletePhoto, findRecordById, listPhotos } from '$lib/server/records';
 
 export async function POST({ params, request }): Promise<Response> {
 	const recordId = Number.parseInt(params.id, 10);

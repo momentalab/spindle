@@ -29,9 +29,8 @@ export function storeSnapshot(recordId: number, snapshot: ReleaseSnapshot): void
 
 /** The stored snapshot for a record, or undefined when none exists. */
 export function snapshotForRecord(recordId: number): ReleaseSnapshot | undefined {
-	const row = getDb()
-		.prepare('SELECT payload FROM release_snapshots WHERE record_id = ?')
-		.get(recordId) as { payload: string } | undefined;
+	const row = getDb().prepare('SELECT payload FROM release_snapshots WHERE record_id = ?').get(recordId) as
+		{ payload: string } | undefined;
 	if (!row) return undefined;
 	try {
 		return JSON.parse(row.payload) as ReleaseSnapshot;

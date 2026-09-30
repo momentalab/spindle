@@ -29,9 +29,7 @@ export function settingsSummary(): SettingsSummary {
 	const db = getDb();
 	const count = (table: 'records' | 'photos' | 'plays'): number =>
 		(db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as { n: number }).n;
-	const artists = (db.prepare(`SELECT artist FROM records`).all() as { artist: string }[]).map(
-		(r) => r.artist,
-	);
+	const artists = (db.prepare(`SELECT artist FROM records`).all() as { artist: string }[]).map((r) => r.artist);
 	return {
 		discogs_configured: isConfigured(),
 		data_dir: DATA_DIR,

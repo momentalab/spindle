@@ -5,13 +5,7 @@
  */
 import { error, fail, redirect } from '@sveltejs/kit';
 import { searchReleases, getRelease, toSeed, DiscogsError } from '$lib/server/discogs';
-import {
-	findByBarcode,
-	findByDiscogsId,
-	addCopy,
-	acquireRecord,
-	parseRecordForm
-} from '$lib/server/records';
+import { findByBarcode, findByDiscogsId, addCopy, acquireRecord, parseRecordForm } from '$lib/server/records';
 import { importRecord } from '$lib/server/importer';
 import type { PageServerLoad, Actions } from './$types';
 import type { DiscogsSeed } from '$lib/types';

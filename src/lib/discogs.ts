@@ -6,9 +6,7 @@
  * Canonical public release URL for a record's `discogs_id`.
  * Returns null when the id is absent or not a positive integer.
  */
-export function discogsReleaseUrl(
-	discogsId: number | string | null | undefined
-): string | null {
+export function discogsReleaseUrl(discogsId: number | string | null | undefined): string | null {
 	if (discogsId === null || discogsId === undefined) return null;
 	const id = Number(discogsId);
 	if (!Number.isInteger(id) || id <= 0) return null;

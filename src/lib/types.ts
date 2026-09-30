@@ -183,14 +183,7 @@ export interface RecordDraft {
 }
 
 export type SortColumn =
-	| 'artist'
-	| 'title'
-	| 'year'
-	| 'genre'
-	| 'label'
-	| 'favorite_tracks'
-	| 'acquired_at'
-	| 'updated_at';
+	'artist' | 'title' | 'year' | 'genre' | 'label' | 'favorite_tracks' | 'acquired_at' | 'updated_at';
 
 export interface ListOptions {
 	search?: string;
@@ -246,7 +239,8 @@ export const DISCOGS_COMMA_GENRES = ['Folk, World, & Country'] as const;
  */
 const COMMA_GENRE_FRAGMENTS: Record<string, string> = Object.fromEntries(
 	[...DISCOGS_COMMA_GENRES].flatMap((g) =>
-		g.split(',')
+		g
+			.split(',')
 			.filter((p) => p.includes('&'))
 			.map((p) => [p.trim().toLowerCase(), g])
 	)
@@ -279,7 +273,8 @@ export function parseGenreList(raw: string | null | undefined): string[] {
 	for (const c of DISCOGS_COMMA_GENRES) {
 		if (!out.some((x) => x.toLowerCase() === c.toLowerCase())) continue;
 		const pieces = new Set(
-			c.split(',')
+			c
+				.split(',')
 				.filter((p) => !p.includes('&'))
 				.map((p) => p.trim().toLowerCase())
 		);

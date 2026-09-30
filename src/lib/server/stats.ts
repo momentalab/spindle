@@ -167,7 +167,11 @@ export interface CollectionStats {
 	condition_report: { graded: number; nm_or_better_pct: number | null }; // C3 headline
 	by_style: StatBarRow[]; // C4
 	cross_tab: CrossTabRow[]; // C5 — one row per dated decade, ascending
-	duplicates: { entries: number; biggest_copies: number; rows: { id: number; artist: string; title: string; copies: number }[] } | null; // C6
+	duplicates: {
+		entries: number;
+		biggest_copies: number;
+		rows: { id: number; artist: string; title: string; copies: number }[];
+	} | null; // C6
 	photos_total: number; // C7
 	records_with_photos: number; // C7
 	extremes: Extremes; // D2 — oldest / freshest parsed year
@@ -193,7 +197,9 @@ const WINDOW_LABELS: Record<StatsWindow, string> = {
 	all: 'since the first shelf'
 };
 /** D5 markers — powers of ten and friendly half-marks. */
-const MILESTONE_MARKS = [10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 3000, 5000];
+const MILESTONE_MARKS = [
+	10, 25, 50, 100, 150, 200, 250, 300, 350, 400, 450, 500, 600, 750, 1000, 1250, 1500, 2000, 2500, 3000, 5000
+];
 const DAY_MS = 86400000;
 /** C2 — fixed display order for the format spectrum. */
 const FORMAT_ORDER = ['7"', '10"', 'LP', 'Box', 'CD', 'Other'] as const;
@@ -231,14 +237,14 @@ function monthKey(d: Date): string {
 function shiftMonth(key: string, delta: number): string {
 	const [y, m] = key.split('-').map(Number);
 	const total = y * 12 + (m - 1) + delta;
-	return `${Math.floor(total / 12)}-${String(((total % 12) + 12) % 12 + 1).padStart(2, '0')}`;
+	return `${Math.floor(total / 12)}-${String((((total % 12) + 12) % 12) + 1).padStart(2, '0')}`;
 }
 
 /** Inclusive month count between two 'YYYY-MM' keys. */
 function monthsBetween(a: string, b: string): number {
 	const [ay, am] = a.split('-').map(Number);
 	const [by, bm] = b.split('-').map(Number);
-	return (by * 12 + bm) - (ay * 12 + am) + 1;
+	return by * 12 + bm - (ay * 12 + am) + 1;
 }
 
 function monthLabel(key: string): { full: string; short: string } {
@@ -304,7 +310,10 @@ function conditionOrdered(counts: Record<string, number>): StatBarRow[] {
 export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	const db = getDb();
 
-	const headline = (db.prepare(`
+	const headline =
+		(db
+			.prepare(
+				`
 		SELECT
 			COUNT(*) AS total,
 			SUM(status = 'in_collection') AS in_collection,
@@ -320,7 +329,9 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 			SUM(status = 'in_collection' AND price_paid IS NULL) AS unpriced_entries,
 			AVG(price_paid) AS avg_price
 		FROM records
-	`).get() as Record<string, null | number>) ?? {};
+	`
+			)
+			.get() as Record<string, null | number>) ?? {};
 
 	const n = (v: unknown): number => (typeof v === 'number' ? v : 0);
 
@@ -328,37 +339,49 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	   labels are each a set per record (junction tables) — every value a record
 	   carries gets its own bar, so a record on two labels counts toward both. */
 	const groupLabelRows = (): ValBarRow[] =>
-	(db.prepare(`
+		(
+			db
+				.prepare(
+					`
 		SELECT rl.label AS label, COUNT(*) AS count,
 		       SUM(CASE WHEN r.status = 'in_collection' THEN COALESCE(r.price_paid, 0) * r.copies ELSE 0 END) AS value_cents
 		FROM record_labels rl
 		JOIN records r ON r.id = rl.record_id
 		WHERE r.status != 'wanted'
 		GROUP BY rl.label
-	`).all() as ValBarRow[]).sort(
-			(a, b) => b.count - a.count || a.label.localeCompare(b.label)
-		);
+	`
+				)
+				.all() as ValBarRow[]
+		).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 
 	const groupGenreRows = (): ValBarRow[] =>
-	(db.prepare(`
+		(
+			db
+				.prepare(
+					`
 		SELECT g.genre AS label, COUNT(*) AS count,
 		       SUM(CASE WHEN r.status = 'in_collection' THEN COALESCE(r.price_paid, 0) * r.copies ELSE 0 END) AS value_cents
 		FROM record_genres g
 		JOIN records r ON r.id = g.record_id
 		WHERE r.status != 'wanted'
 		GROUP BY g.genre
-	`).all() as ValBarRow[]).sort(
-			(a, b) => b.count - a.count || a.label.localeCompare(b.label)
-		);
+	`
+				)
+				.all() as ValBarRow[]
+		).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 
 	/* ---- One full-table pass feeds decades (F1/B4), median year (D1),
 	   extremes (D2), cross-tab (C5), story dates (A1/A3) and formats (C2). ---- */
-	const rows = db.prepare(`
+	const rows = db
+		.prepare(
+			`
 		SELECT id, year, status, price_paid, copies,
 		       COALESCE(acquired_at, created_at) AS at,
 		       acquired_at, format
 		FROM records
-	`).all() as {
+	`
+		)
+		.all() as {
 		id: number;
 		year: string | null;
 		status: RecordStatus;
@@ -394,8 +417,7 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		const y = parseYear(r.year);
 		if (y !== null) {
 			yearNums.push(y);
-			if (!extremes.oldest || y < extremes.oldest.year)
-				extremes.oldest = { year: y, artist: '', title: '', id: 0 };
+			if (!extremes.oldest || y < extremes.oldest.year) extremes.oldest = { year: y, artist: '', title: '', id: 0 };
 			if (!extremes.freshest || y > extremes.freshest.year)
 				extremes.freshest = { year: y, artist: '', title: '', id: 0 };
 		}
@@ -419,9 +441,7 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 
 	const by_decade: ValBarRow[] = [...decadeAgg.entries()]
 		.map(([, v]) => v)
-		.sort((a, b) =>
-			a.label === 'Undated' ? 1 : b.label === 'Undated' ? -1 : a.label.localeCompare(b.label)
-		);
+		.sort((a, b) => (a.label === 'Undated' ? 1 : b.label === 'Undated' ? -1 : a.label.localeCompare(b.label)));
 
 	const median_year: number | null = yearNums.length
 		? (() => {
@@ -433,11 +453,15 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 
 	/* D2 — attach the actual pressing to each extreme year (most recent wins ties). */
 	if (extremes.oldest || extremes.freshest) {
-		const rowsWithId = db.prepare(`
+		const rowsWithId = db
+			.prepare(
+				`
 			SELECT id, artist, title, year FROM records
 			WHERE status != 'wanted'
 			ORDER BY id
-		`).all() as { id: number; artist: string; title: string; year: string | null }[];
+		`
+			)
+			.all() as { id: number; artist: string; title: string; year: string | null }[];
 		for (const r of rowsWithId) {
 			const y = parseYear(r.year);
 			if (y === null) continue;
@@ -448,9 +472,15 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		}
 	}
 
-	const statuses = (db.prepare(`
+	const statuses = (
+		db
+			.prepare(
+				`
 		SELECT status, COUNT(*) AS count FROM records GROUP BY status
-	`).all() as StatusCount[])
+	`
+			)
+			.all() as StatusCount[]
+	)
 		.map((s) => ({ ...s }))
 		.sort((a, b) => b.count - a.count);
 
@@ -504,7 +534,7 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		for (let k = start; ; k = yearly ? String(Number(k) + 1) : shiftMonth(k, 1)) {
 			const count = yearly
 				? [...perKey.entries()].reduce((sum, [key, c]) => (key.startsWith(`${k}-`) ? sum + c : sum), 0)
-				: perKey.get(k) ?? 0;
+				: (perKey.get(k) ?? 0);
 			cum += count;
 			const labels = yearly ? { full: k, short: k } : monthLabel(k);
 			timeline.push({ key: k, label: labels.full, tick_label: labels.short, tick: false, count, cumulative: cum });
@@ -512,11 +542,7 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		}
 		const len = timeline.length;
 		timeline.forEach((b, i) => {
-			b.tick =
-				len <= 12 ||
-				i === 0 ||
-				i === len - 1 ||
-				(yearly ? Number(b.key) % 5 === 0 : b.key.endsWith('-01'));
+			b.tick = len <= 12 || i === 0 || i === len - 1 || (yearly ? Number(b.key) % 5 === 0 : b.key.endsWith('-01'));
 		});
 	}
 
@@ -545,36 +571,53 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	};
 
 	/* C1 — most collected (top 10 artists). */
-	const top_artists = (db.prepare(`
+	const top_artists = (
+		db
+			.prepare(
+				`
 		SELECT artist AS label, COUNT(*) AS count
 		FROM records
 		WHERE TRIM(artist) != '' AND status != 'wanted'
 		GROUP BY artist
-	`).all() as StatBarRow[])
+	`
+			)
+			.all() as StatBarRow[]
+	)
 		.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
 		.slice(0, ARTIST_TOP_N);
 
 	/* Fresh wax — the most recent arrivals still on the shelf. */
-	const fresh = db.prepare(`
+	const fresh = db
+		.prepare(
+			`
 		SELECT id, artist, title, year, cover_filename AS cover
 		FROM records
 		WHERE status = 'in_collection'
 		ORDER BY COALESCE(acquired_at, created_at) DESC, id DESC
 		LIMIT 12
-	`).all() as FreshRecord[];
+	`
+		)
+		.all() as FreshRecord[];
 
 	/* B2 — the priciest ten (wall of fame). */
-	const priciest_ten = db.prepare(`
+	const priciest_ten = db
+		.prepare(
+			`
 		SELECT id, artist, title, year, price_paid AS price_cents, cover_filename AS cover
 		FROM records
 		WHERE status = 'in_collection' AND price_paid IS NOT NULL
 		ORDER BY price_paid DESC, id
 		LIMIT 10
-	`).all() as PriciestRecord[];
+	`
+		)
+		.all() as PriciestRecord[];
 	const priciest: PriciestRecord | null = priciest_ten[0] ?? null;
 
 	/* B1 — spend histogram across five readable bands. */
-	const price_bands = (db.prepare(`
+	const price_bands = (
+		db
+			.prepare(
+				`
 		SELECT
 			CASE
 				WHEN price_paid < 1000 THEN 'Under $10'
@@ -590,28 +633,41 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		WHERE status = 'in_collection' AND price_paid IS NOT NULL
 		GROUP BY 1
 		ORDER BY lo
-	`).all() as (PriceBand & { lo: number })[]).map(({ label, count, value_cents }) => ({
+	`
+			)
+			.all() as (PriceBand & { lo: number })[]
+	).map(({ label, count, value_cents }) => ({
 		label,
 		count,
 		value_cents
 	}));
 
 	/* B3 — spend by source ('Unrecorded' bucket for the missing ones). */
-	const by_source = (db.prepare(`
+	const by_source = (
+		db
+			.prepare(
+				`
 		SELECT COALESCE(NULLIF(TRIM(source), ''), 'Unrecorded') AS label,
 		       COUNT(*) AS count,
 		       SUM(COALESCE(price_paid, 0) * copies) AS value_cents
 		FROM records
 		WHERE status = 'in_collection'
 		GROUP BY 1
-	`).all() as ValBarRow[]).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+	`
+			)
+			.all() as ValBarRow[]
+	).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 
 	/* B5 — condition × price scatter; hidden unless ≥15 graded + priced entries. */
-	const scatterRaw = db.prepare(`
+	const scatterRaw = db
+		.prepare(
+			`
 		SELECT condition_media AS c, price_paid, artist, title
 		FROM records
 		WHERE status = 'in_collection' AND price_paid IS NOT NULL AND condition_media IS NOT NULL
-	`).all() as { c: string; price_paid: number; artist: string; title: string }[];
+	`
+		)
+		.all() as { c: string; price_paid: number; artist: string; title: string }[];
 	let scatter: ScatterDot[] | null = null;
 	if (scatterRaw.length >= 15) {
 		scatter = scatterRaw
@@ -623,7 +679,7 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 							x,
 							y: r.price_paid,
 							label: `${r.artist} — ${r.title} · $${(r.price_paid / 100).toFixed(2)} · ${r.c}`
-					  };
+						};
 			})
 			.filter((d): d is ScatterDot => d !== null);
 	}
@@ -647,9 +703,9 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	const condAgg = (column: 'condition_media' | 'condition_sleeve') => {
 		const counts: Record<string, number> = {};
 		let graded = 0;
-		for (const r of db.prepare(
-			`SELECT ${column} AS c FROM records WHERE status = 'in_collection' AND ${column} IS NOT NULL`
-		).all() as { c: string }[]) {
+		for (const r of db
+			.prepare(`SELECT ${column} AS c FROM records WHERE status = 'in_collection' AND ${column} IS NOT NULL`)
+			.all() as { c: string }[]) {
 			counts[r.c] = (counts[r.c] ?? 0) + 1;
 			graded++;
 		}
@@ -668,12 +724,18 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	   handles long tails natively, so this uses the generous STYLE_TOP_N cap:
 	   collapsing a dozen one-record styles into one wedge would dominate it. */
 	const by_style = topN(
-		(db.prepare(`
+		(
+			db
+				.prepare(
+					`
 			SELECT rs.style AS label, COUNT(*) AS count
 			FROM record_styles rs
 			JOIN records r ON r.id = rs.record_id
 			GROUP BY rs.style
-		`).all() as StatBarRow[]).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)),
+		`
+				)
+				.all() as StatBarRow[]
+		).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)),
 		STYLE_TOP_N
 	);
 
@@ -693,32 +755,38 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		.sort((a, b) => a.decade.localeCompare(b.decade));
 
 	/* C6 — duplicate watch (entries keeping extra copies). */
-	const dupRows = db.prepare(`
+	const dupRows = db
+		.prepare(
+			`
 		SELECT id, artist, title, copies FROM records
 		WHERE status = 'in_collection' AND copies > 1
 		ORDER BY copies DESC, artist
 		LIMIT 8
-	`).all() as { id: number; artist: string; title: string; copies: number }[];
+	`
+		)
+		.all() as { id: number; artist: string; title: string; copies: number }[];
 	const duplicates = dupRows.length
 		? {
 				entries: dupRows.length,
 				biggest_copies: Math.max(...dupRows.map((r) => r.copies)),
 				rows: dupRows
-		  }
+			}
 		: null;
 
 	/* C7 — documentation coverage. */
 	const photoTotal = (db.prepare('SELECT COUNT(*) AS n FROM photos').get() as { n: number }).n;
-	const photoRecords = (db.prepare('SELECT COUNT(DISTINCT record_id) AS n FROM photos').get() as { n: number })
-		.n;
+	const photoRecords = (db.prepare('SELECT COUNT(DISTINCT record_id) AS n FROM photos').get() as { n: number }).n;
 
 	/* Play log — total spins, distinct records spun, and the most-played five. */
 	const playsTotal = (db.prepare('SELECT COUNT(*) AS n FROM plays').get() as { n: number }).n;
-	const recordsPlayed = (db.prepare('SELECT COUNT(DISTINCT record_id) AS n FROM plays').get() as {
-		n: number;
-	}).n;
-	const most_played = (
-		db.prepare(`
+	const recordsPlayed = (
+		db.prepare('SELECT COUNT(DISTINCT record_id) AS n FROM plays').get() as {
+			n: number;
+		}
+	).n;
+	const most_played = db
+		.prepare(
+			`
 			SELECT r.id, r.artist, r.title,
 			       CASE WHEN r.cover_filename IS NOT NULL THEN '/media/' || r.cover_filename ELSE r.cover_remote_url END AS cover,
 			       COUNT(p.id) AS plays,
@@ -728,17 +796,21 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 			GROUP BY p.record_id
 			ORDER BY plays DESC, last_played_at DESC
 			LIMIT 5
-		`).all() as MostPlayedRecord[]
-	);
+		`
+		)
+		.all() as MostPlayedRecord[];
 
 	/* Starred tracks — the favorites ledger. */
-	const favTracksTotal = (db.prepare('SELECT COUNT(*) AS n FROM record_tracks WHERE favorite = 1').get() as {
-		n: number;
-	}).n;
+	const favTracksTotal = (
+		db.prepare('SELECT COUNT(*) AS n FROM record_tracks WHERE favorite = 1').get() as {
+			n: number;
+		}
+	).n;
 	// The lead view: albums ranked by how many of their songs are starred.
 	// Tie-breaks keep the list stable: artist/album A–Z, then id.
-	const favorite_albums_top = (
-		db.prepare(`
+	const favorite_albums_top = db
+		.prepare(
+			`
 			SELECT r.id, r.artist, r.title,
 			       CASE WHEN r.cover_filename IS NOT NULL THEN '/media/' || r.cover_filename ELSE r.cover_remote_url END AS cover,
 			       SUM(t.favorite) AS stars
@@ -748,23 +820,26 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 			HAVING stars > 0
 			ORDER BY stars DESC, r.artist COLLATE NOCASE, r.title COLLATE NOCASE, r.id
 			LIMIT ?
-		`).all(TOP_N) as StarredAlbum[]
-	);
+		`
+		)
+		.all(TOP_N) as StarredAlbum[];
 	const favTrackAlbums = (
 		db.prepare('SELECT COUNT(DISTINCT record_id) AS n FROM record_tracks WHERE favorite = 1').get() as {
 			n: number;
 		}
 	).n;
-	const favorite_tracks_top = (
-		db.prepare(`
+	const favorite_tracks_top = db
+		.prepare(
+			`
 			SELECT t.id AS track_id, r.id AS record_id, r.artist, r.title AS album,
 			       t.position, t.title
 			FROM record_tracks t
 			JOIN records r ON r.id = t.record_id
 			WHERE t.favorite = 1
 			ORDER BY r.artist COLLATE NOCASE, r.title COLLATE NOCASE, t.id
-		`).all() as StarredTrack[]
-	);
+		`
+		)
+		.all() as StarredTrack[];
 
 	const windowTopGenreRows = [...windowedGenre.entries()].map(([label, count]) => ({ label, count }));
 	const window_top_genre: StatBarRow | null = windowTopGenreRows.length
@@ -776,7 +851,11 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		const dated = by_decade.filter((d) => d.label !== 'Undated');
 		if (!dated.length) return null;
 		const top = dated.reduce((a, b) => (b.count > a.count ? b : a));
-		return { label: top.label, count: top.count, share: n(headline.total) ? Math.round((top.count / n(headline.total)) * 100) : 0 };
+		return {
+			label: top.label,
+			count: top.count,
+			share: n(headline.total) ? Math.round((top.count / n(headline.total)) * 100) : 0
+		};
 	})();
 
 	/* D5 — next milestone marker (powers of ten and friendly half-marks). */

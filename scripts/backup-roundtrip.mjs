@@ -77,7 +77,10 @@ form.append('file', new File([zip], 'backup.zip', { type: 'application/zip' }));
 const rres = await fetch(`${BASE}/api/restore`, { method: 'POST', body: form, headers: ORIGIN_HEADERS });
 const rjson = await rres.json().catch(() => ({}));
 check('restore responds ok', rres.status === 200 && rjson.ok === true, JSON.stringify(rjson));
-check('restore reports pre_restore_dir', typeof rjson.pre_restore_dir === 'string' && rjson.pre_restore_dir.includes('.pre-restore'));
+check(
+	'restore reports pre_restore_dir',
+	typeof rjson.pre_restore_dir === 'string' && rjson.pre_restore_dir.includes('.pre-restore')
+);
 
 const dbAfter = new Database(liveDbPath, { readonly: true });
 const recordsAfter = dbAfter.prepare('SELECT COUNT(*) n FROM records').get().n;
@@ -87,7 +90,10 @@ check('cover file restored', existsSync(victimCover));
 
 const pre = `${DATA}/.pre-restore`;
 check('.pre-restore snapshot exists with wiped-gen db', existsSync(`${pre}/mynyl.db`));
-check('.pre-restore snapshot has wiped-gen media (2-cover only)', existsSync(`${pre}/media/2-cover.jpg`) && !existsSync(`${pre}/media/1-cover.jpg`));
+check(
+	'.pre-restore snapshot has wiped-gen media (2-cover only)',
+	existsSync(`${pre}/media/2-cover.jpg`) && !existsSync(`${pre}/media/1-cover.jpg`)
+);
 
 // ---- 5. negative: garbage upload -------------------------------------------
 const badForm = new FormData();
@@ -95,7 +101,10 @@ badForm.append('file', new File([Buffer.from('this is not a zip')], 'bad.zip'));
 const bres = await fetch(`${BASE}/api/restore`, { method: 'POST', body: badForm, headers: ORIGIN_HEADERS });
 check('garbage upload rejected 400', bres.status === 400, `status=${bres.status}`);
 const dbLive2 = new Database(liveDbPath, { readonly: true });
-check('live collection untouched after bad restore', dbLive2.prepare('SELECT COUNT(*) n FROM records').get().n === recordsBefore);
+check(
+	'live collection untouched after bad restore',
+	dbLive2.prepare('SELECT COUNT(*) n FROM records').get().n === recordsBefore
+);
 dbLive2.close();
 
 console.log(failures === 0 ? '\nALL CHECKS PASSED' : `\n${failures} CHECK(S) FAILED`);

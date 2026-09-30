@@ -16,13 +16,7 @@ import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { MEDIA_DIR } from '$lib/server/paths';
 import { DiscogsError, downloadImage, getRelease, type RawRelease } from '$lib/server/discogs';
-import {
-	allocateMediaFilename,
-	findRecordById,
-	listRecords,
-	rmMediaFile,
-	updateRecord
-} from '$lib/server/records';
+import { allocateMediaFilename, findRecordById, listRecords, rmMediaFile, updateRecord } from '$lib/server/records';
 import type { RecordRow } from '$lib/types';
 
 export interface CoverRepairRow extends RecordRow {
@@ -101,9 +95,7 @@ export async function pickCoverFromRelease(recordId: number, releaseId: number):
 	try {
 		release = await getRelease(releaseId);
 	} catch (e) {
-		throw e instanceof DiscogsError
-			? e
-			: new Error('Could not load that release from Discogs.');
+		throw e instanceof DiscogsError ? e : new Error('Could not load that release from Discogs.');
 	}
 	const url = primaryImageUri(release);
 	if (!url) throw new Error('That release has no cover images on Discogs.');
@@ -121,7 +113,7 @@ export async function resetCoverToDiscogs(recordId: number): Promise<RecordRow> 
 	if (!rec.discogs_id) throw new Error('This record has no linked Discogs release to pull a cover from.');
 
 	const url = primaryImageUri(await getRelease(rec.discogs_id));
-	if (!url) throw new Error("The linked release has no cover images on Discogs.");
+	if (!url) throw new Error('The linked release has no cover images on Discogs.');
 
 	return storeCoverFor(recordId, rec.cover_filename, url, url);
 }

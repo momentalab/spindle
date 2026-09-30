@@ -3,13 +3,7 @@
  * If the user fills in a barcode and it already exists locally, offer add-copy.
  */
 import { fail, redirect } from '@sveltejs/kit';
-import {
-	findByBarcode,
-	addCopy,
-	acquireRecord,
-	parseRecordForm,
-	distinctValues
-} from '$lib/server/records';
+import { findByBarcode, addCopy, acquireRecord, parseRecordForm, distinctValues } from '$lib/server/records';
 import { importRecord } from '$lib/server/importer';
 import type { Actions, PageServerLoad } from './$types';
 

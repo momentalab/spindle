@@ -16,11 +16,11 @@ services:
     build: .
     image: mynyl
     ports:
-      - "${MYNYL_PORT:-3737}:3000"
+      - '${MYNYL_PORT:-3737}:3000'
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
-      PORT: "3000"
+      PORT: '3000'
       DATA_DIR: /data
       # 512M (not the old 10M) so large backup zips can be restored in-app;
       # photo uploads are still capped per-file at 25MB server-side.
@@ -34,10 +34,10 @@ services:
     healthcheck:
       test:
         [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://127.0.0.1:3000/').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
         ]
       interval: 30s
       timeout: 5s

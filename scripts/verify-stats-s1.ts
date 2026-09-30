@@ -20,9 +20,7 @@ for (const w of ['all', '24m', '12m'] as const) {
 		timeline_len: s.timeline.length,
 		timeline_first: s.timeline[0] ?? null,
 		timeline_last: s.timeline[s.timeline.length - 1] ?? null,
-		cum_matches_sum:
-			s.timeline[s.timeline.length - 1]?.cumulative ===
-			s.timeline.reduce((a, b) => a + b.count, 0),
+		cum_matches_sum: s.timeline[s.timeline.length - 1]?.cumulative === s.timeline.reduce((a, b) => a + b.count, 0),
 		windowed_sum: s.pace.windowed,
 		undated_count: s.undated_count,
 		pace: s.pace,

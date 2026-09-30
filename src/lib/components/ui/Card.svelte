@@ -14,7 +14,6 @@
 		class?: string;
 		children: Snippet;
 	} = $props();
-
 </script>
 
 <!-- A printed catalogue has no boxes — Card is now a neutral container. -->

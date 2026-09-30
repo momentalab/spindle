@@ -45,7 +45,10 @@ export async function PATCH({ params, request }): Promise<Response> {
 		const updated = updateTrack(trackId, patch);
 		if (!updated || updated.record_id !== recordId) error(404, 'Track not found');
 	} catch (e) {
-		return json({ ok: false, message: e instanceof Error ? e.message : 'Could not update the track.' }, { status: 400 });
+		return json(
+			{ ok: false, message: e instanceof Error ? e.message : 'Could not update the track.' },
+			{ status: 400 }
+		);
 	}
 	return json({ ok: true, tracks: listTracks(recordId) });
 }

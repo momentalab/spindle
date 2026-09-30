@@ -57,16 +57,13 @@ export function findRecordById(id: number): RecordRow | undefined {
 export function findByBarcode(barcode: string): RecordRow | undefined {
 	const digits = barcode.replace(/\D+/g, '');
 	if (!digits) return undefined;
-	const row = getDb()
-		.prepare('SELECT * FROM records WHERE barcode = ? LIMIT 1')
-		.get(digits) as RawRecord | undefined;
+	const row = getDb().prepare('SELECT * FROM records WHERE barcode = ? LIMIT 1').get(digits) as RawRecord | undefined;
 	return row ? hydrateSets(row) : undefined;
 }
 
 export function findByDiscogsId(discogsId: number): RecordRow | undefined {
-	const row = getDb()
-		.prepare('SELECT * FROM records WHERE discogs_id = ? LIMIT 1')
-		.get(discogsId) as RawRecord | undefined;
+	const row = getDb().prepare('SELECT * FROM records WHERE discogs_id = ? LIMIT 1').get(discogsId) as
+		RawRecord | undefined;
 	return row ? hydrateSets(row) : undefined;
 }
 
@@ -87,9 +84,7 @@ function upsertRecordStyles(db: Database.Database, recordId: number, styles: str
 
 function upsertRecordLabels(db: Database.Database, recordId: number, labels: LabelEntry[]): void {
 	const deleteAll = db.prepare('DELETE FROM record_labels WHERE record_id = ?');
-	const insert = db.prepare(
-		'INSERT OR IGNORE INTO record_labels (record_id, label, catno) VALUES (?, ?, ?)'
-	);
+	const insert = db.prepare('INSERT OR IGNORE INTO record_labels (record_id, label, catno) VALUES (?, ?, ?)');
 	deleteAll.run(recordId);
 	for (const l of labels) insert.run(recordId, l.name, l.catno);
 }
@@ -165,23 +160,17 @@ export function distinctValues(column: 'genre' | 'label' | 'source'): string[] {
 	if (column === 'genre') {
 		// Genres are individual entries now — a record with "Electronic, Pop"
 		// contributes to both dropdown values.
-		const rows = db
-			.prepare('SELECT DISTINCT genre AS v FROM record_genres ORDER BY v')
-			.all() as { v: string }[];
+		const rows = db.prepare('SELECT DISTINCT genre AS v FROM record_genres ORDER BY v').all() as { v: string }[];
 		return rows.map((r) => r.v);
 	}
 	if (column === 'label') {
 		// Labels are individual entries now (clean names — catnos excluded), so a
 		// record on two labels contributes to both dropdown values.
-		const rows = db
-			.prepare('SELECT DISTINCT label AS v FROM record_labels ORDER BY v')
-			.all() as { v: string }[];
+		const rows = db.prepare('SELECT DISTINCT label AS v FROM record_labels ORDER BY v').all() as { v: string }[];
 		return rows.map((r) => r.v);
 	}
 	const rows = db
-		.prepare(
-			`SELECT DISTINCT ${column} AS v FROM records WHERE ${column} IS NOT NULL AND ${column} != '' ORDER BY v`
-		)
+		.prepare(`SELECT DISTINCT ${column} AS v FROM records WHERE ${column} IS NOT NULL AND ${column} != '' ORDER BY v`)
 		.all() as { v: string }[];
 	return rows.map((r) => r.v);
 }
@@ -435,12 +424,7 @@ export function updateRecord(id: number, patch: UpdateRecordInput): RecordRow | 
 		}
 	}
 
-	if (
-		fields.length === 0 &&
-		patch.genres === undefined &&
-		patch.styles === undefined &&
-		patch.labels === undefined
-	)
+	if (fields.length === 0 && patch.genres === undefined && patch.styles === undefined && patch.labels === undefined)
 		return existing;
 
 	params.now = new Date().toISOString();
@@ -457,7 +441,11 @@ export function updateRecord(id: number, patch: UpdateRecordInput): RecordRow | 
 			upsertRecordGenres(db, id, patch.genres.map((g) => g.trim()).filter(Boolean));
 		}
 		if (patch.labels !== undefined) {
-			upsertRecordLabels(db, id, patch.labels.filter((l) => l.name.trim() !== ''));
+			upsertRecordLabels(
+				db,
+				id,
+				patch.labels.filter((l) => l.name.trim() !== '')
+			);
 		}
 	});
 	run();
@@ -465,9 +453,7 @@ export function updateRecord(id: number, patch: UpdateRecordInput): RecordRow | 
 }
 
 export function addCopy(id: number): RecordRow | undefined {
-	getDb()
-		.prepare("UPDATE records SET copies = copies + 1, updated_at = datetime('now') WHERE id = ?")
-		.run(id);
+	getDb().prepare("UPDATE records SET copies = copies + 1, updated_at = datetime('now') WHERE id = ?").run(id);
 	return findRecordById(id);
 }
 
@@ -530,18 +516,14 @@ export function deleteRecord(id: number): boolean {
 /* ------------------------------------------------------------------ */
 
 export function listPhotos(recordId: number): PhotoRow[] {
-	return getDb()
-		.prepare('SELECT * FROM photos WHERE record_id = ? ORDER BY id ASC')
-		.all(recordId) as PhotoRow[];
+	return getDb().prepare('SELECT * FROM photos WHERE record_id = ? ORDER BY id ASC').all(recordId) as PhotoRow[];
 }
 
 export function addPhoto(recordId: number, filename: string, caption?: string | null): PhotoRow {
 	const db = getDb();
 	const now = new Date().toISOString();
 	const info = db
-		.prepare(
-			'INSERT INTO photos (record_id, filename, caption, created_at) VALUES (?, ?, ?, ?)'
-		)
+		.prepare('INSERT INTO photos (record_id, filename, caption, created_at) VALUES (?, ?, ?, ?)')
 		.run(recordId, filename, caption ?? null, now);
 	return db.prepare('SELECT * FROM photos WHERE id = ?').get(Number(info.lastInsertRowid)) as PhotoRow;
 }
@@ -564,9 +546,7 @@ export function logPlay(recordId: number): PlayRow {
 	const db = getDb();
 	if (!findRecordById(recordId)) throw new Error('Record not found');
 	const now = new Date().toISOString();
-	const info = db
-		.prepare('INSERT INTO plays (record_id, played_at) VALUES (?, ?)')
-		.run(recordId, now);
+	const info = db.prepare('INSERT INTO plays (record_id, played_at) VALUES (?, ?)').run(recordId, now);
 	return db.prepare('SELECT * FROM plays WHERE id = ?').get(Number(info.lastInsertRowid)) as PlayRow;
 }
 
@@ -580,18 +560,14 @@ export function undoLatestPlay(recordId: number): boolean {
 
 /** Total plays for one record. */
 export function playCount(recordId: number): number {
-	return (
-		getDb()
-			.prepare('SELECT COUNT(*) AS c FROM plays WHERE record_id = ?')
-			.get(recordId) as { c: number }
-	).c;
+	return (getDb().prepare('SELECT COUNT(*) AS c FROM plays WHERE record_id = ?').get(recordId) as { c: number }).c;
 }
 
 /** ISO datetime of the most recent play, or null. */
 export function latestPlayedAt(recordId: number): string | null {
-	const row = getDb()
-		.prepare('SELECT MAX(played_at) AS t FROM plays WHERE record_id = ?')
-		.get(recordId) as { t: string | null };
+	const row = getDb().prepare('SELECT MAX(played_at) AS t FROM plays WHERE record_id = ?').get(recordId) as {
+		t: string | null;
+	};
 	return row.t;
 }
 
@@ -606,9 +582,10 @@ export function playCounts(recordIds?: number[]): Record<number, number> {
 		const sql = `SELECT record_id, COUNT(*) AS c FROM plays WHERE record_id IN (${recordIds.map(() => '?').join(',')}) GROUP BY record_id`;
 		rows = db.prepare(sql).all(...recordIds) as { record_id: number; c: number }[];
 	} else {
-		rows = db
-			.prepare('SELECT record_id, COUNT(*) AS c FROM plays GROUP BY record_id')
-			.all() as { record_id: number; c: number }[];
+		rows = db.prepare('SELECT record_id, COUNT(*) AS c FROM plays GROUP BY record_id').all() as {
+			record_id: number;
+			c: number;
+		}[];
 	}
 	return Object.fromEntries(rows.map((r) => [r.record_id, r.c]));
 }
@@ -629,10 +606,7 @@ export function rmMediaFile(filename: string): void {
 /** Ensure media dir exists and generate a collision-free filename. */
 export function allocateMediaFilename(recordId: number, kind: 'cover' | 'photo'): string {
 	ensureDataDirs();
-	const used = new Set(
-		readdirSync(MEDIA_DIR, { withFileTypes: true })
-			.map((e) => e.name)
-	);
+	const used = new Set(readdirSync(MEDIA_DIR, { withFileTypes: true }).map((e) => e.name));
 	let name: string;
 	do {
 		name = `${recordId}-${kind}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}.jpg`;

@@ -40,7 +40,9 @@ check(
 	'parseLabelList: paren chunk becomes catno, extra chunks dropped',
 	JSON.stringify(parseLabelList('Warner Records (BS 2744) (NOISE-1)')) ===
 		JSON.stringify([{ name: 'Warner Records', catno: 'BS 2744' }]),
-	parseLabelList('Warner Records (BS 2744) (NOISE-1)').map((l) => l.name).join(' | ')
+	parseLabelList('Warner Records (BS 2744) (NOISE-1)')
+		.map((l) => l.name)
+		.join(' | ')
 );
 check(
 	'parseLabelList: multi-label with catnos + case-insensitive name dedupe',
@@ -134,11 +136,16 @@ legacy.exec(`
 	CREATE INDEX IF NOT EXISTS idx_record_genres_genre ON record_genres(genre);
 `);
 const ins = legacy.prepare('INSERT INTO records (artist, title, style, label) VALUES (?, ?, ?, ?)');
-ins.run('A', 'Dirty LP', 'Jazz, Free Jazz, jazz', 'Warner Records (BS 2744) (NOISE-1), Warner records, Atlantic (SD 201)');
+ins.run(
+	'A',
+	'Dirty LP',
+	'Jazz, Free Jazz, jazz',
+	'Warner Records (BS 2744) (NOISE-1), Warner records, Atlantic (SD 201)'
+);
 ins.run('B', 'Simple LP', 'Soul', null);
 ins.run('C', 'Empty LP', null, '   ,  ');
 ins.run('D', 'Dup LP', 'Fusion, Fusion', '');
-legacy.prepare("INSERT INTO record_genres (record_id, genre) VALUES (?, ?)").run(1, 'Jazz');
+legacy.prepare('INSERT INTO record_genres (record_id, genre) VALUES (?, ?)').run(1, 'Jazz');
 for (const v of [1, 2, 3]) {
 	legacy.prepare('INSERT INTO schema_migrations (version, description) VALUES (?, ?)').run(v, 'legacy');
 }
@@ -148,10 +155,10 @@ legacy.close();
 const db = getDb();
 check('v4 applied', db.prepare('SELECT version FROM schema_migrations WHERE version = 4').get() !== undefined);
 
-const styleRows = (db.prepare('SELECT record_id, style FROM record_styles ORDER BY id').all() as {
+const styleRows = db.prepare('SELECT record_id, style FROM record_styles ORDER BY id').all() as {
 	record_id: number;
 	style: string;
-}[]);
+}[];
 console.log('style rows:', JSON.stringify(styleRows));
 check(
 	'styles backfilled (case-insensitive dedupe, blanks dropped)',
@@ -164,11 +171,11 @@ check(
 		])
 );
 
-const labelRows = (db.prepare('SELECT record_id, label, catno FROM record_labels ORDER BY id').all() as {
+const labelRows = db.prepare('SELECT record_id, label, catno FROM record_labels ORDER BY id').all() as {
 	record_id: number;
 	label: string;
 	catno: string | null;
-}[]);
+}[];
 console.log('label rows:', JSON.stringify(labelRows));
 check(
 	'labels backfilled (catno extracted, duplicate label name collapsed)',
@@ -182,8 +189,9 @@ check(
 const cols = (db.prepare('PRAGMA table_info(records)').all() as { name: string }[]).map((c) => c.name);
 check('legacy style column dropped', !cols.includes('style'), cols.join(','));
 check('legacy label column dropped', !cols.includes('label'));
-const idx = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'index'").all() as { name: string }[])
-	.map((i) => i.name);
+const idx = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'index'").all() as { name: string }[]).map(
+	(i) => i.name
+);
 check('legacy label index dropped', !idx.includes('idx_records_label'));
 
 // --- 3. Round-trip through the app's own data access. ---

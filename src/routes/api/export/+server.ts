@@ -10,13 +10,7 @@
  * the list of supported values in the body, so curl/fetch users self-correct.
  */
 import { error } from '@sveltejs/kit';
-import {
-	EXPORT_FORMATS,
-	EXPORT_TABLES,
-	renderExport,
-	type ExportFormat,
-	type ExportTable
-} from '$lib/server/export';
+import { EXPORT_FORMATS, EXPORT_TABLES, renderExport, type ExportFormat, type ExportTable } from '$lib/server/export';
 
 export function GET({ url }): Response {
 	const rawFormat = (url.searchParams.get('format') ?? 'csv').toLowerCase();
@@ -41,8 +35,7 @@ export function GET({ url }): Response {
 	const namePart = table === 'all' ? 'collection' : table;
 	return new Response(body, {
 		headers: {
-			'Content-Type':
-				format === 'csv' ? 'text/csv;charset=utf-8' : 'application/json;charset=utf-8',
+			'Content-Type': format === 'csv' ? 'text/csv;charset=utf-8' : 'application/json;charset=utf-8',
 			'Content-Disposition': `attachment; filename="mynyl-${namePart}-${stamp}.${format}"`,
 			'Cache-Control': 'no-store'
 		}

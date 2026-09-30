@@ -21,9 +21,7 @@ export function listTracks(recordId: number): TrackRow[] {
 }
 
 export function findTrackById(id: number): TrackRow | undefined {
-	const row = getDb().prepare('SELECT * FROM record_tracks WHERE id = ?').get(id) as
-		| TrackRow
-		| undefined;
+	const row = getDb().prepare('SELECT * FROM record_tracks WHERE id = ?').get(id) as TrackRow | undefined;
 	return row;
 }
 
@@ -37,14 +35,7 @@ export function addTrack(recordId: number, input: NewTrackInput): TrackRow {
 			`INSERT INTO record_tracks (record_id, position, title, duration, favorite, created_at)
 			 VALUES (?, ?, ?, ?, ?, ?)`
 		)
-		.run(
-			recordId,
-			input.position?.trim() || null,
-			title,
-			input.duration?.trim() || null,
-			input.favorite ?? 0,
-			now
-		);
+		.run(recordId, input.position?.trim() || null, title, input.duration?.trim() || null, input.favorite ?? 0, now);
 	const row = db.prepare('SELECT * FROM record_tracks WHERE id = ?').get(Number(info.lastInsertRowid)) as TrackRow;
 	return row;
 }
@@ -79,7 +70,7 @@ export function updateTrack(id: number, patch: UpdateTrackInput): TrackRow | und
 		} else if (key === 'favorite') {
 			params.favorite = value ? 1 : 0;
 		} else {
-			params[key] = typeof value === 'string' ? (value.trim() || null) : value;
+			params[key] = typeof value === 'string' ? value.trim() || null : value;
 		}
 	}
 	if (fields.length === 0) return existing;

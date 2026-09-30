@@ -29,8 +29,7 @@ export async function PUT({ request }: { request: Request }): Promise<Response> 
 
 	if ('normalize_artist_leadword' in body) {
 		const v = body.normalize_artist_leadword;
-		if (v !== 'on' && v !== 'off')
-			error(400, `normalize_artist_leadword must be "on" or "off", got "${String(v)}".`);
+		if (v !== 'on' && v !== 'off') error(400, `normalize_artist_leadword must be "on" or "off", got "${String(v)}".`);
 		setLeadWordNormalization(v === 'on');
 	}
 

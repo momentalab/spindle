@@ -147,8 +147,9 @@ check(
 
 const cols = (db.prepare('PRAGMA table_info(records)').all() as { name: string }[]).map((c) => c.name);
 check('legacy genre column dropped', !cols.includes('genre'), cols.join(','));
-const idx = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'index'").all() as { name: string }[])
-	.map((i) => i.name);
+const idx = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'index'").all() as { name: string }[]).map(
+	(i) => i.name
+);
 check('legacy genre index dropped', !idx.includes('idx_records_genre'));
 
 // --- 3. Round-trip through the app's own data access. ---
@@ -172,8 +173,11 @@ check('text search finds individual genres', hit.length === 1 && hit[0].id === 1
 
 // Sort by genre uses the first (lowest-id) junction entry.
 const sorted = listRecords({ sort: 'genre', dir: 'asc' });
-check('sort by genre', JSON.stringify(sorted.map((r) => r.id)) === JSON.stringify([1, 2, 3, 4]),
-	sorted.map((r) => r.id).join(','));
+check(
+	'sort by genre',
+	JSON.stringify(sorted.map((r) => r.id)) === JSON.stringify([1, 2, 3, 4]),
+	sorted.map((r) => r.id).join(',')
+);
 
 // Create with genres → junction rows; update → replaced atomically.
 const created = createRecord({
@@ -231,14 +235,8 @@ check(
 	folk.genres.join(' | ')
 );
 const folkFilter = listRecords({ sort: 'artist', dir: 'asc', genre: 'Folk, World, & Country' });
-check(
-	'genre filter matches the comma genre verbatim',
-	folkFilter.length === 1 && folkFilter[0].id === folk.id
-);
-check(
-	'distinctValues includes the comma genre intact',
-	distinctValues('genre').includes('Folk, World, & Country')
-);
+check('genre filter matches the comma genre verbatim', folkFilter.length === 1 && folkFilter[0].id === folk.id);
+check('distinctValues includes the comma genre intact', distinctValues('genre').includes('Folk, World, & Country'));
 
 db.prepare('DELETE FROM records WHERE artist IN (?, ?)').run('Z', 'F'); // cascades record_genres
 db.close();

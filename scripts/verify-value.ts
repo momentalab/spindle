@@ -35,16 +35,19 @@ import type { NewRecordInput } from '../src/lib/server/records';
 const fkClean = (): boolean => (db.prepare('PRAGMA foreign_key_check').all() as unknown[]).length === 0;
 const count = (t: string): number => (db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;
 const q = (recordId: number, priceCents: number | null, at: string, forSale: number | null, discogsId: number) =>
-	db.prepare(
-		'INSERT INTO market_prices (record_id, discogs_id, price_cents, num_for_sale, fetched_at) VALUES (?, ?, ?, ?, ?)'
-	).run(recordId, discogsId, priceCents, forSale, at);
+	db
+		.prepare(
+			'INSERT INTO market_prices (record_id, discogs_id, price_cents, num_for_sale, fetched_at) VALUES (?, ?, ?, ?, ?)'
+		)
+		.run(recordId, discogsId, priceCents, forSale, at);
 
 // --- migration ----------------------------------------------------------------
-const versions = (db.prepare('SELECT version FROM schema_migrations ORDER BY version').all() as { version: number }[])
-	.map((v) => v.version);
+const versions = (
+	db.prepare('SELECT version FROM schema_migrations ORDER BY version').all() as { version: number }[]
+).map((v) => v.version);
 assert.ok(versions.includes(7), `migration v7 present (got ${versions})`);
 assert.ok(
-	(db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_market_prices_record_id'").get()) !==
+	db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_market_prices_record_id'").get() !==
 		undefined,
 	'market_prices index present'
 );
@@ -56,58 +59,108 @@ const ins = db.prepare(
 );
 const ids: Record<string, number> = {};
 const SEED_DEFAULTS = {
-  artist: "",
-  title: "",
-  year: null,
-  status: "in_collection",
-  discogs_id: null,
-  price_paid: null,
-  copies: 1,
-  sale_price: null,
-  sold_at: null,
+	artist: '',
+	title: '',
+	year: null,
+	status: 'in_collection',
+	discogs_id: null,
+	price_paid: null,
+	copies: 1,
+	sale_price: null,
+	sold_at: null
 };
-function seed(
-  name: string,
-  p: Partial<Record<keyof typeof SEED_DEFAULTS, unknown>>,
-): number {
-  const id = Number(ins.run({ ...SEED_DEFAULTS, ...p }).lastInsertRowid);
-  ids[name] = id;
-  return id;
+function seed(name: string, p: Partial<Record<keyof typeof SEED_DEFAULTS, unknown>>): number {
+	const id = Number(ins.run({ ...SEED_DEFAULTS, ...p }).lastInsertRowid);
+	ids[name] = id;
+	return id;
 }
 
 // 1974, Electronic — cost 2000×2; quotes 2200 → 2500 → 3000 (gainer +50%, mover +36.4%)
-seed('gainer', { artist: 'Gain Artist', title: 'Rises', year: '1974', status: 'in_collection', discogs_id: 9001, price_paid: 2000, copies: 2 });
+seed('gainer', {
+	artist: 'Gain Artist',
+	title: 'Rises',
+	year: '1974',
+	status: 'in_collection',
+	discogs_id: 9001,
+	price_paid: 2000,
+	copies: 2
+});
 q(ids.gainer, 2200, '2026-08-01 09:00:00', 2, 9001);
 q(ids.gainer, 2500, '2026-08-15 09:00:00', 2, 9001);
 q(ids.gainer, 3000, '2026-08-30 09:00:00', 3, 9001);
 db.prepare('INSERT INTO record_genres (record_id, genre) VALUES (?, ?)').run(ids.gainer, 'Electronic');
 
 // 1985, TestLabel — cost 10000; quotes 9000 → 7500 (loser -25%, mover -16.7%)
-seed('loser', { artist: 'Lose Artist', title: 'Falls', year: '1985', status: 'in_collection', discogs_id: 9002, price_paid: 10000, copies: 1 });
+seed('loser', {
+	artist: 'Lose Artist',
+	title: 'Falls',
+	year: '1985',
+	status: 'in_collection',
+	discogs_id: 9002,
+	price_paid: 10000,
+	copies: 1
+});
 q(ids.loser, 9000, '2026-08-01 09:30:00', 1, 9002);
 q(ids.loser, 7500, '2026-08-30 09:30:00', 1, 9002);
 db.prepare('INSERT INTO record_labels (record_id, label, catno) VALUES (?, ?, ?)').run(ids.loser, 'TestLabel', null);
 
 // Undated — cost 1500; quotes 1600 → NULL (latest = "no live listings")
-seed('nolist', { artist: 'Quiet Artist', title: 'No Listings', status: 'in_collection', discogs_id: 9003, price_paid: 1500, copies: 1 });
+seed('nolist', {
+	artist: 'Quiet Artist',
+	title: 'No Listings',
+	status: 'in_collection',
+	discogs_id: 9003,
+	price_paid: 1500,
+	copies: 1
+});
 q(ids.nolist, 1600, '2026-08-01 10:00:00', 1, 9003);
 q(ids.nolist, null, '2026-08-30 10:00:00', null, 9003);
 
 // Sold — paid 8000, sold for 9500 on 2026-08-20; quotes 7000 → 9200 (08-19) → 10100 (08-25)
-seed('sold', { artist: 'Exit Artist', title: 'Gone', status: 'sold', discogs_id: 9004, price_paid: 8000, copies: 1, sale_price: 9500, sold_at: '2026-08-20' });
+seed('sold', {
+	artist: 'Exit Artist',
+	title: 'Gone',
+	status: 'sold',
+	discogs_id: 9004,
+	price_paid: 8000,
+	copies: 1,
+	sale_price: 9500,
+	sold_at: '2026-08-20'
+});
 q(ids.sold, 7000, '2026-08-01 11:00:00', 1, 9004);
 q(ids.sold, 9200, '2026-08-19 11:00:00', 1, 9004);
 q(ids.sold, 10100, '2026-08-25 11:00:00', 1, 9004);
 
 // Wanted — off-shelf: must not count anywhere (cost/linked/shelf)
-seed('wanted', { artist: 'Wanted Artist', title: 'Missing', status: 'wanted', discogs_id: 9005, price_paid: 500, copies: 1 });
+seed('wanted', {
+	artist: 'Wanted Artist',
+	title: 'Missing',
+	status: 'wanted',
+	discogs_id: 9005,
+	price_paid: 500,
+	copies: 1
+});
 
 // Unlinked shelf record — no discogs_id: cost only, market falls back to cost
-seed('unlinked', { artist: 'Plain Artist', title: 'No Link', status: 'in_collection', discogs_id: null, price_paid: 3000, copies: 1 });
+seed('unlinked', {
+	artist: 'Plain Artist',
+	title: 'No Link',
+	status: 'in_collection',
+	discogs_id: null,
+	price_paid: 3000,
+	copies: 1
+});
 
 // Same-second pair — both must persist; MAX(id) is the latest quote.
 // Unpriced: tests movers are cost-agnostic (500 → 600 = +20%).
-seed('same', { artist: 'Twice Artist', title: 'Twin Stamps', status: 'in_collection', discogs_id: 9007, price_paid: null, copies: 1 });
+seed('same', {
+	artist: 'Twice Artist',
+	title: 'Twin Stamps',
+	status: 'in_collection',
+	discogs_id: 9007,
+	price_paid: null,
+	copies: 1
+});
 q(ids.same, 500, '2026-09-01 08:00:00', 1, 9007);
 q(ids.same, 600, '2026-09-01 08:00:00', 1, 9007);
 
@@ -176,20 +229,41 @@ assert.equal(dec['1980s']?.market_cents, 7500);
 assert.equal(dec['Undated']?.cost_cents, 4500, 'nolist 1500 + unlinked 3000; same-second never priced');
 assert.equal(dec['Undated']?.market_cents, 5100, '1500 cost-fallback + 3000 unlinked + 600 quote');
 assert.equal(s.by_decade[s.by_decade.length - 1]?.label, 'Undated', 'Undated sorts last');
-assert.deepEqual(
-	Object.fromEntries(s.by_genre.map((g) => [g.label, g]))['Electronic'],
-	{ label: 'Electronic', count: 1, cost_cents: 4000, market_cents: 6000 }
-);
+assert.deepEqual(Object.fromEntries(s.by_genre.map((g) => [g.label, g]))['Electronic'], {
+	label: 'Electronic',
+	count: 1,
+	cost_cents: 4000,
+	market_cents: 6000
+});
 assert.equal(s.by_label[0]?.label, 'TestLabel');
 assert.equal(s.by_label[0]?.market_cents, 7500);
 
 // --- form path (F7 fields via updateRecord) ------------------------------------
 const base: NewRecordInput = {
-	discogs_id: null, barcode: null, artist: 'Back And Fourth', title: 'Bought Back', year: null,
-	styles: [], genres: [], labels: [], format: null, limited_edition: false,
-	condition_media: null, condition_sleeve: null, price_paid: 1200, acquired_at: null,
-	source: null, status: 'in_collection', wanted_at: null, copies: 1, copy_number: null,
-	copy_total: null, sale_price: null, sold_at: null, notes: null, cover_filename: null,
+	discogs_id: null,
+	barcode: null,
+	artist: 'Back And Fourth',
+	title: 'Bought Back',
+	year: null,
+	styles: [],
+	genres: [],
+	labels: [],
+	format: null,
+	limited_edition: false,
+	condition_media: null,
+	condition_sleeve: null,
+	price_paid: 1200,
+	acquired_at: null,
+	source: null,
+	status: 'in_collection',
+	wanted_at: null,
+	copies: 1,
+	copy_number: null,
+	copy_total: null,
+	sale_price: null,
+	sold_at: null,
+	notes: null,
+	cover_filename: null,
 	cover_remote_url: null
 };
 const r8 = createRecord(base);
@@ -260,4 +334,6 @@ assert.match((threw as Error).message, /Discogs/, 'thrown error names Discogs');
 assert.equal(count('market_prices'), before, 'nothing committed on a failed pass');
 
 console.log('\nAll value checks passed ✔');
-console.log(JSON.stringify({ headline: s, movers: s.movers.map((m) => `${m.artist} ${m.change_pct}%`), sale }, null, 1));
+console.log(
+	JSON.stringify({ headline: s, movers: s.movers.map((m) => `${m.artist} ${m.change_pct}%`), sale }, null, 1)
+);

@@ -1,9 +1,9 @@
 <script lang="ts">
 	let {
-		value = $bindable(""),
+		value = $bindable(''),
 		name,
 		id,
-		type = "text",
+		type = 'text',
 		label,
 		placeholder,
 		inputmode,
@@ -13,7 +13,7 @@
 		step,
 		maxlength,
 		required = false,
-		class: className = "",
+		class: className = ''
 	}: {
 		value?: string | number;
 		name?: string;
@@ -21,14 +21,7 @@
 		type?: string;
 		label?: string;
 		placeholder?: string;
-		inputmode?:
-			| "text"
-			| "numeric"
-			| "decimal"
-			| "email"
-			| "tel"
-			| "url"
-			| "search";
+		inputmode?: 'text' | 'numeric' | 'decimal' | 'email' | 'tel' | 'url' | 'search';
 		list?: string;
 		/** Renders a sibling <datalist> with these values for the browser's autocomplete. */
 		datalist?: readonly string[];
@@ -46,18 +39,13 @@
 
 	/* Editorial field: a single hairline underline, no box. */
 	const fieldClass = $derived(
-		`w-full rounded-none border-0 border-b border-edge bg-transparent px-0 py-2 text-[15px] text-ink placeholder:text-faint focus:border-accent focus:shadow-none focus:outline-none ${className}`,
+		`w-full rounded-none border-0 border-b border-edge bg-transparent px-0 py-2 text-[15px] text-ink placeholder:text-faint focus:border-accent focus:shadow-none focus:outline-none ${className}`
 	);
 </script>
 
 {#if label}
-	<label
-		for={id ?? name}
-		class="mb-1 block text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint"
-	>
-		{label}{#if required}<span class="text-rust" aria-hidden="true">
-				*</span
-			>{/if}
+	<label for={id ?? name} class="mb-1 block text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">
+		{label}{#if required}<span class="text-rust" aria-hidden="true"> *</span>{/if}
 	</label>
 {/if}
 <input

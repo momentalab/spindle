@@ -33,7 +33,9 @@
 			role={name ? 'radio' : 'tab'}
 			aria-checked={active ? true : undefined}
 			class={`relative px-0 py-0.5 text-[12px] font-medium uppercase tracking-[.14em] transition-colors duration-300 ${
-				active ? 'text-ink after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:bg-accent' : 'text-faint hover:text-muted'
+				active
+					? 'text-ink after:absolute after:inset-x-0 after:-bottom-1 after:h-px after:bg-accent'
+					: 'text-faint hover:text-muted'
 			}`}
 			onclick={() => activate(opt.id)}
 		>

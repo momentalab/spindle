@@ -129,8 +129,9 @@ const TABLES = ['records', 'photos', 'plays', 'record_genres', 'record_styles', 
 const beforeCounts: Record<string, number> = {};
 for (const t of TABLES) beforeCounts[t] = (raw.prepare(`SELECT COUNT(*) AS c FROM ${t}`).get() as { c: number }).c;
 const beforeFkViolations = raw.prepare('PRAGMA foreign_key_check').all().length;
-const beforeSeq = (raw.prepare("SELECT seq FROM sqlite_sequence WHERE name = 'records'").get() as { seq: number } | undefined)
-	?.seq;
+const beforeSeq = (
+	raw.prepare("SELECT seq FROM sqlite_sequence WHERE name = 'records'").get() as { seq: number } | undefined
+)?.seq;
 const beforeMaxId = (raw.prepare('SELECT MAX(id) AS m FROM records').get() as { m: number | null }).m ?? 0;
 const beforeCols = (raw.prepare('PRAGMA table_info(records)').all() as { name: string }[]).map((c) => c.name);
 const spotIds = (raw.prepare('SELECT id FROM records ORDER BY id LIMIT 3').all() as { id: number }[]).map((r) => r.id);
@@ -138,9 +139,11 @@ const beforeRows = new Map<number, Record<string, unknown>>();
 for (const id of spotIds) {
 	beforeRows.set(id, raw.prepare('SELECT * FROM records WHERE id = ?').get(id) as Record<string, unknown>);
 }
-const beforeIndexes = (raw.prepare(
-	"SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_records_%' ORDER BY name"
-).all() as { name: string }[]).map((i) => i.name);
+const beforeIndexes = (
+	raw
+		.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_records_%' ORDER BY name")
+		.all() as { name: string }[]
+).map((i) => i.name);
 const beforeWants = (raw.prepare("SELECT COUNT(*) AS c FROM records WHERE status = 'wanted'").get() as { c: number }).c;
 raw.close();
 
@@ -166,11 +169,15 @@ const checkClause = (
 ).sql;
 check(
 	"status CHECK widened to include 'wanted'",
-	/check\s*\(status\s+in\s*\(\s*'in_collection'\s*,\s*'sold'\s*,\s*'traded_away'\s*,\s*'wanted'\s*\)\s*\)/i.test(checkClause)
+	/check\s*\(status\s+in\s*\(\s*'in_collection'\s*,\s*'sold'\s*,\s*'traded_away'\s*,\s*'wanted'\s*\)\s*\)/i.test(
+		checkClause
+	)
 );
-const afterIndexes = (db.prepare(
-	"SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_records_%' ORDER BY name"
-).all() as { name: string }[]).map((i) => i.name);
+const afterIndexes = (
+	db
+		.prepare("SELECT name FROM sqlite_master WHERE type = 'index' AND name LIKE 'idx_records_%' ORDER BY name")
+		.all() as { name: string }[]
+).map((i) => i.name);
 check(
 	'all four record indexes survive the rebuild',
 	JSON.stringify(afterIndexes) === JSON.stringify(beforeIndexes),

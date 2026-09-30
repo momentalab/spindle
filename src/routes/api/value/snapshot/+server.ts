@@ -16,15 +16,9 @@ import { takeMarketSnapshot } from '$lib/server/value';
 export async function POST(): Promise<Response> {
 	try {
 		const result = await takeMarketSnapshot();
-		return Response.json(
-			{ ok: true, ...result },
-			{ headers: { 'Cache-Control': 'no-store' } }
-		);
+		return Response.json({ ok: true, ...result }, { headers: { 'Cache-Control': 'no-store' } });
 	} catch (e) {
 		const message = e instanceof DiscogsError ? e.message : 'Snapshot failed unexpectedly.';
-		return Response.json(
-			{ ok: false, message },
-			{ status: 503, headers: { 'Cache-Control': 'no-store' } }
-		);
+		return Response.json({ ok: false, message }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
 	}
 }

@@ -19,13 +19,7 @@ export async function GET({ params }): Promise<Response> {
 	const name = params.file ?? '';
 
 	// Traversal guard: must be a single bare filename, no path separators / dots tricks.
-	if (
-		!name ||
-		name.includes('/') ||
-		name.includes('\\') ||
-		name.includes('..') ||
-		name.startsWith('.')
-	) {
+	if (!name || name.includes('/') || name.includes('\\') || name.includes('..') || name.startsWith('.')) {
 		error(400, 'Bad media name');
 	}
 

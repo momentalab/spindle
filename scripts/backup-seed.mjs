@@ -8,8 +8,14 @@ db.pragma('journal_mode = WAL');
 const ins = db.prepare(
 	'INSERT INTO records (discogs_id, barcode, artist, title, year, label, status, copies, price_paid) VALUES (?,?,?,?,?,?,?,?,?)'
 );
-const id1 = Number(ins.run(176126, '0123456789012', 'Sonic Youth', 'Daydream Nation', '1988', 'DGC', 'in_collection', 1, 4299).lastInsertRowid);
-const id2 = Number(ins.run(6778478, '0123456789024', 'Talk Talk', 'Spirit of Eden', '1988', 'Polydor', 'in_collection', 2, 2550).lastInsertRowid);
+const id1 = Number(
+	ins.run(176126, '0123456789012', 'Sonic Youth', 'Daydream Nation', '1988', 'DGC', 'in_collection', 1, 4299)
+		.lastInsertRowid
+);
+const id2 = Number(
+	ins.run(6778478, '0123456789024', 'Talk Talk', 'Spirit of Eden', '1988', 'Polydor', 'in_collection', 2, 2550)
+		.lastInsertRowid
+);
 
 // Genres are individual entries in the record_genres junction table (v3+).
 const genIns = db.prepare('INSERT INTO record_genres (record_id, genre) VALUES (?, ?)');

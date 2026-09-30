@@ -33,17 +33,9 @@ process.env.DATA_DIR = DATA; // must precede the dynamic import (paths read env 
 
 const { getDb } = await import('../src/lib/server/db');
 const db = getDb(); // fresh DB — runs migrations v1..v8 on the scratch copy
-const {
-	listTracks,
-	addTrack,
-	updateTrack,
-	deleteTrack,
-	favoriteCounts,
-	replaceTracklist
-} = await import('../src/lib/server/tracks');
-const { seedTracklist, storeSnapshot, snapshotForRecord } = await import(
-	'../src/lib/server/enrichment'
-);
+const { listTracks, addTrack, updateTrack, deleteTrack, favoriteCounts, replaceTracklist } =
+	await import('../src/lib/server/tracks');
+const { seedTracklist, storeSnapshot, snapshotForRecord } = await import('../src/lib/server/enrichment');
 const { toSnapshot } = await import('../src/lib/server/discogs');
 const { collectionStats } = await import('../src/lib/server/stats');
 const { exportAsCsv, exportAsJson } = await import('../src/lib/server/export');
@@ -54,17 +46,18 @@ const fkClean = (): boolean => (db.prepare('PRAGMA foreign_key_check').all() as 
 const count = (t: string): number => (db.prepare(`SELECT COUNT(*) AS n FROM ${t}`).get() as { n: number }).n;
 
 // --- migration ----------------------------------------------------------------
-const versions = (db.prepare('SELECT version FROM schema_migrations ORDER BY version').all() as { version: number }[])
-	.map((v) => v.version);
+const versions = (
+	db.prepare('SELECT version FROM schema_migrations ORDER BY version').all() as { version: number }[]
+).map((v) => v.version);
 assert.ok(versions.includes(8), `migration v8 present (got ${versions})`);
 for (const t of ['record_tracks', 'release_snapshots']) {
 	assert.ok(
-		(db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='${t}'`).get()) !== undefined,
+		db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='${t}'`).get() !== undefined,
 		`${t} table present`
 	);
 }
 assert.ok(
-	(db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_record_tracks_record_id'").get()) !==
+	db.prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_record_tracks_record_id'").get() !==
 		undefined,
 	'record_tracks index present'
 );
@@ -97,7 +90,11 @@ assert.deepStrictEqual(
 );
 const bridgeId = tracks[1].id;
 const closerId = tracks[2].id;
-assert.strictEqual(closerId === undefined ? 0 : (tracks.find((t) => t.title === 'Closer')!.favorite), 1, 'favorite flag set');
+assert.strictEqual(
+	closerId === undefined ? 0 : tracks.find((t) => t.title === 'Closer')!.favorite,
+	1,
+	'favorite flag set'
+);
 
 // partial patch: position only — title/duration/favorite untouched
 const afterPatch = updateTrack(tracks[0].id, { position: 'A1 ' })!; // trims
@@ -166,16 +163,8 @@ assert.deepStrictEqual(
 assert.strictEqual(tracks[0].title, 'Opener');
 assert.strictEqual(tracks.find((t) => t.title === 'Opener')!.title, 'Opener');
 // the existing favorite was on (B1, Closer) — carry-over matches position+title:
-assert.strictEqual(
-	tracks.find((t) => t.title === 'Closer')!.favorite,
-	1,
-	'favorite carried over by position+title'
-);
-assert.strictEqual(
-	tracks.find((t) => t.title === 'Opener')!.favorite,
-	0,
-	'unmatched row loses no favorite (had none)'
-);
+assert.strictEqual(tracks.find((t) => t.title === 'Closer')!.favorite, 1, 'favorite carried over by position+title');
+assert.strictEqual(tracks.find((t) => t.title === 'Opener')!.favorite, 0, 'unmatched row loses no favorite (had none)');
 
 // case-insensitive carry-over: same positions, only the title case differs
 seedTracklist(a, {
@@ -273,12 +262,18 @@ assert.ok(
 	stats.favorite_tracks_top.some((t) => t.record_id === a && t.title.toLowerCase() === 'closer'),
 	'ledger includes the starred track'
 );
-assert.ok(stats.favorite_tracks_top.every((t) => Number.isInteger(t.track_id)), 'ledger carries track ids');
+assert.ok(
+	stats.favorite_tracks_top.every((t) => Number.isInteger(t.track_id)),
+	'ledger carries track ids'
+);
 
 // --- export -------------------------------------------------------------------
 const csv = exportAsCsv('tracks');
 assert.ok(csv.startsWith('id,record_id,position,title,duration,favorite (yes/no)'), 'tracks CSV header');
-assert.ok(csv.split('\r\n').some((line) => line.includes(',yes')), 'favorite rendered as yes/no');
+assert.ok(
+	csv.split('\r\n').some((line) => line.includes(',yes')),
+	'favorite rendered as yes/no'
+);
 
 const json = JSON.parse(exportAsJson('all')) as {
 	record_count: number;
@@ -286,7 +281,10 @@ const json = JSON.parse(exportAsJson('all')) as {
 	tracks: { title: string; favorite: number }[];
 };
 assert.strictEqual(json.track_count, json.tracks.length, 'track_count matches the array');
-assert.ok(json.tracks.some((t) => t.title.toLowerCase() === 'closer'), 'starred track in JSON dump');
+assert.ok(
+	json.tracks.some((t) => t.title.toLowerCase() === 'closer'),
+	'starred track in JSON dump'
+);
 
 console.log('✓ tracks migration + data layer: all assertions passed');
 // scratch cleanup happens by re-running (rmSync at top); leave no server-side residue.

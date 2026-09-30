@@ -35,24 +35,18 @@ export async function reidentifyRecord(recordId: number, newDiscogsId: number): 
 	try {
 		raw = await getRelease(newDiscogsId);
 	} catch (e) {
-		throw e instanceof DiscogsError
-			? e
-			: new Error('Could not load that release from Discogs.');
+		throw e instanceof DiscogsError ? e : new Error('Could not load that release from Discogs.');
 	}
 	const seed = toSeed(raw);
 
 	const byDiscogs = findByDiscogsId(newDiscogsId);
 	if (byDiscogs && byDiscogs.id !== recordId) {
-		throw new ReidentifyConflictError(
-			`Already saved as ${byDiscogs.artist} — ${byDiscogs.title} (same Discogs ID).`
-		);
+		throw new ReidentifyConflictError(`Already saved as ${byDiscogs.artist} — ${byDiscogs.title} (same Discogs ID).`);
 	}
 	if (seed.barcode) {
 		const byBarcode = findByBarcode(seed.barcode);
 		if (byBarcode && byBarcode.id !== recordId) {
-			throw new ReidentifyConflictError(
-				`Already saved as ${byBarcode.artist} — ${byBarcode.title} (same barcode).`
-			);
+			throw new ReidentifyConflictError(`Already saved as ${byBarcode.artist} — ${byBarcode.title} (same barcode).`);
 		}
 	}
 

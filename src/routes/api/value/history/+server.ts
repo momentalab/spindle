@@ -19,12 +19,8 @@ export async function DELETE({ url }: { url: URL }): Promise<Response> {
 		deleted = resetMarketHistory();
 	} else {
 		const id = Number(raw);
-		if (!Number.isInteger(id) || id <= 0)
-			error(400, `record_id must be a positive integer, got "${raw}".`);
+		if (!Number.isInteger(id) || id <= 0) error(400, `record_id must be a positive integer, got "${raw}".`);
 		deleted = resetMarketHistory(id);
 	}
-	return Response.json(
-		{ ok: true, deleted },
-		{ headers: { 'Cache-Control': 'no-store' } },
-	);
+	return Response.json({ ok: true, deleted }, { headers: { 'Cache-Control': 'no-store' } });
 }

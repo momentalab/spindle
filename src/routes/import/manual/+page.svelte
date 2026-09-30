@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { enhance } from "$app/forms";
-	import RecordForm from "$lib/components/RecordForm.svelte";
-	import Banner from "$lib/components/ui/Banner.svelte";
-	import Button from "$lib/components/ui/Button.svelte";
-	import { emptyDraft } from "$lib/draft";
-	import { appTitle } from "$lib/index";
-	import type { RecordDraft } from "$lib/types";
-	import type { ActionData, PageData } from "./$types";
+	import { enhance } from '$app/forms';
+	import RecordForm from '$lib/components/RecordForm.svelte';
+	import Banner from '$lib/components/ui/Banner.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
+	import { emptyDraft } from '$lib/draft';
+	import { appTitle } from '$lib/index';
+	import type { RecordDraft } from '$lib/types';
+	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData | null } = $props();
 	let draft: RecordDraft = $state(emptyDraft());
@@ -26,15 +26,11 @@
 	});
 </script>
 
-<svelte:head><title>{appTitle("Add record")}</title></svelte:head>
+<svelte:head><title>{appTitle('Add record')}</title></svelte:head>
 
 <!-- page head -->
 <header class="border-b border-edge pb-7">
-	<h1
-		class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em]"
-	>
-		Add a record.
-	</h1>
+	<h1 class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em]">Add a record.</h1>
 	<p class="mt-3 max-w-xl font-display text-[15px] italic text-muted">
 		No barcode or Discogs needed — type whatever you know.
 	</p>
@@ -47,9 +43,9 @@
 {#if duplicate}
 	{@const dup = duplicate}
 	<div class="mt-6">
-		<Banner variant={dup.status === "wanted" ? "info" : "error"}>
+		<Banner variant={dup.status === 'wanted' ? 'info' : 'error'}>
 			{#snippet actions()}
-				{#if dup.status === "wanted"}
+				{#if dup.status === 'wanted'}
 					<form method="POST" class="inline">
 						<input type="hidden" name="op" value="acquire" />
 						<input type="hidden" name="record_id" value={dup.id} />
@@ -73,12 +69,9 @@
 					Create anyway
 				</Button>
 			{/snippet}
-			{#if dup.status === "wanted"}
+			{#if dup.status === 'wanted'}
 				On your wishlist:
-				<a
-					href="/records/{dup.id}"
-					class="underline underline-offset-4 transition-colors hover:text-accent"
-				>
+				<a href="/records/{dup.id}" class="underline underline-offset-4 transition-colors hover:text-accent">
 					<strong>{duplicate.artist} — {duplicate.title}</strong>
 				</a>
 				(same barcode) — found it? Acquire it.
@@ -95,24 +88,18 @@
 		method="POST"
 		use:enhance={() =>
 			async ({ result, update }) => {
-				if (result && "data" in result && result.data?.duplicate) {
+				if (result && 'data' in result && result.data?.duplicate) {
 					duplicate = result.data.duplicate as typeof duplicate;
 					return; // stay on the page, show the dedupe banner
 				}
 				update();
 			}}
 	>
-		<input
-			type="hidden"
-			name="op"
-			value={createAnyway ? "create_anyway" : "save"}
-		/>
+		<input type="hidden" name="op" value={createAnyway ? 'create_anyway' : 'save'} />
 		<RecordForm
 			bind:draft
 			sources={data.sources}
-			submitLabel={draft.status === "wanted"
-				? "Save to wishlist"
-				: "Save to my collection"}
+			submitLabel={draft.status === 'wanted' ? 'Save to wishlist' : 'Save to my collection'}
 		/>
 	</form>
 </div>

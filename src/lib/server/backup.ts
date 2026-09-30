@@ -17,7 +17,16 @@
  * candidate DB has opened and passed integrity_check. A failed restore leaves
  * the running collection byte-for-byte untouched.
  */
-import { createReadStream, existsSync, mkdirSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+	createReadStream,
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	renameSync,
+	rmSync,
+	statSync,
+	writeFileSync
+} from 'node:fs';
 import path from 'node:path';
 import { ZipArchive, type EntryData } from 'archiver';
 import * as unzipper from 'unzipper';
@@ -242,6 +251,10 @@ export async function restoreFromBackup(buf: Buffer): Promise<RestoreInfo> {
 	// 5. Reopen and confirm the restored collection is readable.
 	const record_count = (getDb().prepare('SELECT COUNT(*) AS n FROM records').get() as { n: number }).n;
 
-	return { db_size_bytes: dbBytes.length, media_count: mediaEntries.length, pre_restore_dir: PRE_RESTORE_DIR, record_count };
+	return {
+		db_size_bytes: dbBytes.length,
+		media_count: mediaEntries.length,
+		pre_restore_dir: PRE_RESTORE_DIR,
+		record_count
+	};
 }
-

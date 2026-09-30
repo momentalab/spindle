@@ -3,12 +3,28 @@
  * Collection | Wishlist shelf split (the wishlist is `status = 'wanted'`).
  */
 import { fail } from '@sveltejs/kit';
-import { acquireRecord, countRecords, distinctValues, findRecordById, listRecords, playCounts } from '$lib/server/records';
+import {
+	acquireRecord,
+	countRecords,
+	distinctValues,
+	findRecordById,
+	listRecords,
+	playCounts
+} from '$lib/server/records';
 import { favoriteCounts } from '$lib/server/tracks';
 import type { ListOptions, RecordStatus } from '$lib/types';
 import type { Actions, PageServerLoad } from './$types';
 
-const SORT_COLUMNS = new Set(['artist', 'title', 'year', 'genre', 'label', 'favorite_tracks', 'acquired_at', 'updated_at']);
+const SORT_COLUMNS = new Set([
+	'artist',
+	'title',
+	'year',
+	'genre',
+	'label',
+	'favorite_tracks',
+	'acquired_at',
+	'updated_at'
+]);
 
 export const load: PageServerLoad = async ({ url }) => {
 	const search = url.searchParams.get('q') ?? '';
@@ -25,9 +41,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	// ?status=wanted deep link keeps working as an alias. On the collection
 	// shelf, wanted rows are excluded entirely — each record lives on one shelf.
 	const shelf: 'collection' | 'wishlist' =
-		url.searchParams.get('tab') === 'wishlist' || statusParam === 'wanted'
-			? 'wishlist'
-			: 'collection';
+		url.searchParams.get('tab') === 'wishlist' || statusParam === 'wanted' ? 'wishlist' : 'collection';
 	const statusFilter: RecordStatus | '' = shelf === 'wishlist' ? '' : (statusParam as RecordStatus) || '';
 
 	const opts: ListOptions = {

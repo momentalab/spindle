@@ -49,8 +49,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		const db = getDb();
 		const markerKey = `track_fetch_failed:${id}`;
 		const failed = db.prepare('SELECT value FROM settings WHERE key = ?').get(markerKey) as
-			| { value: string }
-			| undefined;
+			{ value: string } | undefined;
 		if (failed && failed.value === String(record.discogs_id)) {
 			// already tried this release and failed — don't retry on every view
 		} else {
@@ -88,8 +87,7 @@ export const actions: Actions = {
 		const rec = findRecordById(id);
 		if (!rec) error(404, 'Record not found');
 		// Not a wanted record — nothing to acquire (banner offers this instead of Add a copy).
-		if (rec.status !== 'wanted')
-			return fail(400, { error: 'Only wanted records can be acquired.' });
+		if (rec.status !== 'wanted') return fail(400, { error: 'Only wanted records can be acquired.' });
 
 		// The acquire dialog may carry purchase details (all optional):
 		// acquired_at (YYYY-MM-DD), price_paid (dollars), both conditions.
@@ -97,9 +95,7 @@ export const actions: Actions = {
 		const dateRaw = String(data.get('acquired_at') ?? '');
 		const priceRaw = String(data.get('price_paid') ?? '').trim();
 		const priceCents =
-			priceRaw && Number.isFinite(parseFloat(priceRaw))
-				? Math.round(parseFloat(priceRaw) * 100)
-				: null;
+			priceRaw && Number.isFinite(parseFloat(priceRaw)) ? Math.round(parseFloat(priceRaw) * 100) : null;
 		acquireRecord(id, {
 			acquired_at: /^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ? dateRaw : null,
 			price_paid: priceCents,
@@ -125,30 +121,26 @@ export const actions: Actions = {
 		const updated = updateRecord(id, patch);
 		if (!updated) error(404, 'Record not found');
 		// Returning nothing = success: SvelteKit revalidates and stays on the page.
-			return null;
-		},
-	
-		reidentify: async ({ request, params }) => {
-			const id = Number.parseInt(params.id, 10);
-			if (!findRecordById(id)) error(404, 'Record not found');
-			const data = await request.formData();
-			const discogsId = Number.parseInt(String(data.get('discogs_id') ?? ''), 10);
-			if (!Number.isFinite(discogsId) || discogsId <= 0)
-				return fail(400, { error: 'No release was selected.' });
-			try {
-				await reidentifyRecord(id, discogsId);
-			} catch (e) {
-				if (e instanceof ReidentifyConflictError) return fail(409, { error: e.message });
-				const msg =
-					e instanceof DiscogsError
-						? e.message
-						: 'Could not re-identify this record. Please try again.';
-				return fail(502, { error: msg });
-			}
-			redirect(303, `/records/${id}?reidentified=1`);
-		},
-	
-		add_copy: async ({ params }) => {
+		return null;
+	},
+
+	reidentify: async ({ request, params }) => {
+		const id = Number.parseInt(params.id, 10);
+		if (!findRecordById(id)) error(404, 'Record not found');
+		const data = await request.formData();
+		const discogsId = Number.parseInt(String(data.get('discogs_id') ?? ''), 10);
+		if (!Number.isFinite(discogsId) || discogsId <= 0) return fail(400, { error: 'No release was selected.' });
+		try {
+			await reidentifyRecord(id, discogsId);
+		} catch (e) {
+			if (e instanceof ReidentifyConflictError) return fail(409, { error: e.message });
+			const msg = e instanceof DiscogsError ? e.message : 'Could not re-identify this record. Please try again.';
+			return fail(502, { error: msg });
+		}
+		redirect(303, `/records/${id}?reidentified=1`);
+	},
+
+	add_copy: async ({ params }) => {
 		const id = Number.parseInt(params.id, 10);
 		if (!findRecordById(id)) error(404, 'Record not found');
 		addCopy(id);
@@ -174,13 +166,11 @@ export const actions: Actions = {
 		if (!findRecordById(id)) error(404, 'Record not found');
 		const data = await request.formData();
 		const releaseId = Number.parseInt(String(data.get('release_id') ?? ''), 10);
-		if (!Number.isFinite(releaseId) || releaseId <= 0)
-			return fail(400, { error: 'No release was selected.' });
+		if (!Number.isFinite(releaseId) || releaseId <= 0) return fail(400, { error: 'No release was selected.' });
 		try {
 			await pickCoverFromRelease(id, releaseId);
 		} catch (e) {
-			const msg =
-				e instanceof DiscogsError ? e.message : 'Could not save that cover. Please try again.';
+			const msg = e instanceof DiscogsError ? e.message : 'Could not save that cover. Please try again.';
 			return fail(502, { error: msg });
 		}
 		redirect(303, `/records/${id}?cover_saved=1`);
@@ -195,8 +185,7 @@ export const actions: Actions = {
 		try {
 			await resetCoverToDiscogs(id);
 		} catch (e) {
-			const msg =
-				e instanceof DiscogsError ? e.message : 'Could not save that cover. Please try again.';
+			const msg = e instanceof DiscogsError ? e.message : 'Could not save that cover. Please try again.';
 			return fail(502, { error: msg });
 		}
 		redirect(303, `/records/${id}?cover_saved=1`);

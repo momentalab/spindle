@@ -1,23 +1,23 @@
 <script lang="ts">
-	import type { Snippet } from "svelte";
+	import type { Snippet } from 'svelte';
 
 	let {
-		tone = "muted",
-		class: className = "",
-		children,
+		tone = 'muted',
+		class: className = '',
+		children
 	}: {
-		tone?: "forest" | "plum" | "rust" | "butter" | "muted";
+		tone?: 'forest' | 'plum' | 'rust' | 'butter' | 'muted';
 		class?: string;
 		children: Snippet;
 	} = $props();
 
 	/* Editorial "status": a letterspaced micro-label, no pill. */
 	const tones = {
-		forest: "text-accent-dim" /* in collection — quiet gold */,
-		plum: "text-accent",
-		rust: "text-rust",
-		butter: "text-faint",
-		muted: "text-faint",
+		forest: 'text-accent-dim' /* in collection — quiet gold */,
+		plum: 'text-accent',
+		rust: 'text-rust',
+		butter: 'text-faint',
+		muted: 'text-faint'
 	} as const;
 </script>
 

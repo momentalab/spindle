@@ -12,9 +12,7 @@
 		<script>
 			(() => {
 				const stored = localStorage.getItem('mynyl-theme');
-				const dark =
-					stored === 'dark' ||
-					(!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
+				const dark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
 				document.documentElement.classList.toggle('dark', dark);
 			})();
 		</script>

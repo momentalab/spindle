@@ -13,18 +13,10 @@ import { getDb } from '$lib/server/db';
 const KEY = 'normalize_artist_leadword';
 
 /** The small set of words that lead a name in "The X" form. */
-const LEADING_WORDS = new Set([
-	'the',
-	'a',
-	'an',
-	'this',
-	'that',
-]);
+const LEADING_WORDS = new Set(['the', 'a', 'an', 'this', 'that']);
 
 export function isLeadWordNormalizationOn(): boolean {
-	const row = getDb()
-		.prepare(`SELECT value FROM settings WHERE key = ?`)
-		.get(KEY) as { value: string } | undefined;
+	const row = getDb().prepare(`SELECT value FROM settings WHERE key = ?`).get(KEY) as { value: string } | undefined;
 	return row?.value === 'on';
 }
 
@@ -32,7 +24,7 @@ export function setLeadWordNormalization(on: boolean): void {
 	getDb()
 		.prepare(
 			`INSERT INTO settings (key, value) VALUES (?, ?)
-			 ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+			 ON CONFLICT(key) DO UPDATE SET value = excluded.value`
 		)
 		.run(KEY, on ? 'on' : 'off');
 }
@@ -69,14 +61,10 @@ export function normalizeLeadWord(artist: string): string {
  */
 export function applyLeadWordToAllRecords(): number {
 	const db = getDb();
-	const rows = db
-		.prepare(`SELECT id, artist FROM records`)
-		.all() as { id: number; artist: string }[];
+	const rows = db.prepare(`SELECT id, artist FROM records`).all() as { id: number; artist: string }[];
 
 	const changed: number[] = [];
-	const update = db.prepare(
-		`UPDATE records SET artist = @artist, updated_at = @now WHERE id = @id`,
-	);
+	const update = db.prepare(`UPDATE records SET artist = @artist, updated_at = @now WHERE id = @id`);
 	const tx = db.transaction(() => {
 		for (const row of rows) {
 			const next = normalizeLeadWord(row.artist);
