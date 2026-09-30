@@ -146,6 +146,7 @@
 
   /* ---- market snapshot (client action → POST /api/value/snapshot) ---- */
   let busy = $state(false);
+  let resetting = $state(false);
   let note = $state<string | null>(null);
   let error = $state<string | null>(null);
 
@@ -178,6 +179,36 @@
       error = e instanceof Error ? e.message : "Snapshot failed.";
     } finally {
       busy = false;
+    }
+  }
+
+  /** Destructive: the append-only price log is the only history, so a reset
+   *  asks first (the count is on the button's section, not the dialog). */
+  async function resetHistory(): Promise<void> {
+    if (resetting) return;
+    const ok = confirm(
+      `Delete all ${s.history_rows} price observation${s.history_rows === 1 ? "" : "s"} from the market ledger?\n\n` +
+        `Sparklines, movers and “market at sale” are read from this log — resetting starts the history from the next snapshot. Records, prices and sales are not touched.`,
+    );
+    if (!ok) return;
+    resetting = true;
+    note = null;
+    error = null;
+    try {
+      const res = await fetch("/api/value/history", { method: "DELETE" });
+      const j = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        deleted?: number;
+        message?: string;
+      } | null;
+      if (!res.ok || !j?.ok)
+        throw new Error(j?.message ?? `HTTP ${res.status}`);
+      note = `History reset — ${j.deleted ?? 0} observation${(j.deleted ?? 0) === 1 ? "" : "s"} removed.`;
+      await invalidateAll(); // the ledger, sparklines and counters re-render empty
+    } catch (e) {
+      error = e instanceof Error ? e.message : "Reset failed.";
+    } finally {
+      resetting = false;
     }
   }
 
@@ -684,6 +715,17 @@
         >
           {busy ? "Asking Discogs…" : "Take a snapshot"}
         </Button>
+        {#if s.history_rows > 0}
+          <Button
+            variant="danger"
+            size="sm"
+            type="button"
+            disabled={resetting || busy}
+            onclick={() => void resetHistory()}
+          >
+            {resetting ? "Clearing…" : "Reset history"}
+          </Button>
+        {/if}
         {#if note}
           <Banner variant="success">{note}</Banner>
         {/if}
