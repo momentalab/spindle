@@ -15,7 +15,7 @@
 	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from '$lib/discogs';
 	import { downscale, fmtSize } from '$lib/image';
 	import { STATUS_LABELS, joinLabels, joinStyles } from '$lib/types';
-	import type { PhotoRow, RecordDraft, ReleaseVideo, SearchCandidate, TrackRow } from '$lib/types';
+	import type { PhotoRow, RecordDraft, ReleaseCredit, ReleaseVideo, SearchCandidate, TrackRow } from '$lib/types';
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData | null } = $props();
@@ -578,9 +578,11 @@
 		return bits.join(' · ');
 	});
 
-	// Discogs returns some releases' video lists with whole entries duplicated.
-	// Svelte throws on duplicate keys in a keyed each during client render, so
-	// dedupe by URL here (render side; toSnapshot() does the same at write time).
+	// Discogs returns some releases' lists with whole entries duplicated (videos
+	// and credits both). Svelte throws on duplicate keys in a keyed each during
+	// client render, so dedupe here (render side; toSnapshot() does the same at
+	// write time). Null byte as field separator: can't appear in API strings.
+	const creditKey = (c: ReleaseCredit) => `${c.name}\u0000${c.role}\u0000${c.kind}`;
 	const snapshotVideos = $derived.by((): ReleaseVideo[] => {
 		const s = data.snapshot;
 		if (!s) return [];
@@ -590,6 +592,19 @@
 			if (seen.has(v.url)) continue;
 			seen.add(v.url);
 			out.push(v);
+		}
+		return out;
+	});
+	const snapshotCredits = $derived.by((): ReleaseCredit[] => {
+		const s = data.snapshot;
+		if (!s) return [];
+		const seen = new Set<string>();
+		const out: ReleaseCredit[] = [];
+		for (const c of s.credits) {
+			const key = creditKey(c);
+			if (seen.has(key)) continue;
+			seen.add(key);
+			out.push(c);
 		}
 		return out;
 	});
@@ -1185,11 +1200,11 @@
 			</div>
 		{/if}
 
-		{#if s.credits.length > 0}
+		{#if snapshotCredits.length > 0}
 			<div class="mt-7">
 				<p class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">Credits</p>
 				<ul class="mt-3 flex flex-col">
-					{#each s.credits as c (c.name + c.role + c.kind)}
+					{#each snapshotCredits as c (creditKey(c))}
 						<li class="grid grid-cols-[1fr_auto] gap-x-4 border-b border-hair py-2 sm:grid-cols-[220px_minmax(0,1fr)]">
 							<span class="text-[10.5px] uppercase tracking-[.18em] text-faint"
 								>{c.role || (c.kind === 'company' ? 'Company' : 'Guest')}</span

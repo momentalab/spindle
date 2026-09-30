@@ -66,6 +66,7 @@ export interface PriceBand {
 }
 
 export interface ScatterDot {
+	id: number; // record id — unique key for the chart's keyed each
 	x: number; // index into CONDITIONS (M→P order: 0 = M … last = P)
 	y: number; // price_paid, cents
 	label: string; // 'Artist — Title · $24.50 · NM'
@@ -208,14 +209,18 @@ const FORMAT_ORDER = ['7"', '10"', 'LP', 'Box', 'CD', 'Other'] as const;
 collapsed tail, so the value metric stays additive. */
 function topN(rows: ValBarRow[], cap: number = TOP_N): ValBarRow[] {
 	if (rows.length <= cap) return rows;
-	const head = [...rows].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)).slice(0, cap);
-	const rest = rows.slice(cap);
+	// A group literally named 'Other' would collide with the synthetic tail row
+	// — charts key rows by label — so fold it into the tail.
+	const other = rows.find((r) => r.label === 'Other');
+	const pool = other ? rows.filter((r) => r !== other) : rows;
+	const head = [...pool].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label)).slice(0, cap);
+	const rest = pool.slice(cap);
 	return [
 		...head,
 		{
 			label: 'Other',
-			count: rest.reduce((sum, r) => sum + r.count, 0),
-			value_cents: rest.reduce((sum, r) => sum + r.value_cents, 0)
+			count: rest.reduce((sum, r) => sum + r.count, 0) + (other?.count ?? 0),
+			value_cents: rest.reduce((sum, r) => sum + r.value_cents, 0) + (other?.value_cents ?? 0)
 		}
 	];
 }
@@ -670,12 +675,12 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	const scatterRaw = db
 		.prepare(
 			`
-		SELECT condition_media AS c, price_paid, artist, title
+		SELECT id, condition_media AS c, price_paid, artist, title
 		FROM records
 		WHERE status = 'in_collection' AND price_paid IS NOT NULL AND condition_media IS NOT NULL
 	`
 		)
-		.all() as { c: string; price_paid: number; artist: string; title: string }[];
+		.all() as { id: number; c: string; price_paid: number; artist: string; title: string }[];
 	let scatter: ScatterDot[] | null = null;
 	if (scatterRaw.length >= 15) {
 		scatter = scatterRaw
@@ -684,6 +689,7 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 				return x === -1
 					? null
 					: {
+							id: r.id,
 							x,
 							y: r.price_paid,
 							label: `${r.artist} — ${r.title} · $${(r.price_paid / 100).toFixed(2)} · ${r.c}`
@@ -752,10 +758,15 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	/* C5 — genre × decade cross-tab: top 5 genres per decade + 'Other'. */
 	const cross_tab: CrossTabRow[] = [...crossAgg.entries()]
 		.map(([decade, genres]) => {
-			const segs = [...genres.entries()].map(([label, count]) => ({ label, count }));
+			// A genre literally named 'Other' would collide with the synthetic tail
+			// segment — segments key by label — so fold it into the tail.
+			const otherCount = genres.get('Other') ?? 0;
+			const segs = [...genres.entries()]
+				.filter(([label]) => label !== 'Other')
+				.map(([label, count]) => ({ label, count }));
 			segs.sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 			const head = segs.slice(0, 5);
-			const rest = segs.slice(5).reduce((sum, s) => sum + s.count, 0);
+			const rest = segs.slice(5).reduce((sum, s) => sum + s.count, 0) + otherCount;
 			return {
 				decade,
 				total: head.reduce((sum, s) => sum + s.count, 0) + rest,

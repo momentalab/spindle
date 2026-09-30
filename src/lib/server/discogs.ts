@@ -263,20 +263,27 @@ export function toSnapshot(release: RawRelease, discogsId?: number): ReleaseSnap
 
 	// Companies first, extra-artists after — companies' role is their entity
 	// type ("Mastered At"), artists carry an explicit role; both fall back to ''.
+	// Discogs duplicates whole entries in these lists too (same disease as
+	// videos); drop repeats (first wins) or the detail page's keyed each crashes.
 	const credits: ReleaseCredit[] = [];
+	const seenCreditKeys = new Set<string>();
 	for (const c of release.companies ?? []) {
 		const name = clean(c.name);
 		if (!name) continue;
-		credits.push({
-			name,
-			role: clean(c.entity_type_name) ?? '',
-			kind: 'company'
-		});
+		const role = clean(c.entity_type_name) ?? '';
+		const key = `${name}\u0000${role}\u0000company`;
+		if (seenCreditKeys.has(key)) continue;
+		seenCreditKeys.add(key);
+		credits.push({ name, role, kind: 'company' });
 	}
 	for (const a of release.extraartists ?? []) {
 		const name = clean(a.anv ? `${a.name} (${a.anv})` : a.name);
 		if (!name) continue;
-		credits.push({ name, role: clean(a.role) ?? '', kind: 'artist' });
+		const role = clean(a.role) ?? '';
+		const key = `${name}\u0000${role}\u0000artist`;
+		if (seenCreditKeys.has(key)) continue;
+		seenCreditKeys.add(key);
+		credits.push({ name, role, kind: 'artist' });
 	}
 
 	// Discogs returns some releases' video lists with whole entries duplicated;

@@ -343,6 +343,7 @@
 			   (CONDITIONS order) — flip it for column and shade alike: worst grade
 			   sits left in the lightest moss, best grade right in the deepest. */
 			dots: s.scatter.map((d) => ({
+				id: d.id,
 				x: x(CONDITIONS.length - 1 - d.x),
 				y: y(d.y),
 				label: d.label,
@@ -1206,7 +1207,7 @@ back to the ledger voice. -->
 							stroke="var(--edge)"
 							stroke-width="1"
 						/>
-						{#each scatterGeom.dots as d (d.label)}
+						{#each scatterGeom.dots as d (d.id)}
 							<circle cx={d.x} cy={d.y} r="2.2" fill={d.fill} opacity="0.75">
 								<title>{d.label}</title>
 							</circle>
