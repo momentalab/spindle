@@ -1,10 +1,10 @@
 /**
  * Backup & restore (server-only) — the local-first safety net (roadmap F8).
  *
- * Backup:  checkpoint+truncate the WAL so `mynyl.db` is a self-contained
+ * Backup:  checkpoint+truncate the WAL so `spindle.db` is a self-contained
  *          snapshot, then stream the db file (+ any live -wal/-shm sidecars)
  *          and every file under `media/` into an in-memory zip via archiver —
- *          no temp disk. Archive layout:  mynyl.db[, -wal, -shm] + media/<files>
+ *          no temp disk. Archive layout:  spindle.db[, -wal, -shm] + media/<files>
  *
  * Restore: parse the uploaded zip (unzipper.Open.buffer), validate it —
  *          structure, path-safety of every entry, and a real open +
@@ -64,7 +64,7 @@ export interface RestoreInfo {
  * consistent snapshot on its own (sidecars are still packed when present).
  */
 export async function createBackup(): Promise<{ buffer: Buffer; info: BackupInfo }> {
-	// Flush + compact the WAL so mynyl.db alone is a consistent snapshot.
+	// Flush + compact the WAL so spindle.db alone is a consistent snapshot.
 	const checkpoint = getDb().pragma('wal_checkpoint(TRUNCATE)') as unknown as Array<{ busy: number }>;
 	if (checkpoint[0]?.busy) {
 		// Another writer holds the WAL; yield briefly and retry once.
@@ -133,8 +133,10 @@ const MAX_ENTRIES = 50_000;
  * Parse the uploaded zip into a sanitized entry map. Throws (user-safe Error)
  * on structural or path-safety problems — before any disk write happens.
  *
- * Allowed layout: `mynyl.db` at the root (optionally `mynyl.db-wal` /
- * `mynyl.db-shm` sidecars) plus single-segment files under `media/`.
+ * Allowed layout: `spindle.db` at the root (optionally `spindle.db-wal` /
+ * `spindle.db-shm` sidecars) plus single-segment files under `media/`.
+ * Pre-rename archives that still carry the legacy `mynyl.db*` names are
+ * accepted and land as `spindle.db*`.
  */
 async function readBackupEntries(buf: Buffer): Promise<Map<string, Buffer>> {
 	let cd: unzipper.CentralDirectory;
@@ -156,7 +158,9 @@ async function readBackupEntries(buf: Buffer): Promise<Map<string, Buffer>> {
 		entries.set(sanitizePath(f.path), await f.buffer());
 	}
 	if (entries.size === 0) throw new Error('Backup archive contains no files.');
-	if (!entries.has('mynyl.db')) throw new Error('Backup archive does not contain mynyl.db.');
+	if (!entries.has('spindle.db') && !entries.has('mynyl.db')) {
+		throw new Error('Backup archive does not contain a database file (spindle.db).');
+	}
 	return entries;
 }
 
@@ -172,7 +176,10 @@ function sanitizePath(raw: string): string {
 
 	if (parts.length === 1) {
 		const base = parts[0];
-		if (!['mynyl.db', 'mynyl.db-wal', 'mynyl.db-shm'].includes(base)) {
+		// spindle.db* is current; mynyl.db* is the pre-rename name, kept for old backups.
+		if (
+			!['spindle.db', 'spindle.db-wal', 'spindle.db-shm', 'mynyl.db', 'mynyl.db-wal', 'mynyl.db-shm'].includes(base)
+		) {
 			throw new Error(`Unexpected file at backup archive root: ${base}`);
 		}
 		return base;
@@ -185,7 +192,7 @@ function sanitizePath(raw: string): string {
 
 /** Open a copy of the candidate db out-of-band and prove it is sound SQLite. */
 function verifyCandidateDb(dbBytes: Buffer): void {
-	const staged = path.join(RESTORE_STAGING_DIR, 'mynyl.db');
+	const staged = path.join(RESTORE_STAGING_DIR, 'spindle.db');
 	rmSync(RESTORE_STAGING_DIR, { recursive: true, force: true });
 	mkdirSync(RESTORE_STAGING_DIR, { recursive: true });
 	writeFileSync(staged, dbBytes);
@@ -218,7 +225,9 @@ export async function restoreFromBackup(buf: Buffer): Promise<RestoreInfo> {
 
 	// 1. Parse + path-sanitize everything up front (no disk writes yet).
 	const entries = await readBackupEntries(buf);
-	const dbBytes = entries.get('mynyl.db')!;
+	// Pre-rename backups archive the db as mynyl.db; both names land as spindle.db.
+	const dbKey = entries.has('spindle.db') ? 'spindle.db' : 'mynyl.db';
+	const dbBytes = entries.get(dbKey)!;
 	const mediaEntries = [...entries.entries()].filter(([k]) => k.startsWith('media/'));
 
 	// 2. Prove the candidate DB is sound before touching the live collection.
@@ -240,9 +249,10 @@ export async function restoreFromBackup(buf: Buffer): Promise<RestoreInfo> {
 	mkdirSync(MEDIA_DIR, { recursive: true });
 
 	writeFileSync(DB_PATH, dbBytes);
-	for (const sidecar of ['mynyl.db-wal', 'mynyl.db-shm']) {
-		const src = entries.get(sidecar);
-		if (src) writeFileSync(path.join(DATA_DIR, sidecar), src);
+	for (const suffix of ['-wal', '-shm']) {
+		// Legacy archives carry mynyl.db-wal/-shm; either way it lands as spindle.db*.
+		const src = entries.get(`spindle.db${suffix}`) ?? entries.get(`mynyl.db${suffix}`);
+		if (src) writeFileSync(path.join(DATA_DIR, `spindle.db${suffix}`), src);
 	}
 	for (const [key, data] of mediaEntries) {
 		writeFileSync(path.join(MEDIA_DIR, key.slice('media/'.length)), data);

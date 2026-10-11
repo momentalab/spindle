@@ -1,13 +1,13 @@
 /**
  * End-to-end smoke test for backup/restore (F8). Requires a running server:
- *   mkdir -p /tmp/mynyl-f8/data/media
- *   PORT=3199 DATA_DIR=/tmp/mynyl-f8/data node build/index.js &
+ *   mkdir -p /tmp/spindle-f8/data/media
+ *   PORT=3199 DATA_DIR=/tmp/spindle-f8/data node build/index.js &
  *   curl -s http://127.0.0.1:3199/          # force lazy DB creation
- *   DATA_DIR=/tmp/mynyl-f8/data node scripts/backup-seed.mjs
- *   DATA_DIR=/tmp/mynyl-f8/data node scripts/backup-roundtrip.mjs [baseUrl]
+ *   DATA_DIR=/tmp/spindle-f8/data node scripts/backup-seed.mjs
+ *   DATA_DIR=/tmp/spindle-f8/data node scripts/backup-roundtrip.mjs [baseUrl]
  *
  * Steps:
- *   1. POST /api/backup            → expect a zip with mynyl.db + media files
+ *   1. POST /api/backup            → expect a zip with spindle.db + media files
  *   2. verify the zip's db is openable and integrity_check=ok, and the db inside
  *      matches what the live server reports (record count)
  *   3. delete one record + one media file from the live DATA_DIR (simulate loss)
@@ -23,14 +23,14 @@ import { readFileSync, writeFileSync, existsSync, unlinkSync } from 'node:fs';
 import Database from 'better-sqlite3';
 
 const BASE = process.argv[2] ?? 'http://127.0.0.1:3199';
-const DATA = process.env.DATA_DIR ?? '/tmp/mynyl-f8/data';
+const DATA = process.env.DATA_DIR ?? '/tmp/spindle-f8/data';
 let failures = 0;
 function check(label, cond, extra = '') {
 	console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${extra ? ` — ${extra}` : ''}`);
 	if (!cond) failures++;
 }
 
-const liveDbPath = `${DATA}/mynyl.db`;
+const liveDbPath = `${DATA}/spindle.db`;
 const dbBefore = new Database(liveDbPath, { readonly: true });
 const recordsBefore = dbBefore.prepare('SELECT COUNT(*) n FROM records').get().n;
 dbBefore.close();
@@ -40,9 +40,9 @@ console.log(`live collection: ${recordsBefore} records`);
 const res = await fetch(`${BASE}/api/backup`, { method: 'POST' });
 check('backup responds 200', res.status === 200, `status=${res.status}`);
 const cd = res.headers.get('content-disposition') ?? '';
-check('attachment with stamped zip name', /attachment; filename="mynyl-backup-.*\.zip"/.test(cd), cd);
+check('attachment with stamped zip name', /attachment; filename="spindle-backup-.*\.zip"/.test(cd), cd);
 const zip = Buffer.from(await res.arrayBuffer());
-writeFileSync('/tmp/mynyl-f8/backup.zip', zip);
+writeFileSync('/tmp/spindle-f8/backup.zip', zip);
 check('zip magic', zip.subarray(0, 2).toString() === 'PK', `${zip.length} bytes`);
 
 // ---- 2. inspect the archive (unzipper from the app's own node_modules) ---
@@ -50,12 +50,12 @@ const unzipper = await import('unzipper');
 const cdDir = await unzipper.Open.buffer(zip);
 const names = cdDir.files.map((f) => f.path).sort();
 console.log('archive entries:', names.join(', '));
-check('archive has mynyl.db', names.includes('mynyl.db'));
+check('archive has spindle.db', names.includes('spindle.db'));
 check('archive has both covers', names.includes('media/1-cover.jpg') && names.includes('media/2-cover.jpg'));
 
-const dbInZip = await cdDir.files.find((f) => f.path === 'mynyl.db').buffer();
-writeFileSync('/tmp/mynyl-f8/in-zip.db', dbInZip);
-const zippedDb = new Database('/tmp/mynyl-f8/in-zip.db', { readonly: true });
+const dbInZip = await cdDir.files.find((f) => f.path === 'spindle.db').buffer();
+writeFileSync('/tmp/spindle-f8/in-zip.db', dbInZip);
+const zippedDb = new Database('/tmp/spindle-f8/in-zip.db', { readonly: true });
 const integrity = zippedDb.pragma('integrity_check');
 check('zipped db integrity_check ok', integrity[0].integrity_check === 'ok', JSON.stringify(integrity[0]));
 const zipRecords = zippedDb.prepare('SELECT COUNT(*) n FROM records').get().n;
@@ -89,7 +89,7 @@ check('record count restored', recordsAfter === recordsBefore, `${recordsAfter} 
 check('cover file restored', existsSync(victimCover));
 
 const pre = `${DATA}/.pre-restore`;
-check('.pre-restore snapshot exists with wiped-gen db', existsSync(`${pre}/mynyl.db`));
+check('.pre-restore snapshot exists with wiped-gen db', existsSync(`${pre}/spindle.db`));
 check(
 	'.pre-restore snapshot has wiped-gen media (2-cover only)',
 	existsSync(`${pre}/media/2-cover.jpg`) && !existsSync(`${pre}/media/1-cover.jpg`)

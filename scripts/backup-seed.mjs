@@ -2,8 +2,8 @@
 import Database from 'better-sqlite3';
 import { writeFileSync } from 'node:fs';
 
-const DATA = process.env.DATA_DIR ?? '/tmp/mynyl-f8/data';
-const db = new Database(`${DATA}/mynyl.db`);
+const DATA = process.env.DATA_DIR ?? '/tmp/spindle-f8/data';
+const db = new Database(`${DATA}/spindle.db`);
 db.pragma('journal_mode = WAL');
 const ins = db.prepare(
 	'INSERT INTO records (discogs_id, barcode, artist, title, year, label, status, copies, price_paid) VALUES (?,?,?,?,?,?,?,?,?)'

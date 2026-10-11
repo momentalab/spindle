@@ -19,17 +19,17 @@ import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 
-const DATA = '/tmp/mynyl-settings-mig/data';
-const DB = path.join(DATA, 'mynyl.db');
+const DATA = '/tmp/spindle-settings-mig/data';
+const DB = path.join(DATA, 'spindle.db');
 
 // Fresh scratch dir; copy the live DB in (consistent snapshot when sqlite3 is
 // available — it's what backups use — plain copy otherwise).
-rmSync('/tmp/mynyl-settings-mig', { recursive: true, force: true });
+rmSync('/tmp/spindle-settings-mig', { recursive: true, force: true });
 mkdirSync(DATA, { recursive: true });
 if (execFileSync('which', ['sqlite3'], { encoding: 'utf8' }).trim()) {
-	execFileSync('sqlite3', [path.resolve('data/mynyl.db'), `.backup ${DB}`], { stdio: 'ignore' });
+	execFileSync('sqlite3', [path.resolve('data/spindle.db'), `.backup ${DB}`], { stdio: 'ignore' });
 } else {
-	cpSync(path.resolve('data/mynyl.db'), DB);
+	cpSync(path.resolve('data/spindle.db'), DB);
 }
 
 process.env.DATA_DIR = DATA;

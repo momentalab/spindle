@@ -26,7 +26,7 @@
 			const cd = res.headers.get('Content-Disposition') ?? '';
 			const m = /filename="?([^";]+)"?/.exec(cd);
 			a.href = url;
-			a.download = m?.[1] ?? `mynyl-backup-${new Date().toISOString().slice(0, 10)}.zip`;
+			a.download = m?.[1] ?? `spindle-backup-${new Date().toISOString().slice(0, 10)}.zip`;
 			document.body.append(a);
 			a.click();
 			a.remove();

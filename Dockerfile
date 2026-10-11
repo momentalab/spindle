@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# mynyl — multi-stage build (node:24-slim on every stage).
+# spindle — multi-stage build (node:24-slim on every stage).
 # Node 24 LTS: the runtime toolchain floor. @zxing/library requires node >=24
 # (enforced by engine-strict in .npmrc); better-sqlite3 and SvelteKit are happy.
 # The runner stage reinstalls runtime deps for the *target* platform so the

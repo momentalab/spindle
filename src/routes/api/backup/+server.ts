@@ -2,8 +2,8 @@
  * Collection backup endpoint (roadmap F8).
  *
  * POST /api/backup  →  streams the whole collection as a zip download:
- *   mynyl.db (WAL checkpointed + truncated first, so it is self-contained)
- *   mynyl.db-wal / mynyl.db-shm (only if still present)
+ *   spindle.db (WAL checkpointed + truncated first, so it is self-contained)
+ *   spindle.db-wal / spindle.db-shm (only if still present)
  *   media/<every cover and photo>
  *
  * A POST (not a GET) on purpose: the body is freshly built per request, can
@@ -27,7 +27,7 @@ export async function POST(): Promise<Response> {
 		headers: {
 			'Content-Type': 'application/zip',
 			'Content-Length': String(buffer.length),
-			'Content-Disposition': `attachment; filename="mynyl-backup-${stamp}.zip"`,
+			'Content-Disposition': `attachment; filename="spindle-backup-${stamp}.zip`,
 			'Cache-Control': 'no-store'
 		}
 	});

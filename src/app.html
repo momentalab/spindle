@@ -11,7 +11,8 @@
 		-->
 		<script>
 			(() => {
-				const stored = localStorage.getItem('mynyl-theme');
+				// `?? mynyl-theme` migrates the preference across the app rename (one-time read fallback).
+				const stored = localStorage.getItem('spindle-theme') ?? localStorage.getItem('mynyl-theme');
 				const dark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
 				document.documentElement.classList.toggle('dark', dark);
 			})();

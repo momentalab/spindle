@@ -181,7 +181,7 @@ export function exportAsJson(table: 'all' | ExportTable = 'all'): string {
 			: (db.prepare('SELECT * FROM record_tracks ORDER BY record_id ASC, id ASC').all() as TrackRow[]);
 	return JSON.stringify(
 		{
-			app: 'mynyl',
+			app: 'spindle',
 			exported_at: new Date().toISOString(),
 			schema_version: 1,
 			record_count: records.length,

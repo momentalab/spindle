@@ -1,7 +1,7 @@
 /**
  * Discogs API v2 client (server-only).
  *
- * Auth model (verified against live API 2026-08-26, see plans/mynyl-plan.md §4.2):
+ * Auth model (verified against live API 2026-08-26, see plans/spindle-plan.md §4.2):
  * - Search (/database/search), release lookup, and image download all work
  *   UNauthenticated (25 req/min tier).
  * - With consumer key/secret ("Discogs Auth" — Authorization: Discogs key=…, secret=…):
@@ -22,7 +22,7 @@ import type {
 } from '$lib/types';
 
 const API_BASE = 'https://api.discogs.com';
-const USER_AGENT = 'mynyl/0.1 (local vinyl collection tracker)';
+const USER_AGENT = 'spindle/0.1 (local vinyl collection tracker)';
 
 export class DiscogsError extends Error {
 	readonly status: number | null;

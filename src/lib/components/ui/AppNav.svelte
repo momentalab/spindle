@@ -46,10 +46,10 @@
 <!-- Masthead — like a publication header -->
 <nav class="sticky top-0 z-50 border-b border-edge bg-paper/90 backdrop-blur-sm">
 	<div class="mx-auto flex max-w-260 items-center px-7 py-5">
-		<a href="/" class="mr-2 flex shrink-0 items-center" aria-label="mynyl — collection home">
+		<a href="/" class="mr-2 flex shrink-0 items-center" aria-label="spindle — collection home">
 			<img src={favicon} alt="" width="27" height="32" class="h-8 w-auto shrink-0" />
 			<span class="ml-3 flex items-baseline">
-				<span class="font-display text-xl font-normal tracking-[.02em] sm:text-2xl">mynyl</span>
+				<span class="font-display text-xl font-normal tracking-[.02em] sm:text-2xl">spindle</span>
 				<!-- tagline drops below lg so the masthead fits narrow viewports -->
 				<span class="ml-3 hidden text-[10px] uppercase tracking-[.2em] text-faint lg:inline"
 					>est. 2026 · a vinyl index</span
@@ -81,7 +81,7 @@
 			bind:this={triggerEl}
 			class="ml-auto -mr-1.5 flex h-10 w-10 items-center justify-center text-ink transition-colors hover:text-accent sm:hidden"
 			aria-expanded={menuOpen}
-			aria-controls="mynyl-nav-panel"
+			aria-controls="spindle-nav-panel"
 			aria-label={menuOpen ? 'Close menu' : 'Open menu'}
 			onclick={() => (menuOpen = !menuOpen)}
 		>
@@ -122,7 +122,7 @@
 			onclick={closeMenu}
 		></button>
 		<div
-			id="mynyl-nav-panel"
+			id="spindle-nav-panel"
 			bind:this={panelEl}
 			tabindex="-1"
 			class="drawer-in absolute inset-y-0 right-0 flex w-[19.5rem] max-w-[85vw] flex-col overflow-y-auto border-l border-edge bg-paper px-7 focus:outline-none"
@@ -131,7 +131,7 @@
 			aria-label="Site navigation"
 		>
 			<div class="flex items-center justify-between py-5">
-				<span class="font-display text-xl tracking-[.02em]">mynyl</span>
+				<span class="font-display text-xl tracking-[.02em]">spindle</span>
 				<button
 					type="button"
 					class="-mr-1.5 flex h-9 w-9 items-center justify-center text-muted transition-colors hover:text-accent"

@@ -12,7 +12,7 @@
 
 	/* ------------------------------------------------------------------ */
 	/* Preferences — client-owned, in localStorage (never the database).   */
-	/* The theme key is the same `mynyl-theme` the app.html boot script    */
+	/* The theme key is the same `spindle-theme` the app.html boot script  */
 	/* uses, so the two stay in agreement.                                 */
 	/* ------------------------------------------------------------------ */
 
@@ -25,7 +25,8 @@
 
 	function readStoredTheme(): ThemeId {
 		if (!browser) return 'light'; // SSR stand-in; the effect corrects it on hydration
-		const s = localStorage.getItem('mynyl-theme');
+		// `?? mynyl-theme` migrates the preference across the app rename (one-time read fallback).
+		const s = localStorage.getItem('spindle-theme') ?? localStorage.getItem('mynyl-theme');
 		return s === 'dark' ? 'dark' : s === 'light' ? 'light' : 'system';
 	}
 
@@ -34,10 +35,10 @@
 	function applyTheme(t: ThemeId): void {
 		if (t === 'system') {
 			// No stored key → the app.html boot script falls through to the OS preference.
-			localStorage.removeItem('mynyl-theme');
+			localStorage.removeItem('spindle-theme');
 			document.documentElement.classList.toggle('dark', window.matchMedia('(prefers-color-scheme: dark)').matches);
 		} else {
-			localStorage.setItem('mynyl-theme', t);
+			localStorage.setItem('spindle-theme', t);
 			document.documentElement.classList.toggle('dark', t === 'dark');
 		}
 	}
@@ -76,7 +77,8 @@
 
 	function readStoredView(): ViewId {
 		if (!browser) return 'cards'; // SSR stand-in
-		const stored = localStorage.getItem('mynyl-default-view');
+		// `?? mynyl-default-view` migrates the preference across the app rename (one-time read fallback).
+		const stored = localStorage.getItem('spindle-default-view') ?? localStorage.getItem('mynyl-default-view');
 		return stored && (VIEW_IDS as string[]).includes(stored) ? (stored as ViewId) : 'cards';
 	}
 
@@ -85,7 +87,7 @@
 	// Writes the key on every change (and once with the hydrated value on mount —
 	// harmless, and it makes a freshly-set preference visible to other tabs' home loads).
 	$effect(() => {
-		if (browser && VIEW_IDS.includes(defaultView)) localStorage.setItem('mynyl-default-view', defaultView);
+		if (browser && VIEW_IDS.includes(defaultView)) localStorage.setItem('spindle-default-view', defaultView);
 	});
 
 	/* ------------------------------------------------------------------ */

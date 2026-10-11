@@ -21,7 +21,7 @@ export function getDb(): Database.Database {
 }
 
 /**
- * Checkpoint the WAL (flushing it into mynyl.db) and close the connection,
+ * Checkpoint the WAL (flushing it into spindle.db) and close the connection,
  * releasing every file handle on the DB. Call this only right before
  * replacing the DB files on disk (restore, F8) — until the next getDb()
  * call the app has no live connection, which is acceptable for a

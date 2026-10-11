@@ -1,8 +1,8 @@
-# mynyl — single-container deployment.
+# spindle — single-container deployment.
 #
 #   docker compose up --build -d
 #
-# Listens on the host at 3737 by default (override with MYNYL_PORT), bound to all interfaces.
+# Listens on the host at 3737 by default (override with SPINDLE_PORT), bound to all interfaces.
 # Point your existing reverse proxy (e.g. Caddy) at that port:
 #     reverse_proxy <server-ip>:3737
 # The app derives its origin from the forwarded Host header and assumes https,
@@ -10,13 +10,13 @@
 #
 # Env vars are interpolated from the repo-root .env (compose-native substitution,
 # same file dev already uses) — there is deliberately no env_file. On a Linux x64
-# server build with:  docker buildx build --platform linux/amd64 -t mynyl .
+# server build with:  docker buildx build --platform linux/amd64 -t spindle .
 services:
-  mynyl:
+  spindle:
     build: .
-    image: mynyl
+    image: spindle
     ports:
-      - '${MYNYL_PORT:-3737}:3000'
+      - '${SPINDLE_PORT:-3737}:3000'
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0

@@ -8,7 +8,7 @@
  *   ./node_modules/.bin/esbuild scripts/verify-genre-migration.ts --bundle \
  *     --platform=node --format=cjs "--alias:$lib=./src/lib" \
  *     --external:better-sqlite3 --outfile=.genre-mig.cjs \
- *   && DATA_DIR=/tmp/mynyl-genre-mig/data node .genre-mig.cjs; rm -f .genre-mig.cjs
+ *     && DATA_DIR=/tmp/spindle-genre-mig/data node .genre-mig.cjs; rm -f .genre-mig.cjs
  */
 import Database from 'better-sqlite3';
 import { mkdirSync, rmSync } from 'node:fs';
@@ -17,7 +17,7 @@ import { getDb } from '../src/lib/server/db';
 import { findRecordById, listRecords, distinctValues, createRecord, updateRecord } from '../src/lib/server/records';
 import { parseGenreList, joinGenres } from '../src/lib/types';
 
-const DATA = '/tmp/mynyl-genre-mig/data';
+const DATA = '/tmp/spindle-genre-mig/data';
 
 let failures = 0;
 function check(label: string, cond: boolean, extra = '') {
@@ -70,7 +70,7 @@ check(
 rmSync(path.dirname(DATA), { recursive: true, force: true });
 mkdirSync(DATA, { recursive: true });
 
-const legacy = new Database(path.join(DATA, 'mynyl.db'));
+const legacy = new Database(path.join(DATA, 'spindle.db'));
 legacy.exec(`
 	CREATE TABLE schema_migrations (
 		version INTEGER PRIMARY KEY,

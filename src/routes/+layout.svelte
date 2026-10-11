@@ -10,7 +10,7 @@
 	<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 	<link rel="shortcut icon" href="/favicon.ico" />
 	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-	<meta name="apple-mobile-web-app-title" content="Mynyl" />
+	<meta name="apple-mobile-web-app-title" content="Spindle" />
 	<link rel="manifest" href="/site.webmanifest" />
 </svelte:head>
 
@@ -20,5 +20,5 @@
 </main>
 
 <footer class="border-t border-hair py-10 text-center">
-	<p class="text-[11px] uppercase tracking-[.22em] text-faint">mynyl — a vinyl index</p>
+	<p class="text-[11px] uppercase tracking-[.22em] text-faint">spindle — a vinyl index</p>
 </footer>

@@ -26,8 +26,8 @@
 import assert from 'node:assert';
 import { mkdirSync, rmSync } from 'node:fs';
 
-const DATA = '/tmp/mynyl-tracks-mig/data';
-rmSync('/tmp/mynyl-tracks-mig', { recursive: true, force: true });
+const DATA = '/tmp/spindle-tracks-mig/data';
+rmSync('/tmp/spindle-tracks-mig', { recursive: true, force: true });
 mkdirSync(DATA, { recursive: true });
 process.env.DATA_DIR = DATA; // must precede the dynamic import (paths read env at init)
 

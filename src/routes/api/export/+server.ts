@@ -36,7 +36,7 @@ export function GET({ url }): Response {
 	return new Response(body, {
 		headers: {
 			'Content-Type': format === 'csv' ? 'text/csv;charset=utf-8' : 'application/json;charset=utf-8',
-			'Content-Disposition': `attachment; filename="mynyl-${namePart}-${stamp}.${format}"`,
+			'Content-Disposition': `attachment; filename="spindle-${namePart}-${stamp}.${format}"`,
 			'Cache-Control': 'no-store'
 		}
 	});

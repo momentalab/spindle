@@ -1,4 +1,4 @@
-# mynyl 🎵
+# spindle 🎵
 
 A **local-first** vinyl record collection tracker. Scan a barcode, pull metadata from Discogs, and keep it — the data lives in a local SQLite database, not on Discogs.
 
@@ -6,7 +6,7 @@ A **local-first** vinyl record collection tracker. Scan a barcode, pull metadata
 
 - **Barcode scanning** — camera-based EAN-13/UPC-A scan (native `BarcodeDetector` where available, ZXing JS fallback) plus manual entry
 - **Discogs import** — search by barcode, review candidates, and save the release; cover art is **downloaded locally** at import time so the collection browses offline
-- **Local-first storage** — SQLite (`data/mynyl.db`) + media files (`data/media/`). Discogs is a one-time source of truth; every field is editable afterwards and never overwritten by Discogs
+- **Local-first storage** — SQLite (`data/spindle.db`) + media files (`data/media/`). Discogs is a one-time source of truth; every field is editable afterwards and never overwritten by Discogs
 - **Extended schema** — beyond Discogs: condition (media/sleeve), price paid, acquired date, source, copies, limited-edition flag, status, and free-form notes
 - **Three views** — cards, table (sortable columns), and list, with search + genre/label/status filters
 - **Photos** — upload images of your actual records (client-side downscale to ~1600px JPEG before storage)
@@ -44,20 +44,20 @@ One container runs the whole app. From a fresh clone:
 docker compose up --build -d
 ```
 
-- **Port** — listens on `127.0.0.1:3737` on the host (override with `MYNYL_PORT`). Bound to localhost by design; put your existing reverse proxy in front.
+- **Port** — listens on `127.0.0.1:3737` on the host (override with `SPINDLE_PORT`). Bound to localhost by design; put your existing reverse proxy in front.
 - **Behind Caddy / any TLS proxy** — point it at the port, nothing else:
 
   ```
   reverse_proxy 127.0.0.1:3737
   ```
 
-  The app derives its origin from the forwarded `Host` header (scheme `https`), so links, redirects and the CSRF check work behind your proxy with no extra config — verified with a simulated `Host: mynyl.example.com` request. Optional: set `ADDRESS_HEADER=x-forwarded-for` + `XFF_DEPTH=1` to log real client IPs.
+  The app derives its origin from the forwarded `Host` header (scheme `https`), so links, redirects and the CSRF check work behind your proxy with no extra config — verified with a simulated `Host: spindle.example.com` request. Optional: set `ADDRESS_HEADER=x-forwarded-for` + `XFF_DEPTH=1` to log real client IPs.
 
 - **Data** — `./data` → `/data`, so DB + media survive rebuilds. On Linux, chown the folder once before first run (`mkdir -p data && chown 1000:1000 data`) since the container runs as uid 1000.
 - **Linux x64 target** — build for the target platform, not your laptop's arch:
 
   ```sh
-  docker buildx build --platform linux/amd64 -t mynyl .
+  docker buildx build --platform linux/amd64 -t spindle .
   ```
 
   The image is `node:24-slim` and reinstalls runtime deps per platform, so `better-sqlite3` gets the correct prebuilt binary with no compile toolchain (the package ships prebuilds; the build uses `npm ci --ignore-scripts`).
@@ -81,7 +81,7 @@ curl -OJ "http://localhost:3737/api/export?format=json"       # full fidelity (r
 
 CSV/JSON exports are a snapshot of the _data_; a backup is the whole _thing_ — the SQLite database plus every cover and photo file, in one zip you can drop anywhere.
 
-- **Download** — from the "Backup" section at the bottom of the home page (or `curl -X POST`), producing e.g. `mynyl-backup-2026-08-30T23-00-00.zip`. The WAL is checkpointed first, so the db file inside is a consistent, self-contained snapshot.
+- **Download** — from the "Backup" section at the bottom of the home page (or `curl -X POST`), producing e.g. `spindle-backup-2026-08-30T23-00-00.zip`. The WAL is checkpointed first, so the db file inside is a consistent, self-contained snapshot.
 - **Restore** — upload that zip from the same section (the browser confirms before it's sent). The server parses and path-checks the archive, opens the candidate database out-of-band and runs `PRAGMA integrity_check` — and only once that passes does it shut the live connection down, preserve the current DB + media in `data/.pre-restore/`, and swap the new generation in. A bad or partial archive aborts with the existing collection byte-for-byte untouched.
 - **Safety net** — `.pre-restore/` keeps exactly one previous generation (the files from before the last restore), so a mistaken restore can be put back by restoring _that_ set of files.
 
@@ -90,7 +90,7 @@ curl -X POST -OJ "http://localhost:3737/api/backup"                  # download 
 # Production builds assume https for origin checks (behind-TLS deployment), so a
 # terminal form-POST needs a matching Origin header, like photo uploads:
 curl -X POST -H "Origin: https://localhost:3737" \
-     -F "file=@mynyl-backup-….zip" "http://localhost:3737/api/restore"
+     -F "file=@spindle-backup-….zip" "http://localhost:3737/api/restore"
 # (Under `npm run dev` the origin check is disabled — plain curl works.)
 ```
 
@@ -104,7 +104,7 @@ curl -X POST -H "Origin: https://localhost:3737" \
 | `DISCOGS_CONSUMER_SECRET` | _(empty)_                                                  | Discogs API secret                                                                     |
 | `DATA_DIR`                | `./data`                                                   | Where the SQLite DB and media files live                                               |
 | `BODY_SIZE_LIMIT`         | `512M` (compose)                                           | Max request body for adapter-node (restore uploads; photos are capped per-file at 8MB) |
-| `MYNYL_PORT`              | `3737` (compose)                                           | Host port for the Docker deployment                                                    |
+| `SPINDLE_PORT`            | `3737` (compose)                                           | Host port for the Docker deployment                                                    |
 
 Create a (free) key/secret pair at https://www.discogs.com/settings/developers — one per project, no OAuth dance needed for local use.
 
@@ -135,7 +135,7 @@ src/
     api/restore/+server.ts   # POST backup zip restore (validated, .pre-restore snapshot)
     api/records/[id]/photos/+server.ts  # photo upload/delete (multipart)
     media/[...file]/+server.ts           # local media serving (traversal-guarded)
-plans/mynyl-plan.md          # the full architecture plan
+plans/spindle-plan.md        # the full architecture plan
 ```
 
 ## Design notes

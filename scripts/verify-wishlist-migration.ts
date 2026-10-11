@@ -17,7 +17,7 @@
  * Run:
  *   npx tsx scripts/verify-wishlist-migration.ts
  */
-const DATA = '/tmp/mynyl-wishlist-mig/data';
+const DATA = '/tmp/spindle-wishlist-mig/data';
 
 // getDb must open the scratch DB, not the live one. paths.ts reads DATA_DIR at
 // IMPORT time, so pin the env var before any app module is loaded — static
@@ -32,8 +32,8 @@ const Database = (await import('better-sqlite3')).default;
 const { getDb } = await import('../src/lib/server/db');
 const { acquireRecord, createRecord, deleteRecord, updateRecord } = await import('../src/lib/server/records');
 
-const DB_FILE = pathMod.join(DATA, 'mynyl.db');
-const SOURCE_DB = pathMod.join(process.cwd(), 'data', 'mynyl.db');
+const DB_FILE = pathMod.join(DATA, 'spindle.db');
+const SOURCE_DB = pathMod.join(process.cwd(), 'data', 'spindle.db');
 
 let failures = 0;
 function check(label: string, cond: boolean, extra = '') {

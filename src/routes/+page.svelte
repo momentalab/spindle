@@ -64,7 +64,8 @@
 	let view = $state<ViewId>((page.url.searchParams.get('view') as ViewId | null) ?? 'cards');
 
 	onMount(() => {
-		const saved = localStorage.getItem('mynyl-default-view');
+		// `?? mynyl-default-view` migrates the preference across the app rename (one-time read fallback).
+		const saved = localStorage.getItem('spindle-default-view') ?? localStorage.getItem('mynyl-default-view');
 		if (page.url.searchParams.get('view') === null && saved && views.some((v) => v.id === saved)) {
 			view = saved as ViewId;
 		}
