@@ -114,7 +114,7 @@
 
 <!-- Mobile nav overlay — full-height drawer over a dimmed backdrop -->
 {#if menuOpen}
-	<div class="fixed inset-0 z-[60] sm:hidden">
+	<div class="fixed inset-0 z-60 sm:hidden">
 		<button
 			type="button"
 			class="absolute inset-0 h-full w-full cursor-default bg-ink/25 backdrop-blur-[2px]"
@@ -125,7 +125,7 @@
 			id="spindle-nav-panel"
 			bind:this={panelEl}
 			tabindex="-1"
-			class="drawer-in absolute inset-y-0 right-0 flex w-[19.5rem] max-w-[85vw] flex-col overflow-y-auto border-l border-edge bg-paper px-7 focus:outline-none"
+			class="drawer-in absolute inset-y-0 right-0 flex w-78 max-w-[85vw] flex-col overflow-y-auto border-l border-edge bg-paper px-7 focus:outline-none"
 			role="dialog"
 			aria-modal="true"
 			aria-label="Site navigation"

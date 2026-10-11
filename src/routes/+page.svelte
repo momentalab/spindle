@@ -658,7 +658,7 @@
 			class="flex cursor-pointer select-none items-center gap-2 pb-1.5"
 			title="Hide Discogs matches — show only records in this index"
 		>
-			<input type="checkbox" bind:checked={localOnly} class="h-3.5 w-3.5 accent-[var(--accent)]" />
+			<input type="checkbox" bind:checked={localOnly} class="h-3.5 w-3.5 accent-accent" />
 			<span class="text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"> Local only </span>
 		</label>
 
@@ -667,7 +667,7 @@
 			class="flex cursor-pointer select-none items-center gap-2 pb-1.5"
 			title="Show only records with a starred track"
 		>
-			<input type="checkbox" bind:checked={favF} class="h-3.5 w-3.5 accent-[var(--accent)]" />
+			<input type="checkbox" bind:checked={favF} class="h-3.5 w-3.5 accent-accent" />
 			<span class="text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"> Starred </span>
 		</label>
 
@@ -750,7 +750,7 @@
 					<span class="hidden font-display text-[15px] italic text-faint sm:inline"
 						>{String(i + 1).padStart(2, '0')}</span
 					>
-					<span class="block h-11 w-11 shrink-0 sm:h-[72px] sm:w-[72px]">
+					<span class="block h-11 w-11 shrink-0 sm:h-18 sm:w-18">
 						<CoverImage src={coverSrc(rec)} alt="" loading="lazy" />
 					</span>
 					<span class="min-w-0">
@@ -768,7 +768,7 @@
 				</a>
 				<!-- pl mirrors the grid template above (cover 44 + gap 12 / + number 56 +
 					     two sm gaps) so the meta line starts under the title. -->
-				<div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 pb-5 pl-[56px] pr-4 pt-1 sm:pl-[176px] sm:pr-6">
+				<div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 pb-5 pl-14 pr-4 pt-1 sm:pl-44 sm:pr-6">
 					<Badge tone={statusTone[rec.status]}>{STATUS_LABELS[rec.status]}</Badge>
 					{@render starBadge(rec)}
 					{#if rec.copies > 1}<span class="font-display text-[13px] italic text-faint">{rec.copies} copies</span>{/if}

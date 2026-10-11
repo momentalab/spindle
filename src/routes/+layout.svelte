@@ -15,7 +15,7 @@
 </svelte:head>
 
 <AppNav />
-<main class="mx-auto min-h-[calc(100dvh-4.5rem)] w-full max-w-[1040px] px-7 pb-24 pt-14">
+<main class="mx-auto min-h-[calc(100dvh-4.5rem)] w-full max-w-260 px-7 pb-24 pt-14">
 	{@render children()}
 </main>
 
