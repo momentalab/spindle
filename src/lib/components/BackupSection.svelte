@@ -91,7 +91,7 @@
 	<div class="flex flex-wrap items-start justify-between gap-x-10 gap-y-5">
 		<div class="max-w-md">
 			<h2 class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Backup</h2>
-			<p class="mt-2.5 font-display text-[14.5px] italic leading-snug text-muted">
+			<p class="mt-2.5 font-display text-[15px] italic leading-snug text-muted">
 				The whole collection — database and every cover & photo — as a single zip. Restore it to any machine, or back it
 				up before you fiddle with the volume.
 			</p>
@@ -115,7 +115,7 @@
 	</div>
 
 	{#if backupNote}
-		<p class="mt-4 text-[12.5px] italic text-muted">{backupNote}</p>
+		<p class="mt-4 text-[14px] italic text-muted">{backupNote}</p>
 	{/if}
 	{#if restoreNote}
 		<div class="mt-4">

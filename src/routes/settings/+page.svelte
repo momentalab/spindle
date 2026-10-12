@@ -67,6 +67,42 @@
 		};
 	});
 
+	/* ------------------------------------------------------------------ */
+	/* Color palette — a second, client-only preference, orthogonal to the  */
+	/* light/dark mode above. `gold` is the default and matches the :root   */
+	/* tokens, so it needs no CSS block of its own. The `data-theme` attr   */
+	/* is the same one the app.html boot script sets, so they agree.        */
+	/* ------------------------------------------------------------------ */
+
+	type PaletteId = 'gold' | 'sepia' | 'forest' | 'ocean' | 'plum';
+	const PALETTE_IDS: PaletteId[] = ['gold', 'sepia', 'forest', 'ocean', 'plum'];
+	// `swatch` is the palette's light-mode accent — a representative dot for the picker.
+	const paletteOptions = [
+		{ id: 'gold', label: 'Gold', swatch: '#8a6c33' },
+		{ id: 'sepia', label: 'Sepia', swatch: '#8a5a2b' },
+		{ id: 'forest', label: 'Forest', swatch: '#4f6b3a' },
+		{ id: 'ocean', label: 'Ocean', swatch: '#3f6b8a' },
+		{ id: 'plum', label: 'Plum', swatch: '#84485c' }
+	] as const;
+
+	function readStoredPalette(): PaletteId {
+		if (!browser) return 'gold'; // SSR stand-in
+		// `?? mynyl-palette` migrates the preference across the app rename (one-time read fallback).
+		const s = localStorage.getItem('spindle-palette') ?? localStorage.getItem('mynyl-palette');
+		return s && (PALETTE_IDS as string[]).includes(s) ? (s as PaletteId) : 'gold';
+	}
+
+	let palette = $state<PaletteId>(readStoredPalette());
+
+	// Writes the key on every change and re-asserts the attribute on mount
+	// (matching what the boot script already painted — harmless). Gold sets the
+	// attr to "gold" too; with no [data-theme='gold'] block in the CSS it's a no-op.
+	$effect(() => {
+		if (!browser) return;
+		document.documentElement.dataset.theme = palette;
+		localStorage.setItem('spindle-palette', palette);
+	});
+
 	type ViewId = 'cards' | 'index' | 'table';
 	const VIEW_IDS: ViewId[] = ['cards', 'index', 'table'];
 	const viewOptions = [
@@ -231,7 +267,7 @@
 <header class="flex flex-wrap items-end justify-between gap-6 border-b border-edge pb-7">
 	<div class="max-w-3xl">
 		<h1 class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em] sm:text-[52px]">Settings.</h1>
-		<p class="mt-3 font-display text-[15px] italic text-muted">
+		<p class="mt-3 font-display text-[16px] italic leading-snug text-muted">
 			Edit preferences, application behavior, appearance, and more.
 		</p>
 	</div>
@@ -240,20 +276,43 @@
 <!-- ══════════════ preferences ══════════════ -->
 <section class="border-b border-hair py-10">
 	<h2 class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Preferences</h2>
-	<p class="mt-2.5 max-w-md font-display text-[14.5px] italic leading-snug text-muted">
-		Stored locally in the browser.
-	</p>
+	<p class="mt-2.5 max-w-md font-display text-[15px] italic leading-snug text-muted">Stored locally in the browser.</p>
 
 	<div class="mt-8 grid gap-x-16 gap-y-8 sm:grid-cols-2">
 		<div class="flex flex-col gap-3">
 			<span class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Theme</span>
 			<Segmented options={themeOptions} bind:value={theme} />
-			<p class="text-[11px] italic leading-relaxed text-faint">System follows the OS color scheme by default.</p>
+			<p class="text-[13px] italic leading-relaxed text-muted">System follows the OS color scheme by default.</p>
+		</div>
+		<div class="flex flex-col gap-3">
+			<span class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Color theme</span>
+			<div role="radiogroup" aria-label="Color theme" class="flex flex-wrap items-center gap-3 pt-0.5">
+				{#each paletteOptions as p (p.id)}
+					{@const active = palette === p.id}
+					<button
+						type="button"
+						role="radio"
+						aria-checked={active ? true : undefined}
+						title={p.label}
+						aria-label={`${p.label} color theme`}
+						class={`h-6 w-6 rounded-full transition-all duration-300 ${
+							active
+								? 'scale-110 ring-2 ring-ink ring-offset-2 ring-offset-paper'
+								: 'border border-edge hover:scale-105'
+						}`}
+						style="background-color: {p.swatch}"
+						onclick={() => (palette = p.id)}
+					></button>
+				{/each}
+			</div>
+			<p class="text-[13px] italic leading-relaxed text-muted">
+				Accent and chart hues, applied on top of the mode above.
+			</p>
 		</div>
 		<div class="flex flex-col gap-3">
 			<span class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Default view</span>
 			<Segmented options={viewOptions} bind:value={defaultView} />
-			<p class="text-[11px] italic leading-relaxed text-faint">The default view for the Collection page.</p>
+			<p class="text-[13px] italic leading-relaxed text-muted">The default view for the Collection page.</p>
 		</div>
 	</div>
 
@@ -296,7 +355,7 @@
 <!-- ══════════════ export ══════════════ -->
 <section class="border-b border-hair py-10">
 	<h2 class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Export</h2>
-	<p class="mt-2.5 max-w-md font-display text-[14.5px] italic leading-snug text-muted">
+	<p class="mt-2.5 max-w-md font-display text-[15px] italic leading-snug text-muted">
 		Export any tables in the database in CSV or JSON formats.
 	</p>
 
@@ -322,7 +381,7 @@
 		<Button href={exportUrl} variant="primary" size="sm">Download</Button>
 	</div>
 
-	<p class="mt-4 text-[11px] italic leading-relaxed text-faint">
+	<p class="mt-4 text-[13px] italic leading-relaxed text-muted">
 		{#if format === 'csv'}
 			CSV renders prices in dollars and covers as local URLs; “records” is the whole index, “photos”, “plays” and
 			“tracks” are their own tables.
@@ -356,7 +415,7 @@
 			</div>
 		</div>
 		{#if checkNote}
-			<p class={`-mt-2 pb-4 pt-1 text-[12.5px] italic ${checkNote.ok ? 'text-forest' : 'text-rust'}`}>
+			<p class={`-mt-2 pb-4 pt-1 text-[14px] italic ${checkNote.ok ? 'text-forest' : 'text-rust'}`}>
 				{checkNote.message}
 			</p>
 		{/if}

@@ -5,16 +5,23 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
 		<!--
-			FOUC-free theme boot: apply the persisted preference (or system
-			preference) before first paint. Runs inline so no flash of the
-			wrong mode on any navigation.
+			FOUC-free theme boot: apply the persisted mode (light/dark/system) and
+			color palette before first paint. Runs inline so no flash of the wrong
+			theme on any navigation.
 		-->
 		<script>
 			(() => {
-				// `?? mynyl-theme` migrates the preference across the app rename (one-time read fallback).
+				// `?? mynyl-*` migrates the preferences across the app rename (one-time read fallbacks).
 				const stored = localStorage.getItem('spindle-theme') ?? localStorage.getItem('mynyl-theme');
 				const dark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
 				document.documentElement.classList.toggle('dark', dark);
+
+				// Color palette (orthogonal to light/dark). `gold` is the default —
+				// the CSS :root values are gold, so an unknown/absent value just
+				// falls through to them. Keep this list in step with the settings page.
+				const palettes = ['gold', 'sepia', 'forest', 'ocean', 'plum'];
+				const palette = localStorage.getItem('spindle-palette') ?? localStorage.getItem('mynyl-palette');
+				document.documentElement.dataset.theme = palettes.includes(palette) ? palette : 'gold';
 			})();
 		</script>
 		%sveltekit.head%
