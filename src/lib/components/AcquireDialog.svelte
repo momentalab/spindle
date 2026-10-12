@@ -166,7 +166,7 @@
 				<div class="mt-1 flex items-center justify-end gap-3">
 					<Button type="button" variant="ghost" disabled={submitting} onclick={onCancel}>Not yet</Button>
 					<Button type="submit" variant="primary" disabled={submitting}>
-						{submitting ? 'Shelving…' : 'On the shelf.'}
+						{submitting ? 'Shelving…' : 'Add to shelf'}
 					</Button>
 				</div>
 			</form>
