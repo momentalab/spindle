@@ -1,14 +1,14 @@
-<table>
-  <tr>
-    <td align="center"><img src="static/spindle-logo-rounded.webp" alt="spindle — five translucent vinyl records" width="280"></td>
-  </tr>
-</table>
+<div align="center">
+  <img src="static/spindle-logo-rounded.webp" alt="spindle — five translucent vinyl records" width="280">
+</div>
 
 # spindle
 
 A **local-first** vinyl record collection tracker. Scan a barcode, pull metadata from Discogs, and keep it — the data lives in a local SQLite database, not on Discogs.
 
 Spindle is fully self-hosted: one container (or one Node process), no account, no cloud, no subscription. Your collection is a folder you can back up, restore, and carry to any machine.
+
+And it stays out of the way: a single Node process idles at **~40 MB of RAM**, with a near-zero disk footprint — the container writes nothing of its own; everything lives in one `./data` directory.
 
 ## Table of contents
 
