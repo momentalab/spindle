@@ -1129,37 +1129,42 @@
 					id={`track-${t.id}`}
 					class={`group grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-hair py-2.5 transition-colors sm:grid-cols-[3rem_minmax(0,1fr)_4rem_auto] ${highlighted ? 'bg-plum-soft' : ''}`}
 				>
-					<span class="text-right text-[11px] uppercase tracking-[.18em] text-faint">
+					<span
+						class={`text-right text-[11px] uppercase tracking-[.18em] text-faint ${editingTrackId === t.id ? 'hidden' : ''}`}
+					>
 						{t.position ?? String(tracks.indexOf(t) + 1)}
 					</span>
 
 					{#if editingTrackId === t.id}
-						<!-- inline edit — three compact fields; save posts a PATCH -->
-						<div class="col-span-full col-start-1 row-start-1 flex flex-wrap items-center gap-2 sm:col-auto">
-							<input
-								class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-[13px] outline-none focus:border-accent"
-								bind:value={editPos}
-								placeholder="A1"
-								aria-label="Track position"
-							/>
-							<input
-								class="min-w-0 flex-1 border-b border-edge bg-transparent px-1 py-0.5 text-[14px] outline-none focus:border-accent"
-								bind:value={editTitle}
-								aria-label="Track title"
-							/>
-							<input
-								class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-right text-[13px] outline-none focus:border-accent"
-								bind:value={editDur}
-								placeholder="3:32"
-								aria-label="Track duration"
-							/>
-							<Button variant="secondary" size="sm" disabled={editSaving} onclick={() => void saveEditTrack()}>
-								{editSaving ? 'Saving…' : 'Save'}
-							</Button>
-							<Button variant="ghost" size="sm" disabled={editSaving} onclick={cancelEditTrack}>Cancel</Button>
-							{#if editError}<p class="w-full text-sm text-rust">
-									{editError}
-								</p>{/if}
+						<!-- inline edit — the three fields take the row's full width; save/cancel
+						     sit right-aligned below so nothing squishes at any width -->
+						<div class="col-span-full col-start-1 row-start-1 flex flex-col gap-2">
+							<div class="flex items-center gap-2">
+								<input
+									class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-[13px] outline-none focus:border-accent"
+									bind:value={editPos}
+									placeholder="A1"
+									aria-label="Track position"
+								/>
+								<input
+									class="min-w-0 flex-1 border-b border-edge bg-transparent px-1 py-0.5 text-[14px] outline-none focus:border-accent"
+									bind:value={editTitle}
+									aria-label="Track title"
+								/>
+								<input
+									class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-right text-[13px] outline-none focus:border-accent"
+									bind:value={editDur}
+									placeholder="3:32"
+									aria-label="Track duration"
+								/>
+							</div>
+							<div class="flex items-center justify-end gap-2">
+								{#if editError}<p class="mr-auto text-sm text-rust">{editError}</p>{/if}
+								<Button variant="secondary" size="sm" disabled={editSaving} onclick={() => void saveEditTrack()}>
+									{editSaving ? 'Saving…' : 'Save'}
+								</Button>
+								<Button variant="ghost" size="sm" disabled={editSaving} onclick={cancelEditTrack}>Cancel</Button>
+							</div>
 						</div>
 					{:else}
 						<button
@@ -1172,11 +1177,11 @@
 						</button>
 					{/if}
 
-					<span class="hidden text-right text-[13px] italic text-faint sm:block">
+					<span class={`hidden text-right text-[13px] italic text-faint ${editingTrackId === t.id ? '' : 'sm:block'}`}>
 						{t.duration ?? ''}
 					</span>
 
-					<div class="flex items-center gap-1.5">
+					<div class={`flex items-center gap-1.5 ${editingTrackId === t.id ? 'hidden' : ''}`}>
 						<button
 							type="button"
 							class={`flex h-7 w-7 items-center justify-center transition-colors ${t.favorite === 1 ? 'text-accent' : 'text-faint hover:text-accent'}`}
