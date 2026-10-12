@@ -5,11 +5,13 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import CoverImage from '$lib/components/ui/CoverImage.svelte';
 	import DecadeLabel from '$lib/components/ui/DecadeLabel.svelte';
+	import TrendChart, { type TrendSeries } from '$lib/components/TrendChart.svelte';
 	import { appTitle } from '$lib/index';
 	import type { MoverRow, QuotePoint, ValueBarRow, ValueRow } from '$lib/server/value';
 
 	let { data }: { data: PageData } = $props();
 	const s = $derived(data.stats);
+	const pf = $derived(data.portfolio);
 
 	/* ---- formatting (ledger voice — same conventions as /stats) ---- */
 	function money(cents: number | null): string {
@@ -28,6 +30,66 @@
 		if (p === null) return '—';
 		return `${p > 0 ? '+' : p < 0 ? '−' : ''}${Math.abs(p).toFixed(1)}%`;
 	}
+
+	/* ---- the portfolio chart (front and center) ---- */
+	/** Full-precision money for the chart's tooltips. */
+	function pfMoney(cents: number): string {
+		return `$${(cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+	}
+	/** Compact money for the chart's y-axis: $840 → $840, $1.2k, $3.4M. */
+	function pfTick(cents: number): string {
+		const d = cents / 100;
+		const trim = (v: number) => v.toFixed(1).replace(/\.0$/, '');
+		if (d >= 1_000_000) return `$${trim(d / 1_000_000)}M`;
+		if (d >= 1_000) return `$${trim(d / 1_000)}k`;
+		return `$${Math.round(d)}`;
+	}
+	const pfSeries = $derived.by<TrendSeries[]>(() => {
+		const out: TrendSeries[] = [
+			{
+				id: 'worth',
+				label: 'Value',
+				color: 'var(--accent)',
+				points: pf.points.map((p) => ({ x: p.ms, y: p.worth_cents }))
+			}
+		];
+		if (pf.has_quotes) {
+			out.push({
+				id: 'invested',
+				label: 'Invested',
+				color: 'var(--chart-slate)',
+				dashed: true,
+				points: pf.points.map((p) => ({ x: p.ms, y: p.invested_cents }))
+			});
+		}
+		return out;
+	});
+	const pfLegend = $derived(
+		pf.has_quotes
+			? [
+					{ label: 'Value', color: 'var(--accent)' },
+					{ label: 'Invested', color: 'var(--chart-slate)' }
+				]
+			: [{ label: 'Value', color: 'var(--accent)' }]
+	);
+	function pfTipExtra(i: number): { label: string; value: string; tone?: 'up' | 'down' }[] {
+		const p = pf.points[i];
+		if (!p) return [];
+		const rows: { label: string; value: string; tone?: 'up' | 'down' }[] = [
+			{ label: 'On the shelf', value: `${p.count} ${p.count === 1 ? 'record' : 'records'}` }
+		];
+		if (pf.has_quotes) {
+			const net = p.worth_cents - p.invested_cents;
+			rows.push({
+				label: 'Net position',
+				value: `${net < 0 ? '-' : '+'}${pfMoney(Math.abs(net))}`,
+				tone: net >= 0 ? 'up' : 'down'
+			});
+		}
+		return rows;
+	}
+	const pfHasValue = $derived(pf.points.length > 0 && pf.current_worth_cents > 0);
+
 	const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as const;
 	/** Deterministic 'Sep 5, 2026' from a 'YYYY-MM-DD…' stamp (no locale drift). */
 	function fmtStamp(stamp: string | null): string {
@@ -324,6 +386,77 @@
 		<Button href="/scan" variant="primary">Scan a record</Button>
 	</div>
 {:else}
+	<!-- ══════════════ the portfolio — what the shelves have been worth ══════════════
+	     Front and center: monthly best-estimate value against cost basis, with
+	     hover readouts. Offline-safe — quotes only appear once snapshots exist. -->
+	<section class="border-b border-hair py-10">
+		<div class="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
+			<div>
+				<h2 class="font-display text-[26px] font-normal leading-tight">The portfolio</h2>
+				<p class="mt-2 max-w-md font-display text-[13.5px] italic leading-relaxed text-faint">
+					What the shelves have carried, month by month — worth against what it cost to build.
+				</p>
+			</div>
+			{#if pf.points.length}
+				<div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+					{#each pfLegend as l (l.label)}
+						<span class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-faint">
+							<span class="h-[3px] w-4" style:background-color={l.color}></span>
+							{l.label}
+						</span>
+					{/each}
+					<span class="text-[10px] font-semibold uppercase tracking-[.16em] text-faint/70">
+						as of {pf.points[pf.points.length - 1].label}
+					</span>
+				</div>
+			{/if}
+		</div>
+
+		{#if pfHasValue}
+			<TrendChart
+				series={pfSeries}
+				height={320}
+				formatValue={pfMoney}
+				formatTick={pfTick}
+				tipExtra={pfTipExtra}
+				ariaLabel="Portfolio value over time"
+			/>
+			<div class="mt-8 grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4">
+				<div>
+					<div class="font-display text-[21px] leading-none tracking-[-.01em] sm:text-[23px]">
+						{pfMoney(pf.current_worth_cents)}
+					</div>
+					<div class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">current value</div>
+				</div>
+				<div>
+					<div class="font-display text-[21px] leading-none tracking-[-.01em] sm:text-[23px]">
+						{pfMoney(pf.current_invested_cents)}
+					</div>
+					<div class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">invested</div>
+				</div>
+				<div>
+					<div
+						class={`font-display text-[21px] leading-none tracking-[-.01em] sm:text-[23px] ${pf.net_cents >= 0 ? 'text-forest' : 'text-rust'}`}
+					>
+						{pf.net_cents < 0 ? '-' : '+'}{pfMoney(Math.abs(pf.net_cents))}
+					</div>
+					<div class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">net position</div>
+				</div>
+				<div>
+					<div class="font-display text-[21px] leading-none tracking-[-.01em] sm:text-[23px]">
+						{pf.records}
+					</div>
+					<div class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">on the shelf</div>
+				</div>
+			</div>
+		{:else if pf.points.length}
+			<p class="font-display text-[15px] italic text-muted">
+				The line draws itself as prices come in — {s.quoted_count} of {s.shelf_count} records
+				{s.quoted_count === 1 ? 'is' : 'are'} priced so far.
+			</p>
+		{/if}
+	</section>
+
 	<!-- headline counters — a quiet ledger strip -->
 	<section class="grid grid-cols-2 gap-x-6 gap-y-8 border-b border-hair py-9 md:grid-cols-3 lg:grid-cols-5">
 		<div>

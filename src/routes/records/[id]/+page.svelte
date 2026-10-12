@@ -5,6 +5,7 @@
 	import AcquireDialog from '$lib/components/AcquireDialog.svelte';
 	import RecordForm from '$lib/components/RecordForm.svelte';
 	import ReleasePicker from '$lib/components/ReleasePicker.svelte';
+	import TrendChart, { type TrendSeries } from '$lib/components/TrendChart.svelte';
 	import Banner from '$lib/components/ui/Banner.svelte';
 	import Badge from '$lib/components/ui/Badge.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -667,6 +668,40 @@
 			] as [string, string][]
 		).filter(([, v]) => v !== '')
 	);
+
+	/* ---- market value — the record's Discogs trendline + position ---- */
+	const mk = $derived(data.market);
+	const mkSeries = $derived<TrendSeries[]>([
+		{
+			id: 'price',
+			label: 'Market price',
+			color: 'var(--accent)',
+			points: mk.priced_points
+				.map((p) => {
+					const d = parseYmd(p.at);
+					return d ? { x: d.getTime(), y: p.price_cents } : null;
+				})
+				.filter((p): p is { x: number; y: number } => p !== null)
+		}
+	]);
+	/** Compact money for the trendline's y-axis: $8.50 stays, $1,240 → $1.2k. */
+	function mkTick(cents: number): string {
+		const d = cents / 100;
+		if (d >= 10_000) return `$${(d / 1000).toFixed(1).replace(/\.0$/, '')}k`;
+		if (d >= 1000) return `$${(d / 1000).toFixed(2).replace(/\.?0+$/, '')}k`;
+		return `$${d.toFixed(d < 10 ? 2 : 0)}`;
+	}
+	function mkPctLabel(pct: number | null): string {
+		if (pct === null) return '—';
+		return `${pct < 0 ? '-' : '+'}${Math.abs(pct).toFixed(1)}%`;
+	}
+	/** Latest quote vs. what was paid, per copy (the record's own P&L line). */
+	const mkPosition = $derived.by(() => {
+		const paid = data.record.price_paid;
+		const last = mk.last_priced;
+		if (paid === null || !last || last.price_cents === null) return null;
+		return last.price_cents - paid;
+	});
 </script>
 
 <svelte:head><title>{appTitle(`${data.record.artist} · ${data.record.title}`)}</title></svelte:head>
@@ -878,8 +913,95 @@
 	</div>
 </div>
 
+<!-- market value — the record's own trendline (Discogs observations) + position.
+     Rendered only when a release is linked: without one there is no market. -->
+{#if data.record.discogs_id}
+	<section class="mt-16 border-t border-edge pt-10">
+		<div class="mb-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
+			<h3 class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">Market value</h3>
+			{#if mk.latest}
+				<p class="font-display text-[13px] italic text-faint">
+					last observed {fmtPlayDate(mk.latest.at)}
+					{#if mk.latest.num_for_sale !== null}· {mk.latest.num_for_sale} for sale{/if}
+				</p>
+			{/if}
+		</div>
+
+		{#if mk.priced_points.length > 0}
+			<div class="mb-8 grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-4">
+				<div>
+					<div class="font-display text-[21px] leading-none tracking-[-.01em] sm:text-[23px]">
+						{fmtPrice(mk.last_priced?.price_cents ?? null)}
+					</div>
+					<div class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">latest quote</div>
+				</div>
+				<div>
+					<div class="font-display text-[21px] leading-none tracking-[-.01em] sm:text-[23px]">
+						{fmtPrice(mk.first_priced?.price_cents ?? null)}
+					</div>
+					<div class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">
+						first observed{mk.first_priced ? ` · ${relDays(mk.first_priced.at)}` : ''}
+					</div>
+				</div>
+				<div>
+					<div
+						class={`font-display text-[21px] leading-none tracking-[-.01em] sm:text-[23px] ${
+							mk.change_pct === null ? '' : mk.change_pct >= 0 ? 'text-forest' : 'text-rust'
+						}`}
+					>
+						{mkPctLabel(mk.change_pct)}
+					</div>
+					<div class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">
+						since first observed
+					</div>
+				</div>
+				<div>
+					<div
+						class={`font-display text-[21px] leading-none tracking-[-.01em] sm:text-[23px] ${
+							mkPosition === null ? '' : mkPosition >= 0 ? 'text-forest' : 'text-rust'
+						}`}
+					>
+						{#if mkPosition === null}
+							—
+						{:else}
+							{mkPosition < 0 ? '-' : '+'}{fmtPrice(Math.abs(mkPosition))}
+						{/if}
+					</div>
+					<div class="mt-1.5 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">
+						{data.record.price_paid === null ? 'price not recorded' : 'vs. what you paid'}
+					</div>
+				</div>
+			</div>
+
+			<TrendChart
+				series={mkSeries}
+				height={240}
+				formatValue={(v) => fmtPrice(v) || '—'}
+				formatTick={mkTick}
+				formatTipDate={(ms) => {
+					const d = new Date(ms);
+					return `${PLAY_MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`;
+				}}
+				ariaLabel="Market price over time"
+			/>
+
+			<p class="mt-3 text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint">
+				Discogs marketplace — one observation per snapshot
+			</p>
+		{:else}
+			<p class="font-display text-[14.5px] italic leading-relaxed text-muted">
+				No market observations yet — <a
+					href="/value"
+					class="text-muted underline underline-offset-4 transition-colors hover:text-accent">take a snapshot</a
+				>
+				and the trendline starts here.
+			</p>
+		{/if}
+	</section>
+{/if}
+
 <!-- photos first — a user field, so it leads with your record before the
-	    Discogs-derived sections below it -->
+    Discogs-derived sections below it -->
 <section class="mt-16 border-t border-edge pt-10">
 	<h3 class="mb-5 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">
 		Photographs — {photos.length}

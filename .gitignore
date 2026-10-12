@@ -20,6 +20,7 @@ Thumbs.db
 
 # Local data (SQLite DB + media)
 /data
+/.scratch
 
 # Vite
 vite.config.js.timestamp-*

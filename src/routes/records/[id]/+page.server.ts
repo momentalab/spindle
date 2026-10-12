@@ -31,6 +31,7 @@ import {
 	distinctValues
 } from '$lib/server/records';
 import { listTracks } from '$lib/server/tracks';
+import { recordMarket } from '$lib/server/value';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -78,6 +79,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		last_played_at: latestPlayedAt(id),
 		tracks,
 		snapshot,
+		// The record's append-only Discogs observation log — trendline + value stats.
+		market: recordMarket(id),
 		// Existing purchase sources — suggestions for the edit form's source field.
 		sources: distinctValues('source')
 	};

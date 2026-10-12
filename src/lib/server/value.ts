@@ -426,6 +426,232 @@ export function portfolioStats(): ValueStats {
 }
 
 /* ------------------------------------------------------------------ */
+/* Portfolio history — the monthly worth/invested series for /stats    */
+/* ------------------------------------------------------------------ */
+
+export interface PortfolioPoint {
+	key: string; // 'YYYY-MM'
+	label: string; // 'Jan 2024'
+	ms: number; // epoch ms, end of the month
+	worth_cents: number; // point-in-time valuation (last priced quote on/before month end, else cost)
+	invested_cents: number; // Σ price_paid × copies on the shelf at month end
+	count: number; // records on the shelf at month end
+}
+
+export interface PortfolioHistory {
+	points: PortfolioPoint[]; // first shelf month → current month
+	current_worth_cents: number;
+	current_invested_cents: number;
+	net_cents: number; // current worth − invested
+	records: number; // on the shelf now (last point's count)
+	has_quotes: boolean; // any market observations exist (worth may diverge from cost)
+}
+
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function monthIndex(y: number, m1: number): number {
+	return y * 12 + (m1 - 1);
+}
+
+/** Last priced quote at or before month index `idx` (list is month-ascending), else null. */
+function lastPricedAsOf(prices: { mi: number; cents: number }[], idx: number): number | null {
+	let lo = 0;
+	let hi = prices.length - 1;
+	let ans: number | null = null;
+	while (lo <= hi) {
+		const mid = (lo + hi) >> 1;
+		if (prices[mid].mi <= idx) {
+			ans = prices[mid].cents;
+			lo = mid + 1;
+		} else {
+			hi = mid - 1;
+		}
+	}
+	return ans;
+}
+
+/**
+ * Monthly portfolio series for /stats's headline chart. A record enters the
+ * books in the month of acquired_at (or created_at when undated) and leaves in
+ * the month of sold_at — so a record sold in March is counted through end of
+ * February. Worth is point-in-time: each month is marked at the record's last
+ * *priced* quote on or before that month, else cost — a March quote never leaks
+ * into February. (A null-price row means "no live listings that day"; the last
+ * priced quote stays the mark.) The current month therefore matches the
+ * portfolioStats market_value convention. Wanted rows never touch the books.
+ * Pure read — safe to call on SSR.
+ */
+export function portfolioHistory(): PortfolioHistory {
+	const db = getDb();
+	const rows = db
+		.prepare(
+			`SELECT id, status, price_paid, copies, acquired_at, sold_at, created_at
+			 FROM records`
+		)
+		.all() as {
+		id: number;
+		status: RecordStatus;
+		price_paid: number | null;
+		copies: number;
+		acquired_at: string | null;
+		sold_at: string | null;
+		created_at: string | null;
+	}[];
+
+	const quotes = db.prepare(`SELECT record_id, price_cents, fetched_at FROM market_prices ORDER BY id`).all() as {
+		record_id: number;
+		price_cents: number | null;
+		fetched_at: string;
+	}[];
+	// Priced quotes per record, oldest → newest (id order). Null-price rows are
+	// skipped: "no live listings that day" keeps the last priced quote as mark.
+	const pricesByRecord = new Map<number, { mi: number; cents: number }[]>();
+	for (const q of quotes) {
+		if (q.price_cents === null) continue;
+		const [qy, qm] = q.fetched_at.slice(0, 7).split('-').map(Number);
+		if (!Number.isFinite(qy) || !Number.isFinite(qm)) continue;
+		const list = pricesByRecord.get(q.record_id) ?? [];
+		list.push({ mi: monthIndex(qy, qm), cents: q.price_cents });
+		pricesByRecord.set(q.record_id, list);
+	}
+
+	const now = new Date();
+	const nowIdx = monthIndex(now.getFullYear(), now.getMonth() + 1);
+
+	interface Rec {
+		enter: number; // shelf month (created_at when undated)
+		exit: number | null; // sale month — the record leaves then
+		unitCost: number; // cost × copies — time-invariant
+		cost: number; // per-copy cost, 0 when unknown
+		copies: number;
+		prices: { mi: number; cents: number }[];
+	}
+	const recs: Rec[] = [];
+	let minIdx = Number.POSITIVE_INFINITY;
+
+	for (const r of rows) {
+		if (r.status === 'wanted') continue; // off-shelf — never on the books
+
+		const src = r.acquired_at ?? r.created_at ?? '';
+		const [ay, am] = src.slice(0, 7).split('-').map(Number);
+		const enter = Number.isFinite(ay) && Number.isFinite(am) ? monthIndex(ay, am) : nowIdx;
+		minIdx = Math.min(minIdx, enter);
+
+		let exit: number | null = null;
+		if (r.status !== 'in_collection' && r.sold_at) {
+			const [sy, sm] = r.sold_at.slice(0, 7).split('-').map(Number);
+			if (Number.isFinite(sy) && Number.isFinite(sm)) exit = monthIndex(sy, sm);
+		}
+
+		recs.push({
+			enter,
+			exit,
+			cost: r.price_paid ?? 0,
+			unitCost: (r.price_paid ?? 0) * r.copies,
+			copies: r.copies,
+			prices: pricesByRecord.get(r.id) ?? []
+		});
+	}
+
+	const empty: PortfolioHistory = {
+		points: [],
+		current_worth_cents: 0,
+		current_invested_cents: 0,
+		net_cents: 0,
+		records: 0,
+		has_quotes: quotes.length > 0
+	};
+	if (!recs.length || minIdx > nowIdx) return empty;
+
+	const span = nowIdx - minIdx + 1;
+	const points: PortfolioPoint[] = [];
+	for (let i = 0; i < span; i++) {
+		const idx = minIdx + i;
+		const y = Math.floor(idx / 12);
+		const m = idx % 12;
+		let cw = 0;
+		let ci = 0;
+		let cn = 0;
+		for (const r of recs) {
+			if (r.enter > idx || (r.exit !== null && idx >= r.exit)) continue; // off the shelf
+			ci += r.unitCost;
+			cn++;
+			// Point-in-time mark: last priced quote on/before this month, else cost.
+			cw += (lastPricedAsOf(r.prices, idx) ?? r.cost) * r.copies;
+		}
+		points.push({
+			key: `${y}-${String(m + 1).padStart(2, '0')}`,
+			label: `${MONTHS_SHORT[m]} ${y}`,
+			ms: new Date(y, m + 1, 0).getTime(), // last day of the month (local)
+			worth_cents: cw,
+			invested_cents: ci,
+			count: cn
+		});
+	}
+	const last = points[points.length - 1];
+	return {
+		points,
+		current_worth_cents: last.worth_cents,
+		current_invested_cents: last.invested_cents,
+		net_cents: last.worth_cents - last.invested_cents,
+		records: last.count,
+		has_quotes: quotes.length > 0
+	};
+}
+
+/* ------------------------------------------------------------------ */
+/* Per-record market log — trendline data for /records/[id]            */
+/* ------------------------------------------------------------------ */
+
+export interface RecordMarketPoint {
+	at: string; // fetched_at, 'YYYY-MM-DD HH:MM:SS'
+	price_cents: number | null; // null = "no live listings" that day (a data point)
+	num_for_sale: number | null;
+}
+
+export interface RecordMarket {
+	points: RecordMarketPoint[]; // full log, oldest → newest
+	priced_points: RecordMarketPoint[]; // non-null prices only (trendline source)
+	latest: RecordMarketPoint | null;
+	first_priced: RecordMarketPoint | null;
+	last_priced: RecordMarketPoint | null;
+	/** (last − first) / first × 100, one decimal; null with <2 priced points. */
+	change_pct: number | null;
+}
+
+/** One record's append-only observation log plus its derived trend stats. */
+export function recordMarket(recordId: number): RecordMarket {
+	const db = getDb();
+	const rows = db
+		.prepare(
+			`SELECT price_cents, num_for_sale, fetched_at
+			 FROM market_prices WHERE record_id = ? ORDER BY id`
+		)
+		.all(recordId) as { price_cents: number | null; num_for_sale: number | null; fetched_at: string }[];
+
+	const points: RecordMarketPoint[] = rows.map((r) => ({
+		at: r.fetched_at,
+		price_cents: r.price_cents,
+		num_for_sale: r.num_for_sale
+	}));
+	const priced_points = points.filter((p): p is RecordMarketPoint & { price_cents: number } => p.price_cents !== null);
+	const first_priced = priced_points[0] ?? null;
+	const last_priced = priced_points[priced_points.length - 1] ?? null;
+	return {
+		points,
+		priced_points,
+		latest: points[points.length - 1] ?? null,
+		first_priced,
+		last_priced,
+		change_pct:
+			// With a single priced point, first === last (same reference) → nothing to measure.
+			first_priced && last_priced && first_priced !== last_priced && first_priced.price_cents > 0
+				? pctChange(first_priced.price_cents, last_priced.price_cents)
+				: null
+	};
+}
+
+/* ------------------------------------------------------------------ */
 /* Snapshot — one observation per shelf record with a discogs_id       */
 /* ------------------------------------------------------------------ */
 
