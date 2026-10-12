@@ -740,6 +740,21 @@ export async function takeMarketSnapshot(): Promise<SnapshotResult> {
 }
 
 /**
+ * True when the price log already holds an observation dated today on the
+ * local calendar. `fetched_at` is stored as UTC text, so both sides are
+ * normalized through SQLite's localtime. This is the once-a-day gate for the
+ * /value page's automatic snapshot pass.
+ */
+export function hasTodaySnapshot(): boolean {
+	const db = getDb();
+	return (
+		db
+			.prepare(`SELECT 1 FROM market_prices WHERE date(fetched_at, 'localtime') = date('now', 'localtime') LIMIT 1`)
+			.get() !== undefined
+	);
+}
+
+/**
  * Reset the price log: delete every observation, or one record's. Returns the
  * row count removed. The log is append-only by design and this is the only
  * path that removes from it — sparklines, movers, and "market at sale" all read
