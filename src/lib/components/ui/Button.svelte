@@ -8,6 +8,7 @@
 		target,
 		type = 'submit',
 		disabled = false,
+		title,
 		onclick,
 		class: className = '',
 		children
@@ -18,6 +19,7 @@
 		target?: string;
 		type?: 'submit' | 'button' | 'reset';
 		disabled?: boolean;
+		title?: string;
 		onclick?: (event: MouseEvent) => void;
 		class?: string;
 		children: Snippet;
@@ -49,7 +51,7 @@
 		{@render children()}
 	</a>
 {:else}
-	<button {type} {disabled} {onclick} class={classes}>
+	<button {type} {disabled} {title} {onclick} class={classes}>
 		{@render children()}
 	</button>
 {/if}

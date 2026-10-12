@@ -6,7 +6,7 @@
 import type Database from 'better-sqlite3';
 import { getDb } from '$lib/server/db';
 import { MEDIA_DIR, ensureDataDirs } from '$lib/server/paths';
-import type { LabelEntry, ListOptions, PlayRow, PhotoRow, RecordRow, RecordStatus } from '$lib/types';
+import type { LabelEntry, ListOptions, PlayRow, PhotoRow, CopyRow, RecordRow, RecordStatus } from '$lib/types';
 import { parseGenreList, parseLabelList, parseStyleList, RECORD_STATUSES } from '$lib/types';
 import { isLeadWordNormalizationOn, normalizeLeadWord } from '$lib/server/artist';
 import { readdirSync, rmSync } from 'node:fs';
@@ -266,6 +266,10 @@ export function createRecord(input: NewRecordInput): RecordRow {
 		upsertRecordStyles(db, recordId, styles);
 		upsertRecordGenres(db, recordId, genres);
 		upsertRecordLabels(db, recordId, labels);
+		// The counter starts at input.copies — mirror it in the copies table so
+		// the two can never drift from birth (normally one unlabeled copy).
+		const insCopy = db.prepare('INSERT INTO record_copies (record_id, label) VALUES (?, NULL)');
+		for (let i = 0; i < input.copies; i++) insCopy.run(recordId);
 		return recordId;
 	})();
 	return findRecordById(newId)!;
@@ -452,20 +456,70 @@ export function updateRecord(id: number, patch: UpdateRecordInput): RecordRow | 
 	return findRecordById(id);
 }
 
-export function addCopy(id: number): RecordRow | undefined {
-	getDb().prepare("UPDATE records SET copies = copies + 1, updated_at = datetime('now') WHERE id = ?").run(id);
-	return findRecordById(id);
+/** All of a record's specific copies, oldest first (id order = acquisition order). */
+export function listCopies(recordId: number): CopyRow[] {
+	return getDb()
+		.prepare('SELECT id, record_id, label, created_at FROM record_copies WHERE record_id = ? ORDER BY id')
+		.all(recordId) as CopyRow[];
 }
 
 /**
- * Decrement the copy count, floored at 1: the CHECK constraint (copies >= 1)
- * keeps a record from disappearing into zero, so at the floor this is a no-op.
+ * Add one specific copy: a record_copies row + the denormalized counter, in a
+ * single transaction so the two can't drift. `label` is the copy's identifier
+ * ("Second pressing · #13/500"); blank/null leaves it unlabeled — the UI shows
+ * "Copy N" by position. Returns the updated record, undefined if it doesn't exist.
  */
-export function removeCopy(id: number): RecordRow | undefined {
-	getDb()
-		.prepare("UPDATE records SET copies = copies - 1, updated_at = datetime('now') WHERE id = ? AND copies > 1")
-		.run(id);
-	return findRecordById(id);
+export function addSpecificCopy(recordId: number, label: string | null): RecordRow | undefined {
+	const db = getDb();
+	const trimmed = label?.trim() ? label.trim() : null;
+	const run = db.transaction(() => {
+		db.prepare('INSERT INTO record_copies (record_id, label) VALUES (?, ?)').run(recordId, trimmed);
+		db.prepare("UPDATE records SET copies = copies + 1, updated_at = datetime('now') WHERE id = ?").run(recordId);
+	});
+	run();
+	return findRecordById(recordId);
+}
+
+/**
+ * Remove one specific copy by its row id: the record_copies row + the counter,
+ * in a single transaction. Floored at 1 — the last copy of a record can't be
+ * removed (the entry always implies at least one physical copy, the same
+ * invariant the CHECK constraint encodes), so at the floor this is a no-op.
+ * Returns the updated record; undefined if the copy id doesn't exist.
+ */
+export function removeSpecificCopy(copyId: number): RecordRow | undefined {
+	const db = getDb();
+	const row = db.prepare('SELECT record_id FROM record_copies WHERE id = ?').get(copyId) as
+		{ record_id: number } | undefined;
+	if (!row) return undefined;
+	const { n } = db.prepare('SELECT COUNT(*) AS n FROM record_copies WHERE record_id = ?').get(row.record_id) as {
+		n: number;
+	};
+	if (n <= 1) return findRecordById(row.record_id); // the floor — last copy stays
+	const run = db.transaction(() => {
+		db.prepare('DELETE FROM record_copies WHERE id = ?').run(copyId);
+		db.prepare("UPDATE records SET copies = copies - 1, updated_at = datetime('now') WHERE id = ? AND copies > 1").run(
+			row.record_id
+		);
+	});
+	run();
+	return findRecordById(row.record_id);
+}
+
+/**
+ * Rename one specific copy: replace its label so an existing (e.g. unlabeled)
+ * copy can be given an identity after the fact. A blank label clears it back
+ * to an unlabeled copy. Returns the updated record; undefined if the copy id
+ * doesn't exist.
+ */
+export function renameCopy(copyId: number, label: string | null): RecordRow | undefined {
+	const db = getDb();
+	const trimmed = label?.trim() ? label.trim() : null;
+	const row = db.prepare('SELECT record_id FROM record_copies WHERE id = ?').get(copyId) as
+		{ record_id: number } | undefined;
+	if (!row) return undefined;
+	db.prepare('UPDATE record_copies SET label = ? WHERE id = ?').run(trimmed, copyId);
+	return findRecordById(row.record_id);
 }
 
 /** Optional purchase details captured at the moment of acquisition. */

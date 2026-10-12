@@ -3,8 +3,9 @@
  * Actions (named only — SvelteKit forbids mixing named + default actions):
  *   edit         — update the record's fields (form)
  *   reidentify   — repoint the record at a different Discogs release
- *   add_copy     — increment copies
- *   remove_copy  — decrement copies (floored at 1)
+ *   add_copy     — add a specific copy (optional identifier)
+ *   rename_copy  — rename one specific copy's label (blank = unlabeled)
+ *   remove_copy  — remove one specific copy by row id (floored at 1)
  *   delete       — remove record (cascades photos + media files)
  *   pick_cover   — override the cover with the artwork of ANY Discogs entry
  *   reset_cover  — re-pull the cover from the record's own linked release
@@ -19,11 +20,13 @@ import { enrichFromDiscogs, snapshotForRecord, storeSnapshot } from '$lib/server
 import { ReidentifyConflictError, reidentifyRecord } from '$lib/server/reidentify';
 import {
 	acquireRecord,
-	addCopy,
-	removeCopy,
+	addSpecificCopy,
+	removeSpecificCopy,
+	renameCopy,
 	deleteRecord,
 	findRecordById,
 	latestPlayedAt,
+	listCopies,
 	listPhotos,
 	parseRecordForm,
 	playCount,
@@ -74,6 +77,7 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	return {
 		record,
+		copies: listCopies(id),
 		photos: listPhotos(id),
 		play_count: playCount(id),
 		last_played_at: latestPlayedAt(id),
@@ -145,18 +149,34 @@ export const actions: Actions = {
 		redirect(303, `/records/${id}?reidentified=1`);
 	},
 
-	add_copy: async ({ params }) => {
+	add_copy: async ({ request, params }) => {
 		const id = Number.parseInt(params.id, 10);
 		if (!findRecordById(id)) error(404, 'Record not found');
-		addCopy(id);
+		const data = await request.formData();
+		// The identifier is optional — a blank field adds an unlabeled copy.
+		addSpecificCopy(id, String(data.get('copy_label') ?? '').trim() || null);
 		redirect(303, `/records/${id}?added_copy=1`);
 	},
 
-	remove_copy: async ({ params }) => {
+	rename_copy: async ({ request, params }) => {
 		const id = Number.parseInt(params.id, 10);
 		if (!findRecordById(id)) error(404, 'Record not found');
-		// removeCopy is a no-op at the floor (copies = 1); the button is hidden there.
-		removeCopy(id);
+		const data = await request.formData();
+		const copyId = Number.parseInt(String(data.get('copy_id') ?? ''), 10);
+		if (!Number.isFinite(copyId) || copyId <= 0) return fail(400, { error: 'No copy was selected.' });
+		// A blank label clears the copy back to an unlabeled one.
+		renameCopy(copyId, String(data.get('copy_label') ?? '').trim() || null);
+		redirect(303, `/records/${id}?renamed_copy=1`);
+	},
+
+	remove_copy: async ({ request, params }) => {
+		const id = Number.parseInt(params.id, 10);
+		if (!findRecordById(id)) error(404, 'Record not found');
+		const data = await request.formData();
+		const copyId = Number.parseInt(String(data.get('copy_id') ?? ''), 10);
+		if (!Number.isFinite(copyId) || copyId <= 0) return fail(400, { error: 'No copy was selected.' });
+		// removeSpecificCopy is a no-op at the floor (last copy); the UI disables that button.
+		removeSpecificCopy(copyId);
 		redirect(303, `/records/${id}?removed_copy=1`);
 	},
 

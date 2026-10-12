@@ -5,7 +5,7 @@
  */
 import { error, fail, redirect } from '@sveltejs/kit';
 import { searchReleases, getRelease, toSeed, DiscogsError } from '$lib/server/discogs';
-import { findByBarcode, findByDiscogsId, addCopy, acquireRecord, parseRecordForm } from '$lib/server/records';
+import { findByBarcode, findByDiscogsId, addSpecificCopy, acquireRecord, parseRecordForm } from '$lib/server/records';
 import { importRecord } from '$lib/server/importer';
 import type { PageServerLoad, Actions } from './$types';
 import type { DiscogsSeed } from '$lib/types';
@@ -43,7 +43,7 @@ export const actions: Actions = {
 		if (op === 'add_copy') {
 			const recordId = Number.parseInt(String(data.get('record_id') ?? ''), 10);
 			if (Number.isFinite(recordId) && recordId > 0) {
-				addCopy(recordId);
+				addSpecificCopy(recordId, null); // re-scanned a barcode you own → one more (unlabeled) copy
 				redirect(303, `/records/${recordId}?added_copy=1`);
 			}
 		}

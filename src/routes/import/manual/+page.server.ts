@@ -3,7 +3,7 @@
  * If the user fills in a barcode and it already exists locally, offer add-copy.
  */
 import { fail, redirect } from '@sveltejs/kit';
-import { findByBarcode, addCopy, acquireRecord, parseRecordForm, distinctValues } from '$lib/server/records';
+import { findByBarcode, addSpecificCopy, acquireRecord, parseRecordForm, distinctValues } from '$lib/server/records';
 import { importRecord } from '$lib/server/importer';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -19,7 +19,7 @@ export const actions: Actions = {
 		if (data.get('op') === 'add_copy') {
 			const recordId = Number.parseInt(String(data.get('record_id') ?? ''), 10);
 			if (Number.isFinite(recordId) && recordId > 0) {
-				addCopy(recordId);
+				addSpecificCopy(recordId, null); // duplicate barcode → one more (unlabeled) copy
 				redirect(303, `/records/${recordId}?added_copy=1`);
 			}
 		}

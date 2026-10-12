@@ -395,6 +395,7 @@
 		if (sp.has('imported')) return 'imported';
 		if (sp.has('added_copy')) return 'added_copy';
 		if (sp.has('removed_copy')) return 'removed_copy';
+		if (sp.has('renamed_copy')) return 'renamed_copy';
 		if (sp.has('cover_saved')) return 'cover_saved';
 		if (sp.has('acquired')) return 'acquired';
 		if (sp.has('reidentified')) return 'reidentified';
@@ -476,6 +477,20 @@
 		} finally {
 			editSaving = false;
 		}
+	}
+
+	// Inline copy rename: one row at a time; save posts the rename_copy action,
+	// so an unlabeled copy can be given its identity after the fact.
+	let editingCopyId = $state<number | null>(null);
+	let editCopyLabel = $state('');
+
+	function startEditCopy(c: { id: number; label: string | null }): void {
+		editingCopyId = c.id;
+		editCopyLabel = c.label ?? '';
+	}
+
+	function cancelEditCopy(): void {
+		editingCopyId = null;
 	}
 
 	async function removeTrack(t: TrackRow): Promise<void> {
@@ -716,6 +731,8 @@
 	<div class="mt-6"><Banner variant="success">Added another copy.</Banner></div>
 {:else if flash === 'removed_copy'}
 	<div class="mt-6"><Banner variant="success">Removed a copy.</Banner></div>
+{:else if flash === 'renamed_copy'}
+	<div class="mt-6"><Banner variant="success">Renamed the copy.</Banner></div>
 {:else if flash === 'acquired'}
 	<div class="mt-6"><Banner variant="success">On the shelf.</Banner></div>
 {:else if flash === 'cover_saved'}
@@ -873,17 +890,6 @@
 			<!-- inline-flex, not inline: a display:inline wrapper form ignores
 			     margins and collapses its height, which is what made rows of
 			     buttons stack with no vertical spacing. -->
-			{#if data.record.status !== 'wanted'}
-				<!-- Copies of a want is nonsense until it's owned (F5). -->
-				<form method="POST" action="?/add_copy" class="inline-flex">
-					<Button type="submit" variant="secondary">Add a copy</Button>
-				</form>
-				{#if data.record.copies > 1}
-					<form method="POST" action="?/remove_copy" class="inline-flex">
-						<Button type="submit" variant="ghost" size="sm">Remove a copy</Button>
-					</form>
-				{/if}
-			{/if}
 			<form
 				method="POST"
 				action="?/delete"
@@ -914,7 +920,7 @@
 </div>
 
 <!-- market value — the record's own trendline (Discogs observations) + position.
-     Rendered only when a release is linked: without one there is no market. -->
+	     Rendered only when a release is linked: without one there is no market. -->
 {#if data.record.discogs_id}
 	<section class="mt-16 border-t border-edge pt-10">
 		<div class="mb-5 flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
@@ -1099,7 +1105,7 @@
 <section class="mt-16 border-t border-edge pt-10">
 	<div class="flex flex-wrap items-end justify-between gap-3">
 		<div>
-			<h3 class="font-display text-3xl font-normal">The tracks</h3>
+			<h3 class="font-display text-3xl font-normal">Tracks</h3>
 			<p class="mt-2 font-display text-[13.5px] italic text-faint">
 				{#if tracks.length > 0}
 					{tracks.length}
@@ -1241,6 +1247,78 @@
 		<Button variant="ghost" size="sm" onclick={openAddTrack}>+ Add a track</Button>
 	</div>
 </section>
+
+<!-- Copies: each physical copy of this release, tracked individually —
+	     add one with an identifier ("Second pressing · #13/500"), rename any of
+	     them, remove the specific one that left. A want has no copies until it's
+	     acquired (F5). -->
+{#if data.record.status !== 'wanted'}
+	<section class="mt-16 border-t border-edge pt-10">
+		<div>
+			<h3 class="font-display text-3xl font-normal">Copies</h3>
+			<p class="mt-2 font-display text-[13.5px] italic text-faint">
+				{data.copies.length}
+				{data.copies.length === 1 ? 'physical copy' : 'physical copies'} of this release — name each one so the shelf matches
+				what's in your hands
+			</p>
+		</div>
+
+		<div class="mt-6">
+			{#each data.copies as c, i (c.id)}
+				{@const last = data.copies.length === 1}
+				<div class="group grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-x-3 border-b border-hair py-2.5">
+					<span class="text-right text-[11px] uppercase tracking-[.18em] text-faint">{i + 1}</span>
+					{#if editingCopyId === c.id}
+						<!-- inline rename — same underline-input pattern as the tracklist -->
+						<form method="POST" action="?/rename_copy" class="flex min-w-0 flex-wrap items-center gap-2" use:enhance>
+							<input type="hidden" name="copy_id" value={c.id} />
+							<input
+								class="min-w-0 flex-1 border-b border-edge bg-transparent px-1 py-0.5 text-[14px] outline-none focus:border-accent"
+								name="copy_label"
+								bind:value={editCopyLabel}
+								placeholder="Blank = unlabeled"
+								aria-label="Copy identifier"
+							/>
+							<Button type="submit" variant="secondary" size="sm">Save</Button>
+							<Button variant="ghost" size="sm" onclick={cancelEditCopy}>Cancel</Button>
+						</form>
+					{:else}
+						<button
+							type="button"
+							class="break-words text-left text-[15px] transition-colors hover:underline"
+							title="Rename this copy"
+							onclick={() => startEditCopy(c)}
+						>
+							{c.label ?? `Copy ${i + 1}`}
+						</button>
+					{/if}
+					<form method="POST" action="?/remove_copy" class="inline-flex">
+						<input type="hidden" name="copy_id" value={c.id} />
+						<Button
+							type="submit"
+							variant="ghost"
+							size="sm"
+							disabled={last}
+							title={last ? 'A record always keeps its last copy' : `Remove ${c.label ?? `copy ${i + 1}`}`}
+						>
+							Remove
+						</Button>
+					</form>
+				</div>
+			{/each}
+		</div>
+
+		<form method="POST" action="?/add_copy" class="mt-6 flex max-w-xl flex-col gap-3" use:enhance>
+			<Input
+				name="copy_label"
+				placeholder="What makes this one distinct? — e.g. Second pressing · #13/500 (blank = just one more)"
+			/>
+			<div>
+				<Button type="submit" variant="secondary">Add a copy</Button>
+			</div>
+		</form>
+	</section>
+{/if}
 
 <!-- from Discogs: the cached release details (offline-capable) -->
 {#if data.snapshot}

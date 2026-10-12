@@ -365,7 +365,37 @@ const migrations: Migration[] = [
 					payload TEXT NOT NULL,
 					fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
 				);
-			`);
+			CREATE INDEX IF NOT EXISTS idx_release_snapshots_record_id ON release_snapshots(record_id);
+		`);
+		}
+	},
+	{
+		version: 9,
+		description:
+			'specific copies: record_copies (one row per physical copy, optional identifier) backfilled from the records.copies counter, which becomes its denormalized count',
+		up(db) {
+			db.exec(`
+			CREATE TABLE IF NOT EXISTS record_copies (
+				id INTEGER PRIMARY KEY AUTOINCREMENT,
+				record_id INTEGER NOT NULL REFERENCES records(id) ON DELETE CASCADE,
+				label TEXT CHECK (label IS NULL OR TRIM(label) != ''),
+				created_at TEXT NOT NULL DEFAULT (datetime('now'))
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_record_copies_record_id ON record_copies(record_id);
+		`);
+
+			// Backfill: each existing counter of N becomes N unlabeled copy rows,
+			// so records.copies stays exactly in sync with the new table from the
+			// first run after migration (id order = acquisition order).
+			const rows = db.prepare('SELECT id, copies FROM records').all() as { id: number; copies: number }[];
+			const insert = db.prepare('INSERT INTO record_copies (record_id, label) VALUES (?, NULL)');
+			const backfill = db.transaction(() => {
+				for (const row of rows) {
+					for (let i = 0; i < row.copies; i++) insert.run(row.id);
+				}
+			});
+			backfill();
 		}
 	}
 ];

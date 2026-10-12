@@ -68,6 +68,15 @@ export interface PlayRow {
 	played_at: string; // ISO datetime
 }
 
+/** One physical copy of a record (record_copies table). Display order = insertion order (id). */
+export interface CopyRow {
+	id: number;
+	record_id: number;
+	/** The copy's identifier ("Second pressing · #13/500"); null = unlabeled ("Copy N" by position). */
+	label: string | null;
+	created_at: string;
+}
+
 /** One row of a record's tracklist (record_tracks table). Display order = insertion order (id). */
 export interface TrackRow {
 	id: number;
