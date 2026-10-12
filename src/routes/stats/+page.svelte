@@ -121,23 +121,21 @@
 		l1.push(seg('.'));
 		lines.push(l1);
 
-		// line two — the artist it leans on, and the median pressing year
+		// line two — top artist and the median pressing year (ledger form)
 		if (artist) {
-			const l2: Part[] = [
-				seg(artist.count > 1 ? 'The shelf leans on ' : 'The shelf is anchored by '),
-				seg(artist.label, true)
-			];
-			if (s.median_year) l2.push(seg(', with a median pressing year of '), seg(String(s.median_year), true));
+			const l2: Part[] = [seg('Top artist: '), seg(artist.label, true)];
+			if (artist.count > 1) l2.push(seg(`, ${artist.count} records`));
+			if (s.median_year) l2.push(seg(', median pressing year '), seg(String(s.median_year), true));
 			l2.push(seg('.'));
 			lines.push(l2);
 		} else if (s.median_year) {
-			lines.push([seg('Median pressing year '), seg(String(s.median_year), true), seg('.')]);
+			lines.push([seg('Median pressing year: '), seg(String(s.median_year), true), seg('.')]);
 		}
 
 		// line three — the priciest pressing
 		if (s.priciest) {
 			lines.push([
-				seg('The priciest pressing on the shelf is '),
+				seg('Priciest on the shelf: '),
 				seg(`${s.priciest.artist} — ${s.priciest.title}`, true),
 				seg(', at '),
 				seg(money(s.priciest.price_cents), true),
@@ -147,7 +145,7 @@
 
 		// line four — where the new arrivals leaned (windowed view only)
 		if (window !== 'all' && s.window_top_genre && s.pace.windowed > 0) {
-			lines.push([seg(`Over ${s.pace.label}, new arrivals leaned `), seg(s.window_top_genre.label, true), seg('.')]);
+			lines.push([seg(`New arrivals over ${s.pace.label}: mostly `), seg(s.window_top_genre.label, true), seg('.')]);
 		}
 
 		// line five — the record that keeps coming back
