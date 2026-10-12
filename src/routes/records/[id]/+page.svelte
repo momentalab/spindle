@@ -807,13 +807,6 @@
 					>{data.record.copies} copies</span
 				>{/if}
 		</div>
-
-		<!-- Cover override entry point — opens the Change cover panel below. -->
-		<div class="mt-5">
-			<Button variant="ghost" size="sm" onclick={() => void openCover()}>
-				{coverOpen ? 'Close cover options' : 'Change cover'}
-			</Button>
-		</div>
 	</div>
 
 	<div class="min-w-0">
@@ -862,6 +855,7 @@
 			</div>
 		{/if}
 
+		<!-- Row 1 — the day-to-day: log (or acquire), undo, edit, delete. -->
 		<div class="mt-9 flex flex-wrap items-center gap-4">
 			{#if data.record.status === 'wanted'}
 				<!-- (F5): the primary action for a want. Opens the acquire dialog —
@@ -886,10 +880,9 @@
 			>
 				{editing ? 'Cancel editing' : 'Edit record'}
 			</Button>
-			<Button variant="ghost" size="sm" onclick={() => void openReidentify()}>Re-identify</Button>
-			<!-- inline-flex, not inline: a display:inline wrapper form ignores
-			     margins and collapses its height, which is what made rows of
-			     buttons stack with no vertical spacing. -->
+			<!-- inline-flex, not inline: a display:inline wrapper form ignores margins and
+			     collapses its height, which is what made rows of buttons stack with no
+			     vertical spacing. -->
 			<form
 				method="POST"
 				action="?/delete"
@@ -900,6 +893,14 @@
 			>
 				<Button type="submit" variant="danger">Delete record</Button>
 			</form>
+		</div>
+
+		<!-- Row 2 — release identity: cover + re-identification. -->
+		<div class="mt-4 flex flex-wrap items-center gap-4">
+			<Button variant="ghost" size="sm" onclick={() => void openCover()}>
+				{coverOpen ? 'Close cover options' : 'Change cover'}
+			</Button>
+			<Button variant="ghost" size="sm" onclick={() => void openReidentify()}>Re-identify</Button>
 		</div>
 
 		{#if data.record.discogs_id}
