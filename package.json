@@ -15,7 +15,7 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"smoke:db": "esbuild scripts/smoke-db.ts --bundle --platform=node --format=cjs \"--alias:$lib=./src/lib\" --external:better-sqlite3 --outfile=.smoke.cjs && node .smoke.cjs && rm -f .smoke.cjs"
+		"smoke:db": "node scripts/verify-bundle.mjs scripts/smoke-db.ts .smoke-db.mjs && DATA_DIR=.scratch/smoke-db/data node .smoke-db.mjs && rm -f .smoke-db.mjs"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-node": "^5.5.4",

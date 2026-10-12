@@ -28,7 +28,9 @@ ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000 \
     DATA_DIR=/data \
-    BODY_SIZE_LIMIT=10M
+    # 512M (matching compose) so media-heavy backup zips can be restored in-app;
+    # photo uploads are still capped per-file at 25MB server-side.
+    BODY_SIZE_LIMIT=512M
 WORKDIR /app
 
 # Runtime deps only, for THIS stage's platform. --ignore-scripts skips npm's

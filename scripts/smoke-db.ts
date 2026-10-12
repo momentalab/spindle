@@ -1,4 +1,4 @@
-/** Temporary smoke test for the DB layer. Run via esbuild bundle (see README task 3 notes). */
+/** Smoke test for the DB layer: migrations, insert/read-back, FK cascades. Run via `npm run smoke:db` (bundles with scripts/verify-bundle.mjs against a scratch DATA_DIR). */
 import { getDb } from '$lib/server/db';
 
 const db = getDb();

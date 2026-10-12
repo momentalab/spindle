@@ -9,14 +9,18 @@ A **local-first** vinyl record collection tracker. Scan a barcode, pull metadata
 - **Local-first storage** — SQLite (`data/spindle.db`) + media files (`data/media/`). Discogs is a one-time source of truth; every field is editable afterwards and never overwritten by Discogs
 - **Extended schema** — beyond Discogs: condition (media/sleeve), price paid, acquired date, source, copies, limited-edition flag, status, and free-form notes
 - **Three views** — cards, table (sortable columns), and list, with search + genre/label/status filters
-- **Photos** — upload images of your actual records (client-side downscale to ~1600px JPEG before storage)
+- **Photos** — upload images of your actual records (client-side downscale to ~1600px JPEG before storage; 25MB per-file server cap)
+- **Market value** — manual price snapshots from the Discogs marketplace build an append-only per-record log; `/value` charts portfolio value vs. invested with point-in-time marks and hover tooltips, and each record page shows its own trendline plus gain/loss vs. what you paid
+- **Stats** — `/stats`: collection aggregates with a count/value toggle and time-series charts
+- **Printable catalogue** — `/print`: an editorial bound-catalogue page that prints to PDF straight from the browser
+- **Settings & repairs** — theme, artist display preference, and Discogs connection status on `/settings`; `/covers` finds records whose cover art failed to download and retries them
 - **Export** — take the whole collection out as CSV or JSON, from the home page or `GET /api/export`
 - **Backup & restore** — download the entire collection (SQLite DB + every cover and photo) as a single zip, and restore it from that zip on any machine; restores validate before touching anything and keep the previous generation in `data/.pre-restore`
 
 ## Requirements
 
 - Node.js 24+ (`@zxing/library` requires it; the Docker image uses Node 24 LTS)
-- Camera access over **localhost or HTTPS** (browsers require a secure context for `getUserMedia`). For on-lan testing, Vite serves on your network IP / Tailscale address.
+- Camera access over **localhost or HTTPS** (browsers require a secure context for `getUserMedia`). The dev server binds to all interfaces (`server.host: true`), so other devices on your network can use it by IP.
 
 ## Development
 
@@ -94,17 +98,17 @@ curl -X POST -H "Origin: https://localhost:3737" \
 # (Under `npm run dev` the origin check is disabled — plain curl works.)
 ```
 
-`BODY_SIZE_LIMIT` is 512M by default so media-heavy backup zips can be restored in-app (individual photo uploads are still capped at 8MB per file server-side). The UI needs no special handling — the browser sends a same-origin `Origin` automatically.
+`BODY_SIZE_LIMIT` is 512M by default so media-heavy backup zips can be restored in-app (individual photo uploads are still capped at 25MB per file server-side). The UI needs no special handling — the browser sends a same-origin `Origin` automatically.
 
 ## Environment
 
-| Variable                  | Default                                                    | Purpose                                                                                |
-| ------------------------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `DISCOGS_CONSUMER_KEY`    | _(empty → unauthenticated tier, manual entry still works)_ | Discogs API consumer key                                                               |
-| `DISCOGS_CONSUMER_SECRET` | _(empty)_                                                  | Discogs API secret                                                                     |
-| `DATA_DIR`                | `./data`                                                   | Where the SQLite DB and media files live                                               |
-| `BODY_SIZE_LIMIT`         | `512M` (compose)                                           | Max request body for adapter-node (restore uploads; photos are capped per-file at 8MB) |
-| `SPINDLE_PORT`            | `3737` (compose)                                           | Host port for the Docker deployment                                                    |
+| Variable                  | Default                                                    | Purpose                                                                                 |
+| ------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `DISCOGS_CONSUMER_KEY`    | _(empty → unauthenticated tier, manual entry still works)_ | Discogs API consumer key                                                                |
+| `DISCOGS_CONSUMER_SECRET` | _(empty)_                                                  | Discogs API secret                                                                      |
+| `DATA_DIR`                | `./data`                                                   | Where the SQLite DB and media files live                                                |
+| `BODY_SIZE_LIMIT`         | `512M`                                                     | Max request body for adapter-node (restore uploads; photos are capped per-file at 25MB) |
+| `SPINDLE_PORT`            | `3737`                                                     | Host port for the Docker deployment                                                     |
 
 Create a (free) key/secret pair at https://www.discogs.com/settings/developers — one per project, no OAuth dance needed for local use.
 
@@ -115,27 +119,48 @@ src/
   lib/
     types.ts                 # shared row/draft types + enums (conditions, statuses)
     draft.ts                 # client↔server form-state helpers
+    components/TrendChart.svelte   # hand-rolled SVG line/area chart with tooltips (no chart lib)
     server/
       db.ts                  # better-sqlite3 singleton (auto-creates schema on first open)
       paths.ts               # data-dir resolution (DATA_DIR)
-      export.ts              # collection export: CSV + JSON renderers
-      discogs.ts             # Discogs API client (search by barcode, release detail)
-      records.ts             # all record SQL: list/search/sort/filter, CRUD, photos
+      discogs.ts             # Discogs API client (search by barcode, release detail, marketplace)
       importer.ts            # importRecord(): local cover download + insert
+      reidentify.ts          # re-fetch a wrongly-picked release and overwrite the record
+      enrichment.ts          # fold a fetched release into local data (tracklist, snapshot)
+      records.ts             # all record SQL: list/search/sort/filter, CRUD, photos, plays
+      value.ts               # market-value layer: portfolio stats/history, per-record quote log
+      stats.ts               # /stats aggregates (pure reads)
+      catalogue.ts           # printable-catalogue page model (shared by HTML + PDF surfaces)
+      catalogue-pdf.ts       # PDF rendering of the catalogue
+      artist.ts              # artist-name normalization (leading-word-first)
+      tracks.ts              # tracklist data access
+      covers.ts              # missing-cover detection + repair/override
+      settings.ts            # /settings summary: credentials, storage, preferences
+      export.ts              # collection export: CSV + JSON renderers
       backup.ts              # backup zip (archiver) + validated restore (.pre-restore snapshot)
   routes/
     +page.*                  # collection home: cards/table/list, search & filters
     scan/+page.svelte        # barcode scanner (camera) + manual entry fallback
     import/barcode/[barcode]/  # Discogs lookup + candidate picker + save
     import/manual/+page.*    # no-barcode entry
-    records/[id]/+page.*     # detail: edit form, photos, add/remove copy, delete
+    records/[id]/+page.*     # detail: edit form, photos, market value, tracklist, plays
+    value/+page.*            # portfolio value: history chart (tooltips) + snapshot controls
+    stats/+page.*            # collection stats
+    print/+page.*            # printable catalogue
+    covers/+page.*           # missing-cover repair
+    settings/+page.*         # preferences + Discogs connection status
     api/import/+server.ts    # JSON lookup endpoint (candidate expansion)
+    api/search/+server.ts    # name-based search (Discogs candidates + local matches)
+    api/list/+server.ts      # full collection dump for client-side filtering
     api/export/+server.ts    # GET collection export (csv|json, table=records|photos)
     api/backup/+server.ts    # POST whole-collection zip download (db checkpointed + media/)
     api/restore/+server.ts   # POST backup zip restore (validated, .pre-restore snapshot)
+    api/discogs-check/+server.ts  # connection probe for the settings page
+    api/settings/+server.ts  # data-backed preferences
+    api/value/snapshot/+server.ts # POST market-price snapshot (append-only log)
+    api/value/history/+server.ts  # DELETE price history (whole log or one record)
     api/records/[id]/photos/+server.ts  # photo upload/delete (multipart)
     media/[...file]/+server.ts           # local media serving (traversal-guarded)
-plans/spindle-plan.md        # the full architecture plan
 ```
 
 ## Design notes

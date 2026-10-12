@@ -1,9 +1,8 @@
 /**
- * Throwaway verification for the stats graph suite — bundles like smoke:db,
- * prints the aggregates against the real (read-only) database.
- * Run: ./node_modules/.bin/esbuild scripts/verify-stats-s1.ts --bundle --platform=node \
- *        --format=cjs "--alias:$lib=./src/lib" --external:better-sqlite3 --outfile=.verify.cjs \
- *        && node .verify.cjs; rm -f .verify.cjs
+ * Diagnostics for the stats suite: prints the aggregates against the real
+ * (read-only) database — the one script that intentionally reads it.
+ * Run: node scripts/verify-bundle.mjs scripts/verify-stats-s1.ts .verify-stats-s1.mjs \
+ *        && node .verify-stats-s1.mjs; rm -f .verify-stats-s1.mjs
  */
 import { collectionStats } from '$lib/server/stats';
 

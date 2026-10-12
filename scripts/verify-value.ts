@@ -14,15 +14,14 @@
  *
  * Run (bundled — value.ts pulls in discogs.ts, which needs SvelteKit's env alias;
  * the stub keeps it inert):
- *   ./node_modules/.bin/esbuild scripts/verify-value.ts --bundle --platform=node --format=cjs \
- *     "--alias:$lib=./src/lib" "--alias:$env/dynamic/private=./scripts/env-stub.ts" \
- *     --external:better-sqlite3 --outfile=.verify-value.cjs && node .verify-value.cjs; rm -f .verify-value.cjs
+ *   node scripts/verify-bundle.mjs scripts/verify-value.ts .verify-value.mjs \
+ *     && DATA_DIR=.scratch/verify-value/data node .verify-value.mjs; rm -f .verify-value.mjs
  */
 import assert from 'node:assert';
 import { mkdirSync, rmSync } from 'node:fs';
 
-const DATA = '/tmp/spindle-value-mig/data';
-rmSync('/tmp/spindle-value-mig', { recursive: true, force: true });
+const DATA = '.scratch/verify-value/data';
+rmSync('.scratch/verify-value', { recursive: true, force: true });
 mkdirSync(DATA, { recursive: true });
 process.env.DATA_DIR = DATA; // must precede the dynamic import (paths read env at init)
 
