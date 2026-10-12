@@ -10,6 +10,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import CoverImage from '$lib/components/ui/CoverImage.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
+	import Modal from '$lib/components/ui/Modal.svelte';
 	import { draftFromRow, emptyDraft } from '$lib/draft';
 	import { appTitle } from '$lib/index';
 	import { DISCOGS_LINK_ATTRS, discogsReleaseUrl } from '$lib/discogs';
@@ -22,6 +23,8 @@
 
 	let draft: RecordDraft = $state(emptyDraft());
 	let editing = $state(false);
+	// In-flight ?/edit POST — keeps the modal from being dismissed mid-save.
+	let editSubmitting = $state(false);
 
 	// After a successful save, server data is revalidated — resync the form from it.
 	$effect(() => {
@@ -1112,37 +1115,9 @@
 	{/if}
 
 	<!-- manual add — always available (a record without a Discogs link lives here) -->
-	{#if addOpen}
-		<div class="mt-4 flex flex-wrap items-center gap-2">
-			<input
-				class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-[13px] outline-none focus:border-accent"
-				bind:value={addPos}
-				placeholder="A1"
-				aria-label="New track position"
-			/>
-			<input
-				class="min-w-0 flex-1 border-b border-edge bg-transparent px-1 py-0.5 text-[14px] outline-none focus:border-accent"
-				bind:value={addTitle}
-				placeholder="Track title"
-				aria-label="New track title"
-			/>
-			<input
-				class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-right text-[13px] outline-none focus:border-accent"
-				bind:value={addDur}
-				placeholder="3:32"
-				aria-label="New track duration"
-			/>
-			<Button variant="secondary" size="sm" disabled={addSaving} onclick={() => void submitAddTrack()}>
-				{addSaving ? 'Adding…' : 'Add track'}
-			</Button>
-			<Button variant="ghost" size="sm" onclick={() => (addOpen = false)}>Cancel</Button>
-			{#if addError}<p class="w-full text-sm text-rust">{addError}</p>{/if}
-		</div>
-	{:else}
-		<div class="mt-4">
-			<Button variant="ghost" size="sm" onclick={openAddTrack}>+ Add a track</Button>
-		</div>
-	{/if}
+	<div class="mt-4">
+		<Button variant="ghost" size="sm" onclick={openAddTrack}>+ Add a track</Button>
+	</div>
 </section>
 
 <!-- from Discogs: the cached release details (offline-capable) -->
@@ -1249,179 +1224,213 @@
 	</section>
 {/if}
 
-<!-- edit form -->
-{#if editing}
-	<section class="mt-16 border-t border-edge pt-10">
-		<h3 class="mb-8 font-display text-3xl font-normal">Edit details</h3>
-		{#if form?.error}<div class="mb-6">
-				<Banner variant="error">{form.error}</Banner>
-			</div>{/if}
-		<form
-			method="POST"
-			action="?/edit"
-			use:enhance={() =>
-				async ({ result }) => {
+<!-- edit form — a modal so the sheet doesn't land below the fold on mobile -->
+<Modal
+	open={editing}
+	aria-label="Edit details"
+	title="Edit details"
+	size="lg"
+	locked={editSubmitting}
+	onClose={() => {
+		editing = false;
+		draft = draftFromRow(data.record); // discard unsaved changes
+	}}
+>
+	{#if form?.error}
+		<div class="mb-6">
+			<Banner variant="error">{form.error}</Banner>
+		</div>
+	{/if}
+	<form
+		method="POST"
+		action="?/edit"
+		use:enhance={() =>
+			async ({ result }) => {
+				editSubmitting = true;
+				try {
 					// Success: dismiss the editor (SvelteKit then revalidates the spec
 					// sheet from the updated row). Failure: keep it open so the error
 					// banner and the filled-in fields stay put.
 					if (!result || !('type' in result) || result.type !== 'failure') {
 						editing = false;
 					}
-				}}
-		>
-			<RecordForm bind:draft sources={data.sources} submitLabel="Save changes" />
-		</form>
-	</section>
-{/if}
+				} finally {
+					editSubmitting = false;
+				}
+			}}
+	>
+		<RecordForm bind:draft sources={data.sources} submitLabel="Save changes" />
+	</form>
+</Modal>
 
 <!-- re-identify — re-pick the release this record points at (wrong pick at import) -->
-{#if reidOpen}
-	<section class="mt-16 border-t border-edge pt-10">
-		<div class="flex flex-wrap items-start justify-between gap-4">
-			<div>
-				<h3 class="font-display text-3xl font-normal">Re-identify</h3>
-				<p class="mt-2 max-w-xl font-display text-[13.5px] italic leading-relaxed text-faint">
-					{#if data.record.barcode}
-						Barcode {data.record.barcode} — pick the release this record actually is.
-					{:else}
-						No barcode on file — searched "{data.record.artist}
-						{data.record.title}" instead.
-					{/if}
-					Identifying details and cover are replaced; your copy's condition, price and notes are kept.
-				</p>
-			</div>
-			<Button variant="ghost" size="sm" onclick={closeReidentify}>Close</Button>
+<Modal open={reidOpen} aria-label="Re-identify" title="Re-identify" size="lg" onClose={closeReidentify}>
+	<p class="max-w-xl font-display text-[13.5px] italic leading-relaxed text-faint">
+		{#if data.record.barcode}
+			Barcode {data.record.barcode} — pick the release this record actually is.
+		{:else}
+			No barcode on file — searched "{data.record.artist}
+			{data.record.title}" instead.
+		{/if}
+		Identifying details and cover are replaced; your copy's condition, price and notes are kept.
+	</p>
+
+	{#if form?.error}
+		<div class="mt-6">
+			<Banner variant="error">{form.error}</Banner>
 		</div>
+	{/if}
 
-		{#if form?.error}
-			<div class="mt-6">
-				<Banner variant="error">{form.error}</Banner>
-			</div>
-		{/if}
-
-		{#if reidLoading}
-			<p class="mt-8 font-display text-[14px] italic text-faint">Looking up on Discogs…</p>
-		{:else if reidError}
-			<div class="mt-8">
-				<Banner variant="warn">Discogs lookup: {reidError}</Banner>
-			</div>
-		{:else if reidCandidates && reidCandidates.length === 0}
-			<div class="mt-8">
-				<Banner variant="info">No Discogs results — fix the identifying fields in "Edit details" instead.</Banner>
-			</div>
-		{:else if reidCandidates}
-			<ReleasePicker
-				candidates={reidCandidates}
-				selectedId={data.record.discogs_id}
-				action="?/reidentify"
-				commitLabel="Select"
-				onCommitted={closeReidentify}
-			/>
-		{/if}
-	</section>
-{/if}
+	{#if reidLoading}
+		<p class="mt-8 font-display text-[14px] italic text-faint">Looking up on Discogs…</p>
+	{:else if reidError}
+		<div class="mt-8">
+			<Banner variant="warn">Discogs lookup: {reidError}</Banner>
+		</div>
+	{:else if reidCandidates && reidCandidates.length === 0}
+		<div class="mt-8">
+			<Banner variant="info">No Discogs results — fix the identifying fields in "Edit details" instead.</Banner>
+		</div>
+	{:else if reidCandidates}
+		<ReleasePicker
+			candidates={reidCandidates}
+			selectedId={data.record.discogs_id}
+			action="?/reidentify"
+			commitLabel="Select"
+			onCommitted={closeReidentify}
+		/>
+	{/if}
+</Modal>
 
 <!-- change cover — override the artwork without touching the record's identity -->
-{#if coverOpen}
-	<section class="mt-16 border-t border-edge pt-10">
-		<div class="flex flex-wrap items-start justify-between gap-4">
-			<div>
-				<h3 class="font-display text-3xl font-normal">Change cover</h3>
-				<p class="mt-2 max-w-xl font-display text-[13.5px] italic leading-relaxed text-faint">
-					Replace the artwork only — none of the picked entry's data touches this record, and nothing changes for the
-					record itself.
-				</p>
-			</div>
-			<Button variant="ghost" size="sm" onclick={closeCover}>Close</Button>
+<Modal open={coverOpen} aria-label="Change cover" title="Change cover" size="lg" onClose={closeCover}>
+	<p class="max-w-xl font-display text-[13.5px] italic leading-relaxed text-faint">
+		Replace the artwork only — none of the picked entry's data touches this record, and nothing changes for the record
+		itself.
+	</p>
+
+	{#if form?.error}
+		<div class="mt-6">
+			<Banner variant="error">{form.error}</Banner>
 		</div>
+	{/if}
 
-		{#if form?.error}
-			<div class="mt-6">
-				<Banner variant="error">{form.error}</Banner>
+	{#if coverError}
+		<div class="mt-6">
+			<Banner variant="error">{coverError}</Banner>
+		</div>
+	{/if}
+
+	<!-- (i) borrow the artwork of any other Discogs entry -->
+	<div class="mt-8">
+		<h4 class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">From another Discogs entry</h4>
+		<form
+			class="mt-3 flex max-w-md items-end gap-3"
+			onsubmit={(e) => {
+				e.preventDefault();
+				void searchCover(coverQuery);
+			}}
+		>
+			<div class="min-w-0 flex-1">
+				<Input name="cover_query" placeholder="Search artist, title or catno…" bind:value={coverQuery} />
 			</div>
-		{/if}
+			<Button type="submit" variant="secondary" size="sm" disabled={coverLoading}>
+				{coverLoading ? 'Searching…' : 'Search'}
+			</Button>
+		</form>
 
-		{#if coverError}
+		{#if coverLoading}
+			<p class="mt-6 font-display text-[14px] italic text-faint">Looking up on Discogs…</p>
+		{:else if coverCandidates && coverCandidates.length === 0}
 			<div class="mt-6">
-				<Banner variant="error">{coverError}</Banner>
+				<Banner variant="info">No Discogs results for that search.</Banner>
 			</div>
+		{:else if coverCandidates}
+			<ReleasePicker
+				candidates={coverCandidates}
+				selectedLabel="Current cover"
+				action="?/pick_cover"
+				commitLabel="Use this cover"
+				fieldName="release_id"
+				onCommitted={() => void onCoverPicked()}
+			/>
 		{/if}
+	</div>
 
-		<!-- (i) borrow the artwork of any other Discogs entry -->
-		<div class="mt-8">
-			<h4 class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">From another Discogs entry</h4>
-			<form
-				class="mt-3 flex max-w-md items-end gap-3"
-				onsubmit={(e) => {
-					e.preventDefault();
-					void searchCover(coverQuery);
-				}}
+	<!-- (ii) upload a local image, or restore the linked release's artwork -->
+	<div class="mt-10 border-t border-hair pt-8">
+		<h4 class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">Or your own image</h4>
+		<div class="mt-4 flex flex-wrap items-center gap-4">
+			<label
+				class={`group block w-[180px] shrink-0 cursor-pointer overflow-hidden rounded-xs border border-dashed border-edge transition-colors hover:border-accent ${coverLoading ? 'pointer-events-none opacity-50' : ''}`}
 			>
-				<div class="min-w-0 flex-1">
-					<Input name="cover_query" placeholder="Search artist, title or catno…" bind:value={coverQuery} />
-				</div>
-				<Button type="submit" variant="secondary" size="sm" disabled={coverLoading}>
-					{coverLoading ? 'Searching…' : 'Search'}
-				</Button>
-			</form>
-
-			{#if coverLoading}
-				<p class="mt-6 font-display text-[14px] italic text-faint">Looking up on Discogs…</p>
-			{:else if coverCandidates && coverCandidates.length === 0}
-				<div class="mt-6">
-					<Banner variant="info">No Discogs results for that search.</Banner>
-				</div>
-			{:else if coverCandidates}
-				<ReleasePicker
-					candidates={coverCandidates}
-					selectedLabel="Current cover"
-					action="?/pick_cover"
-					commitLabel="Use this cover"
-					fieldName="release_id"
-					onCommitted={() => void onCoverPicked()}
-				/>
+				<span
+					class="flex aspect-square w-full flex-col items-center justify-center gap-2 px-4 text-center text-faint transition-colors group-hover:text-accent"
+				>
+					<span class="text-xl leading-none" aria-hidden="true">+</span>
+					<span class="text-[10px] font-semibold uppercase tracking-[.2em]"
+						>{coverLoading ? 'Uploading…' : 'Upload cover image'}</span
+					>
+				</span>
+				<input type="file" accept="image/*" onchange={(e) => void onCoverFilePicked(e)} class="hidden" />
+			</label>
+			{#if data.record.discogs_id}
+				<form
+					method="POST"
+					action="?/reset_cover"
+					class="inline-flex"
+					use:enhance={() =>
+						async ({ result, update }) => {
+							if (result && 'type' in result && result.type === 'failure') {
+								coverError = (result.data as { error?: string } | undefined)?.error ?? 'Could not restore the cover.';
+								return; // keep the panel open on error
+							}
+							await update(); // 303 to the ?cover_saved=1 flash
+							closeCover();
+						}}
+				>
+					<Button type="submit" variant="ghost" size="sm">Restore linked release cover</Button>
+				</form>
 			{/if}
 		</div>
+	</div>
+</Modal>
 
-		<!-- (ii) upload a local image, or restore the linked release's artwork -->
-		<div class="mt-10 border-t border-hair pt-8">
-			<h4 class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">Or your own image</h4>
-			<div class="mt-4 flex flex-wrap items-center gap-4">
-				<label
-					class={`group block w-[180px] shrink-0 cursor-pointer overflow-hidden rounded-xs border border-dashed border-edge transition-colors hover:border-accent ${coverLoading ? 'pointer-events-none opacity-50' : ''}`}
-				>
-					<span
-						class="flex aspect-square w-full flex-col items-center justify-center gap-2 px-4 text-center text-faint transition-colors group-hover:text-accent"
-					>
-						<span class="text-xl leading-none" aria-hidden="true">+</span>
-						<span class="text-[10px] font-semibold uppercase tracking-[.2em]"
-							>{coverLoading ? 'Uploading…' : 'Upload cover image'}</span
-						>
-					</span>
-					<input type="file" accept="image/*" onchange={(e) => void onCoverFilePicked(e)} class="hidden" />
-				</label>
-				{#if data.record.discogs_id}
-					<form
-						method="POST"
-						action="?/reset_cover"
-						class="inline-flex"
-						use:enhance={() =>
-							async ({ result, update }) => {
-								if (result && 'type' in result && result.type === 'failure') {
-									coverError = (result.data as { error?: string } | undefined)?.error ?? 'Could not restore the cover.';
-									return; // keep the panel open on error
-								}
-								await update(); // 303 to the ?cover_saved=1 flash
-								closeCover();
-							}}
-					>
-						<Button type="submit" variant="ghost" size="sm">Restore linked release cover</Button>
-					</form>
-				{/if}
-			</div>
-		</div>
-	</section>
-{/if}
+<!-- manual add — the row used to expand inline under the tracklist; it now pops up -->
+<Modal
+	open={addOpen}
+	aria-label="Add a track"
+	title="Add a track"
+	size="sm"
+	locked={addSaving}
+	onClose={() => (addOpen = false)}
+>
+	<div class="flex flex-wrap items-center gap-2">
+		<input
+			class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-[13px] outline-none focus:border-accent"
+			bind:value={addPos}
+			placeholder="A1"
+			aria-label="New track position"
+		/>
+		<input
+			class="min-w-0 flex-1 border-b border-edge bg-transparent px-1 py-0.5 text-[14px] outline-none focus:border-accent"
+			bind:value={addTitle}
+			placeholder="Track title"
+			aria-label="New track title"
+		/>
+		<input
+			class="w-14 border-b border-edge bg-transparent px-1 py-0.5 text-right text-[13px] outline-none focus:border-accent"
+			bind:value={addDur}
+			placeholder="3:32"
+			aria-label="New track duration"
+		/>
+		<Button variant="secondary" size="sm" disabled={addSaving} onclick={() => void submitAddTrack()}>
+			{addSaving ? 'Adding…' : 'Add track'}
+		</Button>
+		<Button variant="ghost" size="sm" onclick={() => (addOpen = false)}>Cancel</Button>
+		{#if addError}<p class="w-full text-sm text-rust">{addError}</p>{/if}
+	</div>
+</Modal>
 
 <!-- big-photo confirm: files over 8MB ask before an aggressive re-encode + upload -->
 {#if bigFiles.length > 0}
