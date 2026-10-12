@@ -7,10 +7,11 @@
  *
  * POST /api/search  { id, status? }
  *   -> saves that Discogs release to the local collection (cover download
- *      included) and returns { recordId }. `status` is 'in_collection'
- *      (default — "+ Add") or 'wanted' (the wishlist heart). When the release
- *      is already saved (same Discogs ID or barcode) no second row is created
- *      — the response carries { recordId: null, duplicate: { id, artist,
+ *      included) and returns { recordId }. Serves the search bar's wishlist
+ *      heart ('wanted'); "+ Add" navigates to /import/release/[id] instead so
+ *      the record can be customized before it's saved. When the release is
+ *      already saved (same Discogs ID or barcode) no second row is created —
+ *      the response carries { recordId: null, duplicate: { id, artist,
  *      title } } instead so the UI can point at the existing record.
  */
 import { error, json } from '@sveltejs/kit';

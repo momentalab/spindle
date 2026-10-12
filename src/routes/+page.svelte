@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 	import AcquireDialog from '$lib/components/AcquireDialog.svelte';
 	import type { ActionData, PageData } from './$types';
@@ -291,12 +291,18 @@
 	}
 
 	/**
-	 * One-tap save from the Discogs results: "add" drops the release into the
-	 * collection, "wish" hearts it onto the wishlist. Both stay on the page —
-	 * the local dataset is refetched so the fresh row appears in the grid.
+	 * Actions on a Discogs hit. "+ Add" hands the release to the record editor
+	 * at /import/release/[id] — the same page the barcode flow uses — so the
+	 * user can review and fill in details before anything is committed. "wish"
+	 * stays a one-tap save onto the wishlist; the local dataset is refetched so
+	 * the fresh row appears in the grid.
 	 */
 	async function addRemote(hit: RemoteHit, kind: 'add' | 'wish'): Promise<void> {
 		if (saving) return;
+		if (kind === 'add') {
+			goto(`/import/release/${hit.id}`);
+			return;
+		}
 		saving = { id: hit.id, kind };
 		try {
 			const res = await fetch('/api/search', {
@@ -951,14 +957,8 @@
 								</p>
 							</div>
 							<div class="flex shrink-0 items-center gap-2">
-								<Button
-									type="button"
-									variant="secondary"
-									size="sm"
-									disabled={saving !== null}
-									onclick={() => void addRemote(hit, 'add')}
-								>
-									{saving?.id === hit.id && saving.kind === 'add' ? 'Saving…' : '+ Add'}
+								<Button type="button" variant="secondary" size="sm" onclick={() => void addRemote(hit, 'add')}>
+									+ Add
 								</Button>
 								<!-- heart = the wishlist: the common case at the shelf —
 								     you scan with the barcode, you *want* by name. -->
