@@ -565,7 +565,10 @@
 			{/if}
 		</p>
 	</div>
-	<div class="shrink-0 text-right">
+	<!-- max-sm:w-full: below sm this block wraps to its own line — full width makes
+	     text-right pin the count, button and pointers to the right edge (title stays
+	     top-left, stats bottom-right) instead of hugging left under the title. -->
+	<div class="shrink-0 text-right max-sm:w-full">
 		<div class="font-display text-[44px] leading-none {shelf === 'wishlist' ? 'text-plum' : ''}">
 			{shelfCount}
 		</div>
