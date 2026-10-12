@@ -481,14 +481,15 @@ const FONT_FILES = ['source-serif-4-400', 'source-serif-4-italic-400', 'archivo-
 export type CatalogueFont = (typeof FONT_FILES)[number];
 
 /**
- * The bundled TTFs live in static/fonts (adapter-node copies them to the build
- * output root, so production reads build/fonts). pdfkit needs real font files
- * — no woff2, no system stacks.
+ * The bundled TTFs live in static/fonts. In production, adapter-node ships the
+ * static directory under build/client (not the build root), so the same files
+ * are read from build/client/fonts there. pdfkit needs real font files — no
+ * woff2, no system stacks.
  */
 export function fontPath(name: CatalogueFont): string {
 	const dir =
 		process.env.NODE_ENV === 'production'
-			? path.join(process.cwd(), 'build', 'fonts')
+			? path.join(process.cwd(), 'build', 'client', 'fonts')
 			: path.join(process.cwd(), 'static', 'fonts');
 	return path.join(dir, `${name}.ttf`);
 }
