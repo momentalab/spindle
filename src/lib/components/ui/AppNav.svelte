@@ -50,10 +50,6 @@
 			<img src={favicon} alt="" width="27" height="32" class="h-8 w-auto shrink-0" />
 			<span class="ml-3 flex items-baseline">
 				<span class="font-display text-xl font-normal tracking-[.02em] sm:text-2xl">spindle</span>
-				<!-- tagline drops below lg so the masthead fits narrow viewports -->
-				<span class="ml-3 hidden text-[10px] uppercase tracking-[.2em] text-faint lg:inline"
-					>est. 2026 · a vinyl index</span
-				>
 			</span>
 		</a>
 

@@ -1,8 +1,12 @@
 <script lang="ts">
 	import './layout.css';
 	import AppNav from '$lib/components/ui/AppNav.svelte';
+	import { page } from '$app/state';
 
 	let { children } = $props();
+
+	// The catalogue page is a bound, chrome-free artifact — no nav/footer around it.
+	const isCatalogue = $derived(page.url.pathname.startsWith('/print'));
 </script>
 
 <svelte:head>
@@ -14,11 +18,19 @@
 	<link rel="manifest" href="/site.webmanifest" />
 </svelte:head>
 
-<AppNav />
-<main class="mx-auto min-h-[calc(100dvh-4.5rem)] w-full max-w-260 px-7 pb-24 pt-14">
+{#if !isCatalogue}
+	<AppNav />
+{/if}
+<main
+	class={isCatalogue
+		? 'mx-auto w-full max-w-210 px-7 pb-16 pt-8'
+		: 'mx-auto min-h-[calc(100dvh-4.5rem)] w-full max-w-260 px-7 pb-24 pt-14'}
+>
 	{@render children()}
 </main>
 
-<footer class="border-t border-hair py-10 text-center">
-	<p class="text-[11px] uppercase tracking-[.22em] text-faint">spindle — a vinyl index</p>
-</footer>
+{#if !isCatalogue}
+	<footer class="border-t border-hair py-10 text-center">
+		<p class="text-[11px] uppercase tracking-[.22em] text-faint">spindle — a vinyl index</p>
+	</footer>
+{/if}

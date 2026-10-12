@@ -391,3 +391,14 @@ select option {
 .chart-scroll[data-fade] + .chart-fade {
 	opacity: 1;
 }
+
+/* Print (F12 catalogue): the page prints ink-on-paper regardless of the live
+   theme, with a modest @page margin — /print's own styles do the rest. */
+@page {
+	margin: 12mm;
+}
+@media print {
+	body {
+		background: #f4efe5 !important;
+	}
+}

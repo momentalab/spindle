@@ -390,6 +390,24 @@
 			alongside — “All tables” bundles records, photos, plays and tracks in one file.
 		{/if}
 	</p>
+
+	<!-- F12: the collection as a bound catalogue — a rendered artifact, not a data dump -->
+	<div class="mt-10 border-t border-hair pt-8">
+		<span class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Catalogue</span>
+		<p class="mt-2.5 max-w-md font-display text-[15px] italic leading-snug text-muted">
+			The collection as a bound catalogue — real text, embedded covers, no chrome. The PDF is for sharing; the live page
+			is for printing.
+		</p>
+		<div class="mt-6 flex flex-wrap items-center gap-x-8 gap-y-4">
+			<Button href="/api/export/catalogue" variant="primary" size="sm">Download PDF</Button>
+			<a
+				href="/print"
+				class="text-[10.5px] font-semibold uppercase tracking-[.18em] text-muted underline decoration-hair underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
+			>
+				Open catalogue page →
+			</a>
+		</div>
+	</div>
 </section>
 
 <!-- ══════════════ backup & restore (moved from the home page) ══════════════ -->

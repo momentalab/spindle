@@ -579,8 +579,15 @@
 		</div>
 		{#if data.total > 0}
 			<!-- export & backup live in Settings now — the header keeps one quiet pointer -->
-			<div class="mt-4 flex items-center justify-end gap-4">
-				<span class="text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint">data</span>
+			<div class="mt-4 flex items-center justify-end gap-3">
+				<a
+					href="/print"
+					title="The collection as a bound catalogue — print it, or export a PDF / image"
+					class="text-[10.5px] font-semibold uppercase tracking-[.18em] text-muted underline decoration-hair underline-offset-4 transition-colors hover:text-accent hover:decoration-accent"
+				>
+					Catalogue
+				</a>
+				<span class="ml-1 text-[9.5px] font-semibold uppercase tracking-[.2em] text-faint">data</span>
 				<a
 					href="/settings"
 					title="Export, backup & restore — all in Settings"

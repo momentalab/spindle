@@ -1,0 +1,9 @@
+Source Serif 4 and Archivo — Copyright 2020 The Source Serif Project Authors,
+2019 The Archivo Project Authors (silo.org).
+
+Licensed under the SIL Open Font License, Version 1.1 (OFL-1.1).
+Full license: https://scripts.sil.org/OFL
+
+These TTFs are used by the server-side catalogue renderer (pdfkit),
+which cannot read woff2 or system font stacks. The same faces are loaded on
+the /print page so every catalogue format shares identical typography.
