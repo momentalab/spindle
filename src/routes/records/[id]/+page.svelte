@@ -1213,7 +1213,9 @@
 				<p class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">Credits</p>
 				<ul class="mt-3 flex flex-col">
 					{#each snapshotCredits as c (creditKey(c))}
-						<li class="grid grid-cols-[1fr_auto] gap-x-4 border-b border-hair py-2 sm:grid-cols-[220px_minmax(0,1fr)]">
+						<li
+							class="grid grid-cols-[minmax(0,1fr)_auto] gap-x-4 border-b border-hair py-2 sm:grid-cols-[220px_minmax(0,1fr)]"
+						>
 							<span class="text-[10.5px] uppercase tracking-[.18em] text-faint"
 								>{c.role || (c.kind === 'company' ? 'Company' : 'Guest')}</span
 							>
