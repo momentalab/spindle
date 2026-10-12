@@ -1,6 +1,25 @@
-# spindle 🎵
+<table>
+  <tr>
+    <td align="center"><img src="static/spindle-logo-rounded.webp" alt="spindle — five translucent vinyl records" width="280"></td>
+  </tr>
+</table>
+
+# spindle
 
 A **local-first** vinyl record collection tracker. Scan a barcode, pull metadata from Discogs, and keep it — the data lives in a local SQLite database, not on Discogs.
+
+Spindle is fully self-hosted: one container (or one Node process), no account, no cloud, no subscription. Your collection is a folder you can back up, restore, and carry to any machine.
+
+## Table of contents
+
+- [Features](#features)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [Your data](#your-data)
+- [Development](#development)
+- [Project structure](#project-structure)
+- [Design notes](#design-notes)
 
 ## Features
 
@@ -14,33 +33,41 @@ A **local-first** vinyl record collection tracker. Scan a barcode, pull metadata
 - **Stats** — `/stats`: collection aggregates with a count/value toggle and time-series charts
 - **Printable catalogue** — `/print`: an editorial bound-catalogue page that prints to PDF straight from the browser
 - **Settings & repairs** — theme, artist display preference, and Discogs connection status on `/settings`; `/covers` finds records whose cover art failed to download and retries them
-- **Export** — take the whole collection out as CSV or JSON, from the home page or `GET /api/export`
-- **Backup & restore** — download the entire collection (SQLite DB + every cover and photo) as a single zip, and restore it from that zip on any machine; restores validate before touching anything and keep the previous generation in `data/.pre-restore`
+- **Export** — take the whole collection out as CSV (strict RFC 4180) or JSON, from the home page or `GET /api/export`
+- **Backup & restore** — download the entire collection (SQLite DB + every cover and photo) as a single zip, and restore it on any machine; restores validate before touching anything and keep the previous generation in `data/.pre-restore`
 
-## Requirements
+## Quick start
+
+### Requirements
 
 - Node.js 24+ (`@zxing/library` requires it; the Docker image uses Node 24 LTS)
-- Camera access over **localhost or HTTPS** (browsers require a secure context for `getUserMedia`). The dev server binds to all interfaces (`server.host: true`), so other devices on your network can use it by IP.
+- A free [Discogs developer key](https://www.discogs.com/settings/developers) — optional but recommended; without one, imports fall back to manual entry
+- Camera scanning needs **localhost or HTTPS** (browsers require a secure context for `getUserMedia`); the dev server binds to all interfaces (`server.host: true`) so other devices on your network can scan by IP
 
-## Development
+### Run in development
 
 ```sh
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173 — scan a barcode or add records manually at `/import/manual`.
+Open <http://localhost:5173> — scan a barcode, or add records manually at `/import/manual`.
 
-## Production (direct Node)
+## Configuration
 
-```sh
-npm run build     # type-check + build (adapter-node → build/)
-PORT=3000 node build/index.js
-```
+All configuration is via environment variables (a repo-root `.env` works for both the dev server and Docker Compose):
 
-The data directory defaults to `./data` and can be relocated with `DATA_DIR=/path/to/data`.
+| Variable                  | Default                                                    | Purpose                                                                                 |
+| ------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `DISCOGS_CONSUMER_KEY`    | _(empty → unauthenticated tier, manual entry still works)_ | Discogs API consumer key                                                                |
+| `DISCOGS_CONSUMER_SECRET` | _(empty)_                                                  | Discogs API secret                                                                      |
+| `DATA_DIR`                | `./data`                                                   | Where the SQLite DB and media files live                                                |
+| `BODY_SIZE_LIMIT`         | `512M`                                                     | Max request body for adapter-node (restore uploads; photos are capped per-file at 25MB) |
+| `SPINDLE_PORT`            | `3737`                                                     | Host port for the Docker deployment                                                     |
 
-## Deployment (Docker)
+## Deployment
+
+### Docker (recommended)
 
 One container runs the whole app. From a fresh clone:
 
@@ -48,27 +75,38 @@ One container runs the whole app. From a fresh clone:
 docker compose up --build -d
 ```
 
-- **Port** — listens on `127.0.0.1:3737` on the host (override with `SPINDLE_PORT`). Bound to localhost by design; put your existing reverse proxy in front.
+- **Port** — listens on `127.0.0.1:3737` on the host (override with `SPINDLE_PORT`). Bound to localhost by design: the app has no auth of its own, so put your reverse proxy in front.
 - **Behind Caddy / any TLS proxy** — point it at the port, nothing else:
 
   ```
   reverse_proxy 127.0.0.1:3737
   ```
 
-  The app derives its origin from the forwarded `Host` header (scheme `https`), so links, redirects and the CSRF check work behind your proxy with no extra config — verified with a simulated `Host: spindle.example.com` request. Optional: set `ADDRESS_HEADER=x-forwarded-for` + `XFF_DEPTH=1` to log real client IPs.
+  The app derives its origin from the forwarded `Host` header (scheme `https`), so links, redirects, and the CSRF check work behind your proxy with no extra config. Optional: set `ADDRESS_HEADER=x-forwarded-for` + `XFF_DEPTH=1` to log real client IPs.
 
-- **Data** — `./data` → `/data`, so DB + media survive rebuilds. On Linux, chown the folder once before first run (`mkdir -p data && chown 1000:1000 data`) since the container runs as uid 1000.
+- **Data** — `./data` → `/data`, so the DB + media survive rebuilds. On Linux, chown the folder once before first run (`mkdir -p data && chown 1000:1000 data`) since the container runs as uid 1000.
 - **Linux x64 target** — build for the target platform, not your laptop's arch:
 
   ```sh
   docker buildx build --platform linux/amd64 -t spindle .
   ```
 
-  The image is `node:24-slim` and reinstalls runtime deps per platform, so `better-sqlite3` gets the correct prebuilt binary with no compile toolchain (the package ships prebuilds; the build uses `npm ci --ignore-scripts`).
+  The image is `node:24-slim` and reinstalls runtime deps per platform, so `better-sqlite3` gets the correct prebuilt binary with no compile toolchain.
 
 - **Stop** — `docker compose down` (data stays in `./data`).
 
-## Exporting your data
+### Direct Node
+
+```sh
+npm run build     # type-check + production build (adapter-node → build/)
+PORT=3000 node build/index.js
+```
+
+The data directory defaults to `./data` and can be relocated with `DATA_DIR=/path/to/data`.
+
+## Your data
+
+### Export
 
 The whole database can be exported at any time — from the home page ("Export" under the record count) or straight from a terminal:
 
@@ -81,7 +119,7 @@ curl -OJ "http://localhost:3737/api/export?format=json"       # full fidelity (r
 - **CSV** is strictly RFC 4180 (header + rows, CRLF, UTF-8 BOM for Excel), prices in dollars — it opens cleanly in Excel/LibreOffice/pandas.
 - **JSON** carries every raw column plus `exported_at`/counts, for backups and tooling.
 
-## Backup & restore
+### Backup & restore
 
 CSV/JSON exports are a snapshot of the _data_; a backup is the whole _thing_ — the SQLite database plus every cover and photo file, in one zip you can drop anywhere.
 
@@ -98,21 +136,20 @@ curl -X POST -H "Origin: https://localhost:3737" \
 # (Under `npm run dev` the origin check is disabled — plain curl works.)
 ```
 
-`BODY_SIZE_LIMIT` is 512M by default so media-heavy backup zips can be restored in-app (individual photo uploads are still capped at 25MB per file server-side). The UI needs no special handling — the browser sends a same-origin `Origin` automatically.
+`BODY_SIZE_LIMIT` is 512M by default so media-heavy backup zips can be restored in-app. The UI needs no special handling — the browser sends a same-origin `Origin` automatically.
 
-## Environment
+## Development
 
-| Variable                  | Default                                                    | Purpose                                                                                 |
-| ------------------------- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `DISCOGS_CONSUMER_KEY`    | _(empty → unauthenticated tier, manual entry still works)_ | Discogs API consumer key                                                                |
-| `DISCOGS_CONSUMER_SECRET` | _(empty)_                                                  | Discogs API secret                                                                      |
-| `DATA_DIR`                | `./data`                                                   | Where the SQLite DB and media files live                                                |
-| `BODY_SIZE_LIMIT`         | `512M`                                                     | Max request body for adapter-node (restore uploads; photos are capped per-file at 25MB) |
-| `SPINDLE_PORT`            | `3737`                                                     | Host port for the Docker deployment                                                     |
+```sh
+npm run check    # type-check + Svelte diagnostics
+npm run build    # production build (adapter-node → build/)
+npm run dev      # dev server at http://localhost:5173
+npm run smoke:db # DB-layer smoke test against a scratch database
+```
 
-Create a (free) key/secret pair at https://www.discogs.com/settings/developers — one per project, no OAuth dance needed for local use.
+Server logic is covered by verification scripts in `scripts/` that seed a scratch database and assert exact values. The day-to-day loop, the script catalogue, and code conventions (integer-cents money, append-only price log, local-calendar dates) are documented in [DEVELOPMENT.md](./DEVELOPMENT.md).
 
-## Project layout
+## Project structure
 
 ```
 src/

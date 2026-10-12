@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 
 	// Served verbatim from static/ (copied to the build output root).
-	const favicon = `${base}/favicon.svg`;
+	const logo = `${base}/spindle-logo-clear.webp`;
 
 	const links = [
 		{ href: '/', label: 'Collection' },
@@ -47,8 +47,8 @@
 <nav class="sticky top-0 z-50 border-b border-edge bg-paper/90 backdrop-blur-sm">
 	<div class="mx-auto flex max-w-260 items-center px-7 py-5">
 		<a href="/" class="mr-2 flex shrink-0 items-center" aria-label="spindle — collection home">
-			<img src={favicon} alt="" width="27" height="32" class="h-8 w-auto shrink-0" />
-			<span class="ml-3 flex items-baseline">
+			<img src={logo} alt="" width="40" height="40" class="h-10 w-10 shrink-0" />
+			<span class="flex items-baseline">
 				<span class="font-display text-xl font-normal tracking-[.02em] sm:text-2xl">spindle</span>
 			</span>
 		</a>
