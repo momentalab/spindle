@@ -22,6 +22,14 @@
 				const palettes = ['gold', 'sepia', 'forest', 'ocean', 'plum', 'plain'];
 				const palette = localStorage.getItem('spindle-palette') ?? localStorage.getItem('mynyl-palette');
 				document.documentElement.dataset.theme = palettes.includes(palette) ? palette : 'gold';
+
+				// Font scheme (orthogonal to mode + palette). `editorial` is the
+				// default — the CSS :root value is editorial, so an unknown/absent
+				// value just falls through to it. Keep this list in step with the
+				// settings page.
+				const fonts = ['editorial', 'modern'];
+				const font = localStorage.getItem('spindle-font');
+				document.documentElement.dataset.font = fonts.includes(font) ? font : 'editorial';
 			})();
 		</script>
 		%sveltekit.head%

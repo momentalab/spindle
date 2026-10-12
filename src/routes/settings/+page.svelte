@@ -104,6 +104,36 @@
 		localStorage.setItem('spindle-palette', palette);
 	});
 
+	/* ------------------------------------------------------------------ */
+	/* Font scheme — a third, client-only preference, orthogonal to mode   */
+	/* and palette. `editorial` is the default and matches the :root       */
+	/* token, so it needs no CSS block of its own. The `data-font` attr    */
+	/* is the same one the app.html boot script sets, so they agree.       */
+	/* ------------------------------------------------------------------ */
+
+	type FontId = 'editorial' | 'modern';
+	const FONT_IDS: FontId[] = ['editorial', 'modern'];
+	const fontOptions = [
+		{ id: 'editorial', label: 'Editorial' },
+		{ id: 'modern', label: 'Modern' }
+	] as const;
+
+	function readStoredFont(): FontId {
+		if (!browser) return 'editorial'; // SSR stand-in
+		const s = localStorage.getItem('spindle-font');
+		return s && (FONT_IDS as string[]).includes(s) ? (s as FontId) : 'editorial';
+	}
+
+	let font = $state<FontId>(readStoredFont());
+
+	// Writes the key on every change and re-asserts the attribute on mount
+	// (matching what the boot script already painted — harmless).
+	$effect(() => {
+		if (!browser) return;
+		document.documentElement.dataset.font = font;
+		localStorage.setItem('spindle-font', font);
+	});
+
 	type ViewId = 'cards' | 'index' | 'table';
 	const VIEW_IDS: ViewId[] = ['cards', 'index', 'table'];
 	const viewOptions = [
@@ -308,6 +338,13 @@
 			</div>
 			<p class="text-[13px] italic leading-relaxed text-muted">
 				Accent and chart hues, applied on top of the mode above.
+			</p>
+		</div>
+		<div class="flex flex-col gap-3">
+			<span class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Typeface</span>
+			<Segmented options={fontOptions} bind:value={font} />
+			<p class="text-[13px] italic leading-relaxed text-muted">
+				Editorial sets titles in a book serif; Modern brings them over to the body sans.
 			</p>
 		</div>
 		<div class="flex flex-col gap-3">

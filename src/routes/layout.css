@@ -32,6 +32,10 @@
  */
 :root {
 	color-scheme: light;
+	/* Display face (titles, section heads, italic voice). The `data-font` axis
+	   reassigns this at runtime (see the font-scheme block below); this value
+	   is the editorial default. */
+	--display-face: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
 	--paper: #f4efe5;
 	--surface: #faf7f0;
 	--surface-2: #eae3d3;
@@ -292,10 +296,22 @@ html.dark[data-theme='plain'] {
 	--chart-mauve: #5e5e5e;
 }
 
+/*
+ * Font scheme — the third axis, orthogonal to light/dark mode and palette.
+ * Selected with `data-font="<id>"` on <html> (see app.html boot + Settings).
+ * `editorial` is the default: the :root --display-face value above *is*
+ * editorial, so an absent or unknown attribute falls through untouched.
+ * `modern` swaps the display face for the body sans, dropping the book-serif
+ * voice from every title app-wide (body text is already that sans).
+ */
+:root[data-font='modern'] {
+	--display-face: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
 /* Expose the raw tokens as Tailwind v4 color utilities (bg-paper, text-accent, border-hair, …).
    `inline` keeps them referencing the runtime vars so class-based dark mode re-colors everything. */
 @theme inline {
-	--font-display: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+	--font-display: var(--display-face);
 	--font-sans: 'Archivo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
 	--color-paper: var(--paper);
