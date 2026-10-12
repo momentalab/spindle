@@ -390,6 +390,7 @@
 		const sp = page.url.searchParams;
 		if (sp.has('imported')) return 'imported';
 		if (sp.has('added_copy')) return 'added_copy';
+		if (sp.has('removed_copy')) return 'removed_copy';
 		if (sp.has('cover_saved')) return 'cover_saved';
 		if (sp.has('acquired')) return 'acquired';
 		if (sp.has('reidentified')) return 'reidentified';
@@ -675,6 +676,8 @@
 	<div class="mt-6"><Banner variant="success">Record saved.</Banner></div>
 {:else if flash === 'added_copy'}
 	<div class="mt-6"><Banner variant="success">Added another copy.</Banner></div>
+{:else if flash === 'removed_copy'}
+	<div class="mt-6"><Banner variant="success">Removed a copy.</Banner></div>
 {:else if flash === 'acquired'}
 	<div class="mt-6"><Banner variant="success">On the shelf.</Banner></div>
 {:else if flash === 'cover_saved'}
@@ -837,6 +840,11 @@
 				<form method="POST" action="?/add_copy" class="inline-flex">
 					<Button type="submit" variant="secondary">Add a copy</Button>
 				</form>
+				{#if data.record.copies > 1}
+					<form method="POST" action="?/remove_copy" class="inline-flex">
+						<Button type="submit" variant="ghost" size="sm">Remove a copy</Button>
+					</form>
+				{/if}
 			{/if}
 			<form
 				method="POST"

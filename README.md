@@ -128,7 +128,7 @@ src/
     scan/+page.svelte        # barcode scanner (camera) + manual entry fallback
     import/barcode/[barcode]/  # Discogs lookup + candidate picker + save
     import/manual/+page.*    # no-barcode entry
-    records/[id]/+page.*     # detail: edit form, photos, add copy, delete
+    records/[id]/+page.*     # detail: edit form, photos, add/remove copy, delete
     api/import/+server.ts    # JSON lookup endpoint (candidate expansion)
     api/export/+server.ts    # GET collection export (csv|json, table=records|photos)
     api/backup/+server.ts    # POST whole-collection zip download (db checkpointed + media/)

@@ -4,6 +4,7 @@
  *   edit         — update the record's fields (form)
  *   reidentify   — repoint the record at a different Discogs release
  *   add_copy     — increment copies
+ *   remove_copy  — decrement copies (floored at 1)
  *   delete       — remove record (cascades photos + media files)
  *   pick_cover   — override the cover with the artwork of ANY Discogs entry
  *   reset_cover  — re-pull the cover from the record's own linked release
@@ -19,6 +20,7 @@ import { ReidentifyConflictError, reidentifyRecord } from '$lib/server/reidentif
 import {
 	acquireRecord,
 	addCopy,
+	removeCopy,
 	deleteRecord,
 	findRecordById,
 	latestPlayedAt,
@@ -115,7 +117,7 @@ export const actions: Actions = {
 		// Fields with no UI in the edit form must not be clobbered by an edit:
 		//  - cover_filename / cover_remote_url: the cover is downloaded at import time;
 		//    the local file reference must survive edits (parseRecordForm has no way to express "unchanged").
-		//  - copies: managed exclusively by the "add a copy" action, not by a field edit.
+		//  - copies: managed exclusively by the add/remove copy actions, not by a field edit.
 		const { cover_filename, cover_remote_url, copies, ...patch } = input;
 
 		const updated = updateRecord(id, patch);
@@ -145,6 +147,14 @@ export const actions: Actions = {
 		if (!findRecordById(id)) error(404, 'Record not found');
 		addCopy(id);
 		redirect(303, `/records/${id}?added_copy=1`);
+	},
+
+	remove_copy: async ({ params }) => {
+		const id = Number.parseInt(params.id, 10);
+		if (!findRecordById(id)) error(404, 'Record not found');
+		// removeCopy is a no-op at the floor (copies = 1); the button is hidden there.
+		removeCopy(id);
+		redirect(303, `/records/${id}?removed_copy=1`);
 	},
 
 	repair_cover: async ({ params }) => {

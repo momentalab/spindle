@@ -457,6 +457,17 @@ export function addCopy(id: number): RecordRow | undefined {
 	return findRecordById(id);
 }
 
+/**
+ * Decrement the copy count, floored at 1: the CHECK constraint (copies >= 1)
+ * keeps a record from disappearing into zero, so at the floor this is a no-op.
+ */
+export function removeCopy(id: number): RecordRow | undefined {
+	getDb()
+		.prepare("UPDATE records SET copies = copies - 1, updated_at = datetime('now') WHERE id = ? AND copies > 1")
+		.run(id);
+	return findRecordById(id);
+}
+
 /** Optional purchase details captured at the moment of acquisition. */
 export interface AcquireOptions {
 	/** 'YYYY-MM-DD'; today's date when omitted or empty. */
