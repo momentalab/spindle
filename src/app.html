@@ -19,7 +19,7 @@
 				// Color palette (orthogonal to light/dark). `gold` is the default —
 				// the CSS :root values are gold, so an unknown/absent value just
 				// falls through to them. Keep this list in step with the settings page.
-				const palettes = ['gold', 'sepia', 'forest', 'ocean', 'plum'];
+				const palettes = ['gold', 'sepia', 'forest', 'ocean', 'plum', 'plain'];
 				const palette = localStorage.getItem('spindle-palette') ?? localStorage.getItem('mynyl-palette');
 				document.documentElement.dataset.theme = palettes.includes(palette) ? palette : 'gold';
 			})();

@@ -254,6 +254,44 @@ html.dark[data-theme='plum'] {
 	--chart-mauve: #b08a9e;
 }
 
+:root[data-theme='plain'] {
+	--paper: #f5f5f4;
+	--surface: #fbfbfa;
+	--surface-2: #e8e8e6;
+	--ink: #1a1a1a;
+	--muted: #5d5d5d;
+	--faint: #8d8d8d;
+	--edge: rgba(26, 26, 26, 0.2);
+	--hair: rgba(26, 26, 26, 0.1);
+	--accent: #6b6b6b; /* neutral grey — the whole point of this one */
+	--accent-dim: rgba(107, 107, 107, 0.65);
+	--plum: #6b6b6b;
+	--plum-soft: rgba(107, 107, 107, 0.1);
+	/* grayscale ramp, darkest → lightest, so the four chart families stay distinct */
+	--chart-moss: #414141;
+	--chart-clay: #5e5e5e;
+	--chart-slate: #7c7c7c;
+	--chart-mauve: #9b9b9b;
+}
+html.dark[data-theme='plain'] {
+	--paper: #0a0a0a;
+	--surface: #121212;
+	--surface-2: #1a1a1a;
+	--ink: #ececec;
+	--muted: #a4a4a4;
+	--faint: #6f6f6f;
+	--edge: rgba(236, 236, 236, 0.16);
+	--hair: rgba(236, 236, 236, 0.08);
+	--accent: #b0b0b0;
+	--accent-dim: rgba(176, 176, 176, 0.45);
+	--plum: #b0b0b0;
+	--plum-soft: rgba(176, 176, 176, 0.12);
+	--chart-moss: #d6d6d6;
+	--chart-clay: #a8a8a8;
+	--chart-slate: #828282;
+	--chart-mauve: #5e5e5e;
+}
+
 /* Expose the raw tokens as Tailwind v4 color utilities (bg-paper, text-accent, border-hair, …).
    `inline` keeps them referencing the runtime vars so class-based dark mode re-colors everything. */
 @theme inline {

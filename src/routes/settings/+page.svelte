@@ -74,15 +74,16 @@
 	/* is the same one the app.html boot script sets, so they agree.        */
 	/* ------------------------------------------------------------------ */
 
-	type PaletteId = 'gold' | 'sepia' | 'forest' | 'ocean' | 'plum';
-	const PALETTE_IDS: PaletteId[] = ['gold', 'sepia', 'forest', 'ocean', 'plum'];
+	type PaletteId = 'gold' | 'sepia' | 'forest' | 'ocean' | 'plum' | 'plain';
+	const PALETTE_IDS: PaletteId[] = ['gold', 'sepia', 'forest', 'ocean', 'plum', 'plain'];
 	// `swatch` is the palette's light-mode accent — a representative dot for the picker.
 	const paletteOptions = [
 		{ id: 'gold', label: 'Gold', swatch: '#8a6c33' },
 		{ id: 'sepia', label: 'Sepia', swatch: '#8a5a2b' },
 		{ id: 'forest', label: 'Forest', swatch: '#4f6b3a' },
 		{ id: 'ocean', label: 'Ocean', swatch: '#3f6b8a' },
-		{ id: 'plum', label: 'Plum', swatch: '#84485c' }
+		{ id: 'plum', label: 'Plum', swatch: '#84485c' },
+		{ id: 'plain', label: 'Plain', swatch: '#6b6b6b' }
 	] as const;
 
 	function readStoredPalette(): PaletteId {
