@@ -132,23 +132,12 @@
 			lines.push([seg('Median pressing year: '), seg(String(s.median_year), true), seg('.')]);
 		}
 
-		// line three — the priciest pressing
-		if (s.priciest) {
-			lines.push([
-				seg('Priciest on the shelf: '),
-				seg(`${s.priciest.artist} — ${s.priciest.title}`, true),
-				seg(', at '),
-				seg(money(s.priciest.price_cents), true),
-				seg('.')
-			]);
-		}
-
-		// line four — where the new arrivals leaned (windowed view only)
+		// line three — where the new arrivals leaned (windowed view only)
 		if (window !== 'all' && s.window_top_genre && s.pace.windowed > 0) {
 			lines.push([seg(`New arrivals over ${s.pace.label}: mostly `), seg(s.window_top_genre.label, true), seg('.')]);
 		}
 
-		// line five — the record that keeps coming back
+		// line four — the record that keeps coming back
 		if (s.most_played[0]) {
 			const top = s.most_played[0];
 			lines.push([
@@ -158,7 +147,7 @@
 			]);
 		}
 
-		// line six — the most-starred album
+		// line five — the most-starred album
 		const topStarred = s.favorite_albums_top[0];
 		if (topStarred) {
 			lines.push([

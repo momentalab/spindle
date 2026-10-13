@@ -138,6 +138,15 @@
 				seg(' versus what they cost.')
 			]);
 		}
+		if (s.priciest) {
+			lines.push([
+				seg('Priciest on the shelf: '),
+				seg(`${s.priciest.artist} — ${s.priciest.title}`, true),
+				seg(', at '),
+				seg(money(s.priciest.price_cents), true),
+				seg('.')
+			]);
+		}
 		return lines;
 	});
 

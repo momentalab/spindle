@@ -12,6 +12,7 @@
  */
 import { getDb } from '$lib/server/db';
 import { DiscogsError, getMarketStats, throttleRemaining } from '$lib/server/discogs';
+import type { PriciestRecord } from './stats';
 import type { RecordStatus } from '$lib/types';
 
 export interface QuotePoint {
@@ -74,6 +75,7 @@ export interface ValueStats {
 	unrealized_pct: number | null;
 	realized_cents: number; // Σ (sale - paid) over sold rows priced on both sides
 	sales_count: number; // sold rows carrying a sale_price
+	priciest: PriciestRecord | null; // most expensive shelf record by price_paid
 	/* comparison strips */
 	gainers: ValueRow[]; // has cost + quote, delta_pct desc, top 10
 	losers: ValueRow[]; // same, delta_pct asc, top 10
@@ -266,6 +268,7 @@ export function portfolioStats(): ValueStats {
 	let linked_count = 0;
 	let watched_count = 0;
 	let no_listing_count = 0;
+	let priciest: PriciestRecord | null = null;
 
 	const ranked: (ValueRow & { _delta: number })[] = [];
 	const moverCandidates: MoverRow[] = [];
@@ -311,6 +314,16 @@ export function portfolioStats(): ValueStats {
 		shelf_count++;
 		if (r.discogs_id) linked_count++;
 		if (st && st.points.length > 0) watched_count++;
+		if (r.price_paid !== null && (!priciest || r.price_paid > priciest.price_cents)) {
+			priciest = {
+				id: r.id,
+				artist: r.artist,
+				title: r.title,
+				year: r.year,
+				price_cents: r.price_paid,
+				cover: r.cover_filename
+			};
+		}
 
 		const cost = (r.price_paid ?? 0) * r.copies;
 		cost_basis_cents += cost;
@@ -409,6 +422,7 @@ export function portfolioStats(): ValueStats {
 			priced_count > 0 && unrealized_cost_cents > 0 ? pctChange(unrealized_cost_cents, unrealized_market_cents) : null,
 		realized_cents,
 		sales_count,
+		priciest,
 		gainers,
 		losers,
 		movers,
