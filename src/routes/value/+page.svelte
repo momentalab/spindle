@@ -365,15 +365,10 @@
 					</p>
 				{/each}
 			</div>
-		{:else}
-			<p class="mt-3 font-display text-[15px] italic text-muted">
-				The collection as a portfolio — what it cost, what the market says, what has already left.
-			</p>
 		{/if}
 	</div>
 	<div class="hidden text-right sm:block">
 		<div class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">The Index</div>
-		<div class="mt-1 font-display text-[13px] italic text-faint">vol. ii — the money</div>
 	</div>
 </header>
 
@@ -393,9 +388,6 @@
 		<div class="mb-8 flex flex-wrap items-end justify-between gap-x-8 gap-y-4">
 			<div>
 				<h2 class="font-display text-[26px] font-normal leading-tight">The portfolio</h2>
-				<p class="mt-2 max-w-md font-display text-[13.5px] italic leading-relaxed text-faint">
-					What the shelves have carried, month by month — worth against what it cost to build.
-				</p>
 			</div>
 			{#if pf.points.length}
 				<div class="flex flex-wrap items-center gap-x-5 gap-y-2">

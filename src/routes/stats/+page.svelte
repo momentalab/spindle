@@ -681,15 +681,10 @@ back to the ledger voice. -->
 					</p>
 				{/each}
 			</div>
-		{:else}
-			<p class="mt-3 font-display text-[15px] italic text-muted">
-				The index, audited — what the shelves hold, and what they cost.
-			</p>
 		{/if}
 	</div>
 	<div class="hidden text-right sm:block">
 		<div class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">The Index</div>
-		<div class="mt-1 font-display text-[13px] italic text-faint">vol. i — by the numbers</div>
 	</div>
 </header>
 
@@ -781,7 +776,7 @@ back to the ledger voice. -->
 					{s.plays_total}
 					{s.plays_total === 1 ? 'spin' : 'spins'} logged across
 					{s.records_played}
-					{s.records_played === 1 ? 'record' : 'records'} — what actually gets played.
+					{s.records_played === 1 ? 'record' : 'records'}
 				</p>
 			</div>
 

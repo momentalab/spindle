@@ -550,26 +550,8 @@
 <header class="flex flex-wrap items-end justify-between gap-6 pb-7">
 	<div class="min-w-0">
 		<h1 class="font-display text-5xl font-normal leading-[1.05] tracking-[-.01em] sm:text-[52px]">
-			{#if shelf === 'wishlist'}The wishlist,<br />in waiting.{:else}Your records,<br />catalogued.{/if}
+			{#if shelf === 'wishlist'}The wishlist.{:else}Your records,<br />catalogued.{/if}
 		</h1>
-		<p class="mt-3 font-display text-[15px] italic text-muted">
-			{#if shelf === 'wishlist'}
-				{data.wanted_total}
-				{data.wanted_total === 1 ? 'release' : 'releases'}
-				on the short list.
-			{:else}
-				{shelfCount}
-				{shelfCount === 1 ? 'album' : 'albums'}, scanned and shelved.
-				{#if data.wanted_total > 0}
-					<a
-						href="/?tab=wishlist"
-						class="text-plum underline decoration-hair underline-offset-4 transition-colors hover:decoration-plum"
-					>
-						{data.wanted_total} still wanted.
-					</a>
-				{/if}
-			{/if}
-		</p>
 	</div>
 	<!-- max-sm:w-full: below sm this block wraps to its own line — full width makes
 	     text-right pin the count, button and pointers to the right edge (title stays
