@@ -18,7 +18,8 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"smoke:db": "node scripts/verify-bundle.mjs scripts/smoke-db.ts .smoke-db.mjs && DATA_DIR=.scratch/smoke-db/data node .smoke-db.mjs && rm -f .smoke-db.mjs"
+		"smoke:db": "node scripts/verify-bundle.mjs scripts/smoke-db.ts .smoke-db.mjs && DATA_DIR=.scratch/smoke-db/data node .smoke-db.mjs && rm -f .smoke-db.mjs",
+		"test": "node scripts/ci-verify.mjs"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-node": "^5.5.4",

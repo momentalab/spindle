@@ -6,15 +6,16 @@ The day-to-day loop for building and testing spindle — what's not covered by t
 
 ```sh
 npm run check    # svelte-check: types + Svelte diagnostics across the project
+npm test         # verification scripts (current-logic subset; same suite CI runs)
 npm run build    # production build (adapter-node → build/)
 npm run dev      # dev server at http://localhost:5173
 ```
 
-Run both `check` and `build` before calling a change done. svelte-check catches Svelte 5 gotchas that tsc alone misses — e.g. `$derived(() => …)` silently creates a derived _whose value is the function_; multi-line derivations need `$derived.by(() => { … })`.
+Run `check`, `test`, and `build` before calling a change done. svelte-check catches Svelte 5 gotchas that tsc alone misses — e.g. `$derived(() => …)` silently creates a derived _whose value is the function_; multi-line derivations need `$derived.by(() => { … })`.
 
 ## Testing server logic: verification scripts
 
-The data layer (`src/lib/server/*.ts`) has no test framework. Instead there are **verification scripts** in `scripts/` — plain Node programs that seed a scratch database, exercise the functions under test, and assert with `node:assert`:
+The data layer (`src/lib/server/*.ts`) has no test framework. Instead there are **verification scripts** in `scripts/` — plain Node programs that seed a scratch database, exercise the functions under test, and assert with `node:assert`. **CI runs a subset**: `npm test` (via `scripts/ci-verify.mjs`, wired into GitHub Actions) bundles and runs the scripts that cover _current_ logic — `smoke-db`, `verify-catalogue`, `verify-portfolio`, `verify-value-snapshot`, `verify-value`. The `*-migration.ts` scripts pin one-off historical migrations and are run on demand, not on every PR; the backup pair and `verify-stats-s1.ts` stay manual (running production build / real DB).
 
 - `scripts/verify-bundle.mjs` — the bundler every other script goes through (house pattern)
 - `scripts/verify-value.ts` — the `/value` data layer: `portfolioStats()`, quote log, P&L, cascades
