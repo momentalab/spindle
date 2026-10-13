@@ -24,13 +24,13 @@ Spindle is fully self-hosted: one container (or one Node process), no account, n
 - **Discogs import**: search by barcode, review candidates, and save the release; cover art is **downloaded locally** at import time so the collection browses offline
 - **Local-first storage**: SQLite (`data/spindle.db`) + media files (`data/media/`). Discogs is a one-time source of truth; every field is editable afterwards and never overwritten by Discogs
 - **Extended schema**: beyond Discogs: condition (media/sleeve), price paid, acquired date, source, copies, limited-edition flag, status, and free-form notes
-- **Three views**: cards, table (sortable columns), and list, with search + genre/label/status filters
+- **Three views**: cards, index (numbered entries), and table (sortable columns), with search + genre/label/status filters
 - **Photos**: upload images of your actual records (client-side downscale to ~1600px JPEG before storage; 25MB per-file server cap)
 - **Market value**: manual price snapshots from the Discogs marketplace build an append-only per-record log; `/value` charts portfolio value vs. invested with point-in-time marks and hover tooltips, and each record page shows its own trendline plus gain/loss vs. what you paid
-- **Stats**: `/stats`: collection aggregates with a count/value toggle and time-series charts
-- **Printable catalogue**: `/print` is an editorial bound-catalogue page that prints to PDF straight from the browser
-- **Settings & repairs**: theme, artist display preference, and Discogs connection status on `/settings`; `/covers` finds records whose cover art failed to download and retries them
-- **Export**: take the whole collection out as CSV (strict RFC 4180) or JSON, from the home page or `GET /api/export`
+- **Stats**: `/stats` is an aggregate view of your collection with various charts that break down what's on your shelf
+- **Printable catalogue**: `/print` is an editorial bound-catalogue page that prints to PDF straight from the browser, and `GET /api/export/catalogue` downloads the same catalogue as a server-rendered PDF (both linked from Settings → Export)
+- **Settings & repairs**: theme, appearance, artist display preference, export, backup & restore, and Discogs connection status on `/settings`; `/covers` finds records whose cover art failed to download and retries them
+- **Export**: take the collection out as CSV (strict RFC 4180) or JSON — records, photos, plays, and tracks tables — from Settings → Export or `GET /api/export`
 - **Backup & restore**: download the entire collection (SQLite DB + every cover and photo) as a single zip, and restore it on any machine; restores validate before touching anything and keep the previous generation in `data/.pre-restore`
 
 ## Quick start
@@ -57,7 +57,7 @@ Then create the data directory and start:
 
 ```sh
 mkdir -p data
-chown 1000:1000 data   # Linux only — the container runs as uid 1000
+sudo chown 1000:1000 data   # Linux only — the container runs as uid 1000
 docker compose up -d
 ```
 
@@ -126,12 +126,12 @@ The data directory defaults to `./data` and can be relocated with `DATA_DIR=/pat
 
 ### Export
 
-The whole database can be exported at any time — from the home page ("Export" under the record count) or straight from a terminal:
+The whole database can be exported at any time — from Settings (the "Export" section) or straight from a terminal:
 
 ```sh
 curl -OJ "http://localhost:3737/api/export?format=csv"        # records → CSV
 curl -OJ "http://localhost:3737/api/export?format=csv&table=photos"
-curl -OJ "http://localhost:3737/api/export?format=json"       # full fidelity (records + photos)
+curl -OJ "http://localhost:3737/api/export?format=json"       # full fidelity (records + photos + plays + tracks)
 ```
 
 - **CSV** is strictly RFC 4180 (header + rows, CRLF, UTF-8 BOM for Excel), prices in dollars — it opens cleanly in Excel/LibreOffice/pandas.
@@ -141,7 +141,7 @@ curl -OJ "http://localhost:3737/api/export?format=json"       # full fidelity (r
 
 CSV/JSON exports are a snapshot of the _data_; a backup is the whole _thing_ — the SQLite database plus every cover and photo file, in one zip you can drop anywhere.
 
-- **Download**: from the "Backup" section at the bottom of the home page (or `curl -X POST`), producing e.g. `spindle-backup-2026-08-30T23-00-00.zip`. The WAL is checkpointed first, so the db file inside is a consistent, self-contained snapshot.
+- **Download**: from the "Backup" section on Settings (or `curl -X POST`), producing e.g. `spindle-backup-2026-08-30T23-00-00.zip`. The WAL is checkpointed first, so the db file inside is a consistent, self-contained snapshot.
 - **Restore**: upload that zip from the same section (the browser confirms before it's sent). The server parses and path-checks the archive, opens the candidate database out-of-band and runs `PRAGMA integrity_check` — and only once that passes does it shut the live connection down, preserve the current DB + media in `data/.pre-restore/`, and swap the new generation in. A bad or partial archive aborts with the existing collection byte-for-byte untouched.
 - **Safety net**: `.pre-restore/` keeps exactly one previous generation (the files from before the last restore), so a mistaken restore can be put back by restoring _that_ set of files.
 

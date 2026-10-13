@@ -1,7 +1,7 @@
 /**
  * Collection export endpoint.
  *
- * GET /api/export?format=csv|json[&table=records|photos|plays]
+ * GET /api/export?format=csv|json[&table=records|photos|plays|tracks]
  *   format  csv (default) or json
  *   table   records | photos | plays. CSV defaults to records; JSON defaults
  *           to all tables. For CSV the default filename reflects the table.
