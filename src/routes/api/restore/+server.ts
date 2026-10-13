@@ -12,8 +12,8 @@
  *
  * Body limit: restore rides on the app's single BODY_SIZE_LIMIT (adapter-node
  * dev + prod). It is set to 512M by default (.env.example / compose) because a
- * media-heavy backup zip can be large; individual photo uploads are still
- * capped per-file at 8MB in their own route.
+ *   media-heavy backup zip can be large; individual photo uploads are still
+ *   capped per-file at 25MB in their own route.
  */
 import { error, json } from '@sveltejs/kit';
 import { restoreFromBackup } from '$lib/server/backup';
