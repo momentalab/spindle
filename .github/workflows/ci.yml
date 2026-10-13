@@ -47,17 +47,14 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Create named GitHub release
+      - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           tag="$GITHUB_REF_NAME"
-          if gh release view "$tag" >/dev/null 2>&1; then
-            # re-run, or a release already exists — just make sure it's named
-            gh release edit "$tag" --title "spindle $tag"
-          else
-            gh release create "$tag" --title "spindle $tag" --generate-notes
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --generate-notes
           fi
           notes="$(gh release view "$tag" --json body -q .body)"
           case "$notes" in
