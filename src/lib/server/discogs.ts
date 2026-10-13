@@ -1,7 +1,7 @@
 /**
  * Discogs API v2 client (server-only).
  *
- * Auth model (verified against live API 2026-08-26, see plans/spindle-plan.md §4.2):
+ * Auth model (verified against the live API 2026-08-26):
  * - Search (/database/search), release lookup, and image download all work
  *   UNauthenticated (25 req/min tier).
  * - With consumer key/secret ("Discogs Auth" — Authorization: Discogs key=…, secret=…):
