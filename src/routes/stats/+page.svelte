@@ -566,11 +566,11 @@ sideways inside their own box with an edge fade hinting at more content. -->
 						>
 						<div class="flex h-28 items-end justify-center border-b border-edge">
 							<span
-								class="w-full max-w-[22px] transition-[height] duration-500"
+								class="w-full max-w-5.5 transition-[height] duration-500"
 								style={`height: ${max ? Math.max((r.num / max) * 100, 3) : 0}%; background-color: ${r.color ?? 'var(--accent)'}`}
 							></span>
 						</div>
-						<div class="pt-2 text-center text-[10.5px] uppercase leading-[1.5] tracking-[.08em]">
+						<div class="pt-2 text-center text-[10.5px] uppercase leading-normal tracking-[.08em]">
 							{#if href}
 								<a {href} class="block truncate transition-colors duration-300 hover:text-accent">
 									<DecadeLabel label={r.label} />
@@ -634,7 +634,7 @@ back to the ledger voice. -->
 							y={li * 12 - ((sl.lines.length - 1) * 12) / 2}
 							text-anchor={sl.anchor}
 							style:fill={sl.color}
-							class="text-[10px] font-semibold uppercase tracking-[.05em]"
+							class="text-[10px] font-semibold uppercase tracking-wider"
 							>{line}{#if li === sl.lines.length - 1}<tspan
 									dx="4"
 									class="fill-faint font-display font-normal italic text-[10.5px] normal-case tracking-normal"
@@ -951,13 +951,13 @@ back to the ledger voice. -->
 			<div class="relative">
 				<div class="chart-scroll pb-1" data-scroll-fade>
 					<div style={`min-width: ${Math.max(timeline.length * 34, 520)}px`}>
-						<div class="flex items-end gap-[3px] border-b border-edge">
+						<div class="flex items-end gap-0.75 border-b border-edge">
 							{#each timeline as b, i (b.key)}
 								<div title={`${b.label} — ${b.count}`} class="flex h-44 flex-1 basis-0 flex-col justify-end sm:h-52">
 									<span class="flex h-32 items-end sm:h-40">
 										{#if b.count > 0}
 											<span
-												class="w-full max-w-[9px] transition-[height] duration-500"
+												class="w-full max-w-2.25 transition-[height] duration-500"
 												style={`height: ${Math.max((b.count / maxCount) * 100, 4)}%; background-color: ${stepShade('var(--accent)', i, timeline.length)}`}
 											></span>
 										{/if}
@@ -965,7 +965,7 @@ back to the ledger voice. -->
 								</div>
 							{/each}
 						</div>
-						<div class="flex gap-[3px] pt-2">
+						<div class="flex gap-0.75 pt-2">
 							{#each timeline as b (b.key)}
 								<span class="flex-1 basis-0 text-center">
 									{#if b.tick}
@@ -1025,11 +1025,11 @@ back to the ledger voice. -->
 				</h3>
 				<div class="relative">
 					<div class="chart-scroll pb-1" data-scroll-fade>
-						<div class="min-w-[480px]">
+						<div class="min-w-120">
 							<div class="mb-1 flex gap-px">
 								{#each heat.cols as c, i (i)}
 									{@const lbl = heat.months.find((m) => m.col === i)}
-									<span class="flex h-3 w-[11px] shrink-0 items-center text-[8.5px] uppercase tracking-wide text-faint">
+									<span class="flex h-3 w-2.75 shrink-0 items-center text-[8.5px] uppercase tracking-wide text-faint">
 										{lbl?.label}
 									</span>
 								{/each}
@@ -1041,7 +1041,7 @@ back to the ledger voice. -->
 											{#if cell.n >= 0}
 												<span
 													title={cell.n ? `${cell.key} — ${cell.n} acquisition${cell.n > 1 ? 's' : ''}` : cell.key}
-													class="h-[11px] w-[11px] shrink-0 border"
+													class="h-2.75 w-2.75 shrink-0 border"
 													style:background-color={cell.n > 1
 														? 'var(--accent)'
 														: cell.n === 1
@@ -1067,7 +1067,7 @@ back to the ledger voice. -->
 				<h3 class="mb-5 text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">Fresh wax</h3>
 				<div class="flex gap-5 overflow-x-auto pb-2">
 					{#each s.fresh as f (f.id)}
-						<a href={`/records/${f.id}`} class="group w-[84px] shrink-0">
+						<a href={`/records/${f.id}`} class="group w-21 shrink-0">
 							<CoverImage
 								src={f.cover ? `/media/${f.cover}` : null}
 								alt=""
@@ -1444,7 +1444,7 @@ back to the ledger voice. -->
 						<div class="mt-5 flex flex-wrap gap-x-6 gap-y-2">
 							{#each crossLegend as g (g)}
 								<span class="flex items-center gap-1.5">
-									<span class="h-[7px] w-[7px]" style:background-color={catColor(g)}></span>
+									<span class="h-1.75 w-1.75" style:background-color={catColor(g)}></span>
 									<span class="text-[10px] uppercase tracking-[.14em] text-faint">{g}</span>
 								</span>
 							{/each}

@@ -261,7 +261,7 @@
 					{@const d = groupDelta(r)}
 					<tr class="border-b border-hair">
 						<td
-							class="max-w-[120px] truncate py-2.5 pr-3 font-display text-[14.5px] tracking-[.005em] sm:max-w-[220px] sm:pr-4"
+							class="max-w-30 truncate py-2.5 pr-3 font-display text-[14.5px] tracking-[.005em] sm:max-w-55 sm:pr-4"
 							title={r.label}
 						>
 							{#if decadeLabels}
@@ -298,7 +298,7 @@
 {#snippet spark(series: QuotePoint[])}
 	{@const pts = sparkline(series)}
 	{#if pts}
-		<svg viewBox="0 0 64 18" class="hidden h-[18px] w-16 shrink-0 sm:block" aria-hidden="true">
+		<svg viewBox="0 0 64 18" class="hidden h-4.5 w-16 shrink-0 sm:block" aria-hidden="true">
 			<polyline
 				points={pts}
 				fill="none"
@@ -336,7 +336,7 @@
 		</div>
 		{@render spark(r.series)}
 		<span
-			class={`w-[72px] shrink-0 text-right font-display text-[15px] tabular-nums sm:text-[16px] ${
+			class={`w-18 shrink-0 text-right font-display text-[15px] tabular-nums sm:text-[16px] ${
 				(r.delta_pct ?? 0) >= 0 ? 'text-forest' : 'text-rust'
 			}`}
 		>
@@ -393,7 +393,7 @@
 				<div class="flex flex-wrap items-center gap-x-5 gap-y-2">
 					{#each pfLegend as l (l.label)}
 						<span class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[.16em] text-faint">
-							<span class="h-[3px] w-4" style:background-color={l.color}></span>
+							<span class="h-0.75 w-4" style:background-color={l.color}></span>
 							{l.label}
 						</span>
 					{/each}
@@ -554,7 +554,7 @@
 						</div>
 						{@render spark(mrow.series)}
 						<span
-							class={`w-[72px] shrink-0 text-right font-display text-[15px] tabular-nums sm:text-[16px] ${
+							class={`w-18 shrink-0 text-right font-display text-[15px] tabular-nums sm:text-[16px] ${
 								mrow.change_pct >= 0 ? 'text-forest' : 'text-rust'
 							}`}
 						>
@@ -617,11 +617,11 @@
 							sold {money(sale.sale_cents)}
 						</div>
 						<div
-							class={`w-[72px] text-right font-display text-[15px] tabular-nums ${sale.delta_cents >= 0 ? 'text-forest' : 'text-rust'}`}
+							class={`w-18 text-right font-display text-[15px] tabular-nums ${sale.delta_cents >= 0 ? 'text-forest' : 'text-rust'}`}
 						>
 							{money(sale.delta_cents)}
 						</div>
-						<div class="w-[92px] text-right text-[11px] uppercase tracking-[.12em] text-faint">
+						<div class="w-23 text-right text-[11px] uppercase tracking-[.12em] text-faint">
 							{sale.sold_at ? fmtStamp(sale.sold_at) : ''}
 						</div>
 						<div class="flex w-full items-center justify-end gap-2 sm:w-auto">
