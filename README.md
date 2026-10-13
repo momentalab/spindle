@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="static/spindle-logo-rounded.webp" alt="spindle — five translucent vinyl records" width="280">
+  <img src="static/spindle-logo.webp" alt="spindle — five translucent vinyl records" width="280">
 </div>
 
 # spindle
@@ -18,8 +18,8 @@ And it stays out of the way: a single Node process idles at **~40 MB of RAM**, w
 - [Deployment](#deployment)
 - [Your data](#your-data)
 - [Development](#development)
-- [Project structure](#project-structure)
 - [Design notes](#design-notes)
+- [Attributions](#attributions)
 
 ## Features
 
@@ -147,58 +147,7 @@ npm run dev      # dev server at http://localhost:5173
 npm run smoke:db # DB-layer smoke test against a scratch database
 ```
 
-Server logic is covered by verification scripts in `scripts/` that seed a scratch database and assert exact values. The day-to-day loop, the script catalogue, and code conventions (integer-cents money, append-only price log, local-calendar dates) are documented in [DEVELOPMENT.md](./DEVELOPMENT.md).
-
-## Project structure
-
-```
-src/
-  lib/
-    types.ts                 # shared row/draft types + enums (conditions, statuses)
-    draft.ts                 # client↔server form-state helpers
-    components/TrendChart.svelte   # hand-rolled SVG line/area chart with tooltips (no chart lib)
-    server/
-      db.ts                  # better-sqlite3 singleton (auto-creates schema on first open)
-      paths.ts               # data-dir resolution (DATA_DIR)
-      discogs.ts             # Discogs API client (search by barcode, release detail, marketplace)
-      importer.ts            # importRecord(): local cover download + insert
-      reidentify.ts          # re-fetch a wrongly-picked release and overwrite the record
-      enrichment.ts          # fold a fetched release into local data (tracklist, snapshot)
-      records.ts             # all record SQL: list/search/sort/filter, CRUD, photos, plays
-      value.ts               # market-value layer: portfolio stats/history, per-record quote log
-      stats.ts               # /stats aggregates (pure reads)
-      catalogue.ts           # printable-catalogue page model (shared by HTML + PDF surfaces)
-      catalogue-pdf.ts       # PDF rendering of the catalogue
-      artist.ts              # artist-name normalization (leading-word-first)
-      tracks.ts              # tracklist data access
-      covers.ts              # missing-cover detection + repair/override
-      settings.ts            # /settings summary: credentials, storage, preferences
-      export.ts              # collection export: CSV + JSON renderers
-      backup.ts              # backup zip (archiver) + validated restore (.pre-restore snapshot)
-  routes/
-    +page.*                  # collection home: cards/table/list, search & filters
-    scan/+page.svelte        # barcode scanner (camera) + manual entry fallback
-    import/barcode/[barcode]/  # Discogs lookup + candidate picker + save
-    import/manual/+page.*    # no-barcode entry
-    records/[id]/+page.*     # detail: edit form, photos, market value, tracklist, plays
-    value/+page.*            # portfolio value: history chart (tooltips) + snapshot controls
-    stats/+page.*            # collection stats
-    print/+page.*            # printable catalogue
-    covers/+page.*           # missing-cover repair
-    settings/+page.*         # preferences + Discogs connection status
-    api/import/+server.ts    # JSON lookup endpoint (candidate expansion)
-    api/search/+server.ts    # name-based search (Discogs candidates + local matches)
-    api/list/+server.ts      # full collection dump for client-side filtering
-    api/export/+server.ts    # GET collection export (csv|json, table=records|photos)
-    api/backup/+server.ts    # POST whole-collection zip download (db checkpointed + media/)
-    api/restore/+server.ts   # POST backup zip restore (validated, .pre-restore snapshot)
-    api/discogs-check/+server.ts  # connection probe for the settings page
-    api/settings/+server.ts  # data-backed preferences
-    api/value/snapshot/+server.ts # POST market-price snapshot (append-only log)
-    api/value/history/+server.ts  # DELETE price history (whole log or one record)
-    api/records/[id]/photos/+server.ts  # photo upload/delete (multipart)
-    media/[...file]/+server.ts           # local media serving (traversal-guarded)
-```
+Server logic is covered by verification scripts in `scripts/` that seed a scratch database and assert exact values. The day-to-day loop, the script catalogue, the file map, and code conventions are documented in [DEVELOPMENT.md](./DEVELOPMENT.md).
 
 ## Design notes
 
@@ -207,3 +156,23 @@ src/
 - **Deleting** a record removes its media files from disk (cover + photos) and cascades the photo rows.
 - **Dedupe**: saving an existing barcode/Discogs ID offers "add another copy" instead of duplicating, with a create-anyway escape hatch for distinct pressings.
 - The DB file and media directory are gitignored (`/data`) — this app is designed to be _your_ data, in _your_ folder.
+
+## Attributions
+
+spindle is built on open-source software:
+
+- [Svelte](https://svelte.dev) + [SvelteKit](https://kit.svelte.dev) — the app (MIT)
+- [Tailwind CSS](https://tailwindcss.com) — styling (MIT)
+- [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) — local SQLite storage (MIT)
+- [sharp](https://sharp.pixelplumbing.com) — cover & photo image processing (Apache-2.0)
+- [pdfkit](https://pdfkit.org) — printable catalogue PDF (MIT)
+- [archiver](https://github.com/archiverjs/node-archiver) + [unzipper](https://github.com/ZJONSSON/node-unzipper) — backup zip in/out (MIT)
+- [ZXing JS](https://zxing-js.github.io/library/) — barcode scanning (browser wrapper MIT, core library Apache-2.0)
+
+Every dependency is MIT or Apache-2.0 licensed.
+
+---
+
+<img src="https://momentalab.com/logo-dark.png" alt="Momenta Lab" width="120">
+
+Made with 🤍 by [Momenta Lab](https://momentalab.com)

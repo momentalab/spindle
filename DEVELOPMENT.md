@@ -2,6 +2,57 @@
 
 The day-to-day loop for building and testing spindle — what's not covered by the README.
 
+## Layout
+
+```
+src/
+  lib/
+    types.ts                 # shared row/draft types + enums (conditions, statuses)
+    draft.ts                 # client↔server form-state helpers
+    components/TrendChart.svelte   # hand-rolled SVG line/area chart with tooltips (no chart lib)
+    server/
+      db.ts                  # better-sqlite3 singleton (auto-creates schema on first open)
+      paths.ts               # data-dir resolution (DATA_DIR)
+      discogs.ts             # Discogs API client (search by barcode, release detail, marketplace)
+      importer.ts            # importRecord(): local cover download + insert
+      reidentify.ts          # re-fetch a wrongly-picked release and overwrite the record
+      enrichment.ts          # fold a fetched release into local data (tracklist, snapshot)
+      records.ts             # all record SQL: list/search/sort/filter, CRUD, photos, plays
+      value.ts               # market-value layer: portfolio stats/history, per-record quote log
+      stats.ts               # /stats aggregates (pure reads)
+      catalogue.ts           # printable-catalogue page model (shared by HTML + PDF surfaces)
+      catalogue-pdf.ts       # PDF rendering of the catalogue
+      artist.ts              # artist-name normalization (leading-word-first)
+      tracks.ts              # tracklist data access
+      covers.ts              # missing-cover detection + repair/override
+      settings.ts            # /settings summary: credentials, storage, preferences
+      export.ts              # collection export: CSV + JSON renderers
+      backup.ts              # backup zip (archiver) + validated restore (.pre-restore snapshot)
+  routes/
+    +page.*                  # collection home: cards/table/list, search & filters
+    scan/+page.svelte        # barcode scanner (camera) + manual entry fallback
+    import/barcode/[barcode]/  # Discogs lookup + candidate picker + save
+    import/manual/+page.*    # no-barcode entry
+    records/[id]/+page.*     # detail: edit form, photos, market value, tracklist, plays
+    value/+page.*            # portfolio value: history chart (tooltips) + snapshot controls
+    stats/+page.*            # collection stats
+    print/+page.*            # printable catalogue
+    covers/+page.*           # missing-cover repair
+    settings/+page.*         # preferences + Discogs connection status
+    api/import/+server.ts    # JSON lookup endpoint (candidate expansion)
+    api/search/+server.ts    # name-based search (Discogs candidates + local matches)
+    api/list/+server.ts      # full collection dump for client-side filtering
+    api/export/+server.ts    # GET collection export (csv|json, table=records|photos)
+    api/backup/+server.ts    # POST whole-collection zip download (db checkpointed + media/)
+    api/restore/+server.ts   # POST backup zip restore (validated, .pre-restore snapshot)
+    api/discogs-check/+server.ts  # connection probe for the settings page
+    api/settings/+server.ts  # data-backed preferences
+    api/value/snapshot/+server.ts # POST market-price snapshot (append-only log)
+    api/value/history/+server.ts  # DELETE price history (whole log or one record)
+    api/records/[id]/photos/+server.ts  # photo upload/delete (multipart)
+    media/[...file]/+server.ts           # local media serving (traversal-guarded)
+```
+
 ## The usual checks
 
 ```sh
