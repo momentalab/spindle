@@ -32,6 +32,16 @@ export async function POST({ params, request }): Promise<Response> {
 		if (f.size > MAX_BYTES) error(400, `Photo too large (${Math.ceil(f.size / 1024 / 1024)}MB, max 25MB)`);
 	}
 
+	// MIME allowlist matching the /media route's served types. File.type is
+	// client-supplied, so this hardens against junk uploads rather than acting
+	// as a security boundary — the serve path's octet-stream fallback for
+	// unknown extensions remains the backstop.
+	const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+	for (const f of files) {
+		if (!ALLOWED_TYPES.has(f.type))
+			error(400, `Unsupported photo type (${f.type || 'unknown'}) — upload JPEG, PNG, WebP, or GIF.`);
+	}
+
 	const saved = [];
 	for (const f of files) {
 		const filename = allocateMediaFilename(recordId, 'photo');
