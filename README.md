@@ -82,7 +82,7 @@ All configuration is via environment variables (a repo-root `.env` works for bot
 Use the [compose file from the quick start](#quick-start), with one change for a permanent deployment — pin a release tag instead of `latest`:
 
 ```yaml
-image: ghcr.io/momentalab/spindle:v0.1.0
+image: ghcr.io/momentalab/spindle:v0.1.1
 ```
 
 - **Port**: listens on `3737` on the host (override with `SPINDLE_PORT`), bound to all interfaces. Put your reverse proxy in front:
