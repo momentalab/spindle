@@ -16,7 +16,6 @@ Spindle is fully self-hosted: one container (or one Node process), no account, n
 - [Deployment](#deployment)
 - [Your data](#your-data)
 - [Development](#development)
-- [Design notes](#design-notes)
 - [Attributions](#attributions)
 
 ## Features
@@ -170,14 +169,6 @@ npm run smoke:db # DB-layer smoke test against a scratch database
 ```
 
 Server logic is covered by verification scripts in `scripts/` that seed a scratch database and assert exact values. The day-to-day loop, the script catalogue, the file map, and code conventions are documented in [DEVELOPMENT.md](./DEVELOPMENT.md).
-
-## Design notes
-
-- **Price** is stored as integer cents to avoid float drift.
-- **Covers** reference a local filename once downloaded; `cover_remote_url` is kept as a fallback only.
-- **Deleting** a record removes its media files from disk (cover + photos) and cascades the photo rows.
-- **Dedupe**: saving an existing barcode/Discogs ID offers "add another copy" instead of duplicating, with a create-anyway escape hatch for distinct pressings.
-- The DB file and media directory are gitignored (`/data`) — this app is designed to be your data, in your folder.
 
 ## Attributions
 

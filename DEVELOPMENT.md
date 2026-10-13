@@ -9,7 +9,7 @@ src/
   lib/
     types.ts                 # shared row/draft types + enums (conditions, statuses)
     draft.ts                 # client↔server form-state helpers
-    components/TrendChart.svelte   # hand-rolled SVG line/area chart with tooltips (no chart lib)
+    components/TrendChart.svelte   # SVG line/area chart with tooltips
     server/
       db.ts                  # better-sqlite3 singleton (auto-creates schema on first open)
       paths.ts               # data-dir resolution (DATA_DIR)
@@ -120,4 +120,11 @@ Verification scripts must **never touch the real database**:
 - **Wanted rows are off the books** — they never enter history, P&L, or shelf counts.
 - **User dates are local-calendar `YYYY-MM-DD` strings.** Month math goes through local `new Date(y, m, d)`, not UTC — UTC month-ends render as the _next_ month for users east of UTC.
 - **No chart libraries.** Charts are hand-rolled SVG (`src/lib/components/TrendChart.svelte`), themed with the CSS variables in `src/routes/layout.css` (`--accent`, `--chart-slate`, `--forest`/`--rust` for +/−, hairlines). TrendChart assumes all series share x positions.
-- **Svelte 5 runes**: `$derived.by(() => {…})` for multi-line derivations; `$props()` for component props.
+- **Svelte 5 runes**: `$props()` for component props.
+
+## Design notes
+
+- **Covers** reference a local filename once downloaded; `cover_remote_url` is kept as a fallback only.
+- **Deleting** a record removes its media files from disk (cover + photos) and cascades the photo rows.
+- **Dedupe**: saving an existing barcode/Discogs ID offers "add another copy" instead of duplicating, with a create-anyway escape hatch for distinct pressings.
+- The DB file and media directory are gitignored (`/data`) — this app is designed to be your data, in your folder.
