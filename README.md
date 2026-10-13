@@ -75,11 +75,11 @@ One container runs the whole app. From a fresh clone:
 docker compose up --build -d
 ```
 
-- **Port** — listens on `127.0.0.1:3737` on the host (override with `SPINDLE_PORT`). Bound to localhost by design: the app has no auth of its own, so put your reverse proxy in front.
+- **Port** — listens on `3737` on the host (override with `SPINDLE_PORT`), bound to all interfaces. Put your reverse proxy in front:
 - **Behind Caddy / any TLS proxy** — point it at the port, nothing else:
 
   ```
-  reverse_proxy 127.0.0.1:3737
+  reverse_proxy spindle-host:3737   # this host's address (LAN IP, tailnet IP, …)
   ```
 
   The app derives its origin from the forwarded `Host` header (scheme `https`), so links, redirects, and the CSRF check work behind your proxy with no extra config. Optional: set `ADDRESS_HEADER=x-forwarded-for` + `XFF_DEPTH=1` to log real client IPs.

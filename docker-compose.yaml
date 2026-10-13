@@ -3,8 +3,8 @@
 #   docker compose up --build -d
 #
 # Listens on the host at 3737 by default (override with SPINDLE_PORT), bound to
-# 127.0.0.1 — the app has no auth of its own, so keep it behind your reverse proxy:
-#     reverse_proxy 127.0.0.1:3737
+# all interfaces — keep it behind your reverse proxy:
+#     reverse_proxy <this-host>:3737
 # The app derives its origin from the forwarded Host header and assumes https,
 # so no extra env is needed behind a TLS-terminating proxy (see README).
 #
@@ -16,7 +16,7 @@ services:
     build: .
     image: spindle
     ports:
-      - '127.0.0.1:${SPINDLE_PORT:-3737}:3000'
+      - '0.0.0.0:${SPINDLE_PORT:-3737}:3000'
     environment:
       NODE_ENV: production
       HOST: 0.0.0.0
