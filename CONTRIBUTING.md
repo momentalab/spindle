@@ -11,7 +11,8 @@ the in-depth conventions and the verification-script pattern live in
 
 No environment variables are required to develop: the Discogs credentials
 (`DISCOGS_CONSUMER_KEY` / `DISCOGS_CONSUMER_SECRET`, see `.env.example`) are
-optional, and without them imports fall back to manual entry.
+optional — the app runs fully without them, at Discogs' unauthenticated rate
+limit (25 req/min instead of 60).
 
 ## The loop
 

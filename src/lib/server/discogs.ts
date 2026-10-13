@@ -7,9 +7,9 @@
  * - With consumer key/secret ("Discogs Auth" — Authorization: Discogs key=…, secret=…):
  *   60 req/min tier + guaranteed image URLs. No OAuth dance needed for this app
  *   because we never call user-scoped endpoints (collection lives in local SQLite).
- * - Credentials come from .env (DISCOGS_CONSUMER_KEY / DISCOGS_CONSUMER_SECRET).
- *   When absent, the client degrades gracefully to unauthenticated requests and
- *   the UI falls back to manual entry. Local data is always fully usable.
+ * Credentials come from .env (DISCOGS_CONSUMER_KEY / DISCOGS_CONSUMER_SECRET).
+ * When absent, the client degrades gracefully to unauthenticated requests —
+ * everything still works, just at the 25 req/min tier. Local data is always fully usable.
  */
 import { env } from '$env/dynamic/private';
 import type {
