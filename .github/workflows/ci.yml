@@ -26,7 +26,7 @@ jobs:
     needs: check-and-build
     if: startsWith(github.ref, 'refs/tags/v')
     permissions:
-      contents: read
+      contents: write
       packages: write
     steps:
       - uses: actions/checkout@v5
@@ -47,3 +47,28 @@ jobs:
             ghcr.io/${{ github.repository }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Create named GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          tag="$GITHUB_REF_NAME"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            # re-run, or a release already exists — just make sure it's named
+            gh release edit "$tag" --title "spindle $tag"
+          else
+            gh release create "$tag" --title "spindle $tag" --generate-notes
+          fi
+          notes="$(gh release view "$tag" --json body -q .body)"
+          case "$notes" in
+            *"docker pull ghcr.io/$GITHUB_REPOSITORY:$tag"*) ;; # already annotated
+            *)
+              {
+                printf '%s\n' "$notes"
+                printf '\n---\n\n'
+                printf 'Image: `ghcr.io/%s:%s` (linux/amd64 + linux/arm64, also tagged `latest`)\n\n' "$GITHUB_REPOSITORY" "$tag"
+                printf '```sh\ndocker pull ghcr.io/%s:%s\n```\n' "$GITHUB_REPOSITORY" "$tag"
+              } > release-notes.md
+              gh release edit "$tag" --notes-file release-notes.md
+              ;;
+          esac
