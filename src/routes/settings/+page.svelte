@@ -456,6 +456,12 @@
 	<h2 class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Connection & storage</h2>
 
 	<div class="mt-8">
+		<!-- row: version -->
+		<div class="flex flex-wrap items-baseline justify-between gap-x-8 gap-y-1 border-b border-hair py-4">
+			<span class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Version</span>
+			<span class="text-[13px] text-muted">v{data.summary.version}</span>
+		</div>
+
 		<!-- row: Discogs -->
 		<div class="flex flex-wrap items-center justify-between gap-x-8 gap-y-3 border-b border-hair py-4">
 			<span class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Discogs</span>
