@@ -8,8 +8,24 @@ A **lightweight**, **feature-rich**, and **local-first** vinyl record collection
 
 Spindle is fully self-hosted: one container (or one Node process), no account, no cloud, no subscription. Your collection is a folder you can back up, restore, and carry to any machine. The runtime is also incredibly efficient: being built with Svelte + SvelteKit and utilizing a minimal set of dependencies, Spindle is a single Node process that idles at **~40 MB of RAM**, with a near-zero disk footprint — the container writes nothing of its own; everything lives in one `./data` directory.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center" width="34%"><img src="static/screenshots/collection.webp" alt="The collection view — records as cards with cover art, plus search and genre, label and status filters" width="100%"></td>
+    <td align="center" width="33%"><img src="static/screenshots/stats.webp" alt="Stats — collection totals, top artist and the most spinned tracks" width="100%"></td>
+    <td align="center" width="33%"><img src="static/screenshots/value.webp" alt="Value — portfolio value vs. invested over time, with top gainers and losers" width="100%"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Collection</sub></td>
+    <td align="center"><sub>Stats</sub></td>
+    <td align="center"><sub>Value</sub></td>
+  </tr>
+</table>
+
 ## Table of contents
 
+- [Screenshots](#screenshots)
 - [Features](#features)
 - [Quick start](#quick-start)
 - [Configuration](#configuration)
