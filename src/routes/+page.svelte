@@ -182,6 +182,10 @@
 					return r.labels[0]?.name.toLowerCase() ?? '\uffff';
 				case 'favorite_tracks':
 					return favCountOf(r);
+				case 'acquired_at':
+					return r.acquired_at ?? '\uffff'; // missing dates last
+				case 'updated_at':
+					return r.updated_at ?? '\uffff';
 				default:
 					return r.artist.toLowerCase();
 			}
@@ -202,6 +206,18 @@
 		['genre', 'Genre'],
 		['label', 'Label'],
 		['favorite_tracks', 'Starred']
+	];
+
+	// Sort dropdown options (all SortColumn values, human-readable labels).
+	const sortOptions: [SortColumn, string][] = [
+		['artist', 'Artist'],
+		['title', 'Title'],
+		['year', 'Year'],
+		['genre', 'Genre'],
+		['label', 'Label'],
+		['favorite_tracks', 'Starred'],
+		['acquired_at', 'Acquired'],
+		['updated_at', 'Updated']
 	];
 
 	/** How many tracks on this record are favorited (0 when none tracked).
@@ -668,8 +684,29 @@
 			<input type="checkbox" bind:checked={favF} class="h-3.5 w-3.5 accent-accent" />
 			<span class="text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint"> Starred </span>
 		</label>
+	</div>
 
-		<div class="ml-auto flex items-center gap-5 border-l border-hair pb-1.5 pl-6">
+	<!-- row 3 — sort (left) + view switch (right) -->
+	<div class="mt-4 flex items-center justify-between gap-4">
+		<div class="flex items-end gap-2">
+			<label class="flex flex-col gap-1.5">
+				<span class="text-[10.5px] font-semibold uppercase tracking-[.22em] text-faint">Sort</span>
+				<Select bind:value={sort} class="w-32 py-1.5">
+					{#each sortOptions as [val, label]}
+						<option value={val}>{label}</option>
+					{/each}
+				</Select>
+			</label>
+			<button
+				type="button"
+				onclick={() => (dir = dir === 'asc' ? 'desc' : 'asc')}
+				class="mb-0.5 border border-edge px-2 py-1.5 text-[10.5px] font-semibold uppercase tracking-[.14em] text-muted transition-colors hover:border-ink hover:text-ink"
+				title={dir === 'asc' ? 'Ascending — click for descending' : 'Descending — click for ascending'}
+			>
+				{dir === 'asc' ? '↑' : '↓'}
+			</button>
+		</div>
+		<div class="flex items-center gap-5">
 			<Segmented options={views} bind:value={view} />
 			<span class="hidden text-[10.5px] font-semibold uppercase tracking-[.2em] text-faint md:inline">
 				{displayRecords.length} of {shelfCount} shown
