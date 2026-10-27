@@ -1,5 +1,7 @@
 /** Smoke test for the DB layer: migrations, insert/read-back, FK cascades. Run via `npm run smoke:db` (bundles with scripts/verify-bundle.mjs against a scratch DATA_DIR). */
+import assert from 'node:assert';
 import { getDb } from '$lib/server/db';
+import { createRecord } from '$lib/server/records';
 
 const db = getDb();
 const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name").all() as {
@@ -95,5 +97,37 @@ const labelsAfter = (
 ).c;
 console.log('labels after cascade delete:', labelsAfter);
 if (labelsAfter !== 0) throw new Error('record_labels rows were not cascaded');
+
+// Artist lead-word normalization is unconditional on create (Discogs artists_sort
+// uses "Beatles, The" as a sort key; we store "The Beatles").
+const normRec = createRecord({
+	discogs_id: null,
+	barcode: null,
+	artist: 'Strokes, The',
+	title: 'Normalisation Test',
+	styles: [],
+	genres: [],
+	year: null,
+	labels: [],
+	format: null,
+	limited_edition: false,
+	condition_media: null,
+	condition_sleeve: null,
+	price_paid: null,
+	acquired_at: null,
+	source: null,
+	status: 'in_collection',
+	wanted_at: null,
+	copies: 1,
+	copy_number: null,
+	copy_total: null,
+	sale_price: null,
+	sold_at: null,
+	notes: null,
+	cover_filename: null,
+	cover_remote_url: null
+});
+assert.equal(normRec.artist, 'The Strokes', 'createRecord must normalize trailing lead word');
+console.log('artist normalization on create: OK');
 
 console.log('SMOKE OK');

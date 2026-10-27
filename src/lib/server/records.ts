@@ -224,10 +224,13 @@ export function createRecord(input: NewRecordInput): RecordRow {
 	const genres = input.genres.map((g) => g.trim()).filter(Boolean);
 	const labels = input.labels.filter((l) => l.name.trim() !== '');
 	// Artist lead-word normalization ("Beatles, The" -> "The Beatles") is applied
-	// here — the single create chokepoint — when the settings toggle is on, so
-	// every import path (barcode, manual, search-bar add, restore-free re-save)
-	// stores the same canonical form.
-	const artist = isLeadWordNormalizationOn() ? normalizeLeadWord(input.artist) : input.artist;
+	// unconditionally on create: Discogs' artists_sort field uses the trailing form
+	// ("Strokes, The") as a sort key, and storing it verbatim makes the collection
+	// look broken. Every import path (barcode, manual, search-bar add) routes
+	// through here, so canonicalizing at birth is the single fix.
+	// The settings toggle (normalize_artist_leadword) gates only the *edit* path
+	// (updateRecord), where a user may deliberately type the trailing form.
+	const artist = normalizeLeadWord(input.artist);
 	// Status invariants are applied at write time, not in SQL. Entering "wanted"
 	// stamps the wish date and forces acquired_at NULL (a wanted record can't be
 	// both wanted and acquired); entering "sold" stamps the sale date.
