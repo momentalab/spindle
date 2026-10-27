@@ -766,6 +766,9 @@ back to the ledger voice. -->
 					{s.plays_total === 1 ? 'spin' : 'spins'} logged across
 					{s.records_played}
 					{s.records_played === 1 ? 'record' : 'records'}
+					{#if s.minutes_played_total > 0}
+						· ≈ {s.minutes_played_total} min played
+					{/if}
 				</p>
 			</div>
 
@@ -798,12 +801,15 @@ back to the ledger voice. -->
 								{p.plays}
 							</span>
 							<!-- the last-played date is desktop-only: on a 360px row it would
-                   steal the width artist/title need (full date stays in `title`). -->
+	               steal the width artist/title need (full date stays in `title`). -->
 							<span
 								title={p.last_played_at ? fmtPlayedAt(p.last_played_at) : undefined}
 								class="text-[10px] font-semibold uppercase tracking-[.2em] text-faint"
 							>
 								{p.plays === 1 ? 'spin' : 'spins'}
+								{#if p.minutes > 0}
+									· {p.minutes} min
+								{/if}
 								{#if p.last_played_at}
 									<span class="hidden sm:inline">· last {fmtPlayedAt(p.last_played_at)}</span>
 								{/if}

@@ -30,6 +30,7 @@ import {
 	listPhotos,
 	parseRecordForm,
 	playCount,
+	trackDurationSeconds,
 	updateRecord,
 	distinctValues
 } from '$lib/server/records';
@@ -75,11 +76,13 @@ export const load: PageServerLoad = async ({ params }) => {
 		}
 	}
 
+	const plays = playCount(id);
 	return {
 		record,
 		copies: listCopies(id),
 		photos: listPhotos(id),
-		play_count: playCount(id),
+		play_count: plays,
+		minutes_played: Math.round(trackDurationSeconds(id) / 60) * plays,
 		last_played_at: latestPlayedAt(id),
 		tracks,
 		snapshot,

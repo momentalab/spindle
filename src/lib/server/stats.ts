@@ -101,6 +101,8 @@ export interface MostPlayedRecord {
 	title: string;
 	cover: string | null;
 	plays: number;
+	/** Total minutes of music played (track duration × plays); 0 when no durations. */
+	minutes: number;
 	last_played_at: string | null;
 }
 
@@ -179,6 +181,7 @@ export interface CollectionStats {
 	/* play log */
 	plays_total: number; // total spins logged
 	records_played: number; // distinct records with ≥ 1 spin
+	minutes_played_total: number; // Σ (track duration minutes × plays) across all records
 	most_played: MostPlayedRecord[]; // top 5 by count, then most recent
 	/* starred */
 	favorite_tracks_total: number; // all favorited tracks, across all records
@@ -798,19 +801,39 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 	const photoTotal = (db.prepare('SELECT COUNT(*) AS n FROM photos').get() as { n: number }).n;
 	const photoRecords = (db.prepare('SELECT COUNT(DISTINCT record_id) AS n FROM photos').get() as { n: number }).n;
 
-	/* Play log — total spins, distinct records spun, and the most-played five. */
+	/* Play log — total spins, distinct records spun, minutes played, most-played five. */
 	const playsTotal = (db.prepare('SELECT COUNT(*) AS n FROM plays').get() as { n: number }).n;
 	const recordsPlayed = (
 		db.prepare('SELECT COUNT(DISTINCT record_id) AS n FROM plays').get() as {
 			n: number;
 		}
 	).n;
+
+	// Minutes played: per-record track duration (seconds) × play count, summed.
+	const durRows = db
+		.prepare(
+			`
+			SELECT p.record_id,
+			       COUNT(p.id) AS plays,
+			       COALESCE(SUM(CASE WHEN t.duration GLOB '[0-9]:[0-9][0-9]' THEN (CAST(substr(t.duration, 1, instr(t.duration, ':') - 1) AS INTEGER) * 60 + CAST(substr(t.duration, instr(t.duration, ':') + 1) AS INTEGER)) ELSE 0 END), 0) AS dur_sec
+			FROM plays p
+			LEFT JOIN record_tracks t ON t.record_id = p.record_id
+			GROUP BY p.record_id
+		`
+		)
+		.all() as { record_id: number; plays: number; dur_sec: number }[];
+	let minutes_played_total = 0;
+	for (const r of durRows) {
+		minutes_played_total += Math.round((r.dur_sec * r.plays) / 60);
+	}
+
 	const most_played = db
 		.prepare(
 			`
 			SELECT r.id, r.artist, r.title,
 			       CASE WHEN r.cover_filename IS NOT NULL THEN '/media/' || r.cover_filename ELSE r.cover_remote_url END AS cover,
 			       COUNT(p.id) AS plays,
+			       COALESCE((SELECT SUM(CASE WHEN t2.duration GLOB '[0-9]:[0-9][0-9]' THEN (CAST(substr(t2.duration, 1, instr(t2.duration, ':') - 1) AS INTEGER) * 60 + CAST(substr(t2.duration, instr(t2.duration, ':') + 1) AS INTEGER)) ELSE 0 END) FROM record_tracks t2 WHERE t2.record_id = r.id), 0) AS dur_sec,
 			       MAX(p.played_at) AS last_played_at
 			FROM plays p
 			JOIN records r ON r.id = p.record_id
@@ -819,7 +842,12 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 			LIMIT 5
 		`
 		)
-		.all() as MostPlayedRecord[];
+		.all() as (Omit<MostPlayedRecord, 'minutes'> & { dur_sec: number })[];
+	// Convert seconds → minutes (rounded) for display.
+	const most_playedMapped = most_played.map((r) => ({
+		...r,
+		minutes: Math.round((r.dur_sec * r.plays) / 60)
+	}));
 
 	/* Starred tracks — the favorites ledger. */
 	const favTracksTotal = (
@@ -929,7 +957,8 @@ export function collectionStats(window: StatsWindow = 'all'): CollectionStats {
 		extremes,
 		plays_total: playsTotal,
 		records_played: recordsPlayed,
-		most_played,
+		minutes_played_total,
+		most_played: most_playedMapped,
 		favorite_tracks_total: favTracksTotal,
 		favorite_track_albums: favTrackAlbums,
 		favorite_albums_top,
