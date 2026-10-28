@@ -89,7 +89,9 @@
 	};
 
 	/* Responsive width — measured on the wrapper; SSR renders a desktop-width
-	   first pass and the ResizeObserver corrects it after hydration. */
+	   first pass and the ResizeObserver corrects it after hydration. The SVG
+	   itself must never force that initial width on a narrow viewport, so it is
+	   clamped to the wrapper's box (the overflow guard below). */
 	let wrapRef = $state<HTMLElement | null>(null);
 	let width = $state(860);
 	$effect(() => {
@@ -102,6 +104,11 @@
 		ro.observe(el);
 		return () => ro.disconnect();
 	});
+	// The SSR/hydration pass renders the full desktop width; without this guard
+	// the fixed-width SVG widens the page (and, on an iOS PWA, locks the viewport
+	// into horizontal scroll until the user zooms out) whenever a chart lands
+	// in a freshly navigated page before the observer fires.
+	const svgOverflow = $derived(wrapRef !== null && width > wrapRef.clientWidth);
 
 	const anchor = $derived(series[0]?.points ?? []);
 	const plotW = $derived(Math.max(width - M.left - M.right, 10));
@@ -190,7 +197,14 @@
 	onpointermove={onMove}
 	onpointerleave={() => (hoverI = null)}
 >
-	<svg {width} {height} role="img" aria-label={ariaLabel} class="block">
+	<svg
+		{width}
+		{height}
+		role="img"
+		aria-label={ariaLabel}
+		class="block max-w-full"
+		style:overflow={svgOverflow ? 'hidden' : undefined}
+	>
 		{#if anchor.length}
 			{#each yTicks as v (v)}
 				<line x1={M.left} x2={width - M.right} y1={ys(v)} y2={ys(v)} stroke="var(--hair)" />
