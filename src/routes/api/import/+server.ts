@@ -23,8 +23,29 @@ export async function GET({ url }: { url: URL }): Promise<Response> {
 		}
 
 		if (barcode && barcode.trim()) {
-			const { results, total } = await searchReleases({ barcode: barcode.trim(), perPage: 25 });
-			return Response.json({ mode: 'barcode', barcode: barcode.trim(), candidates: results, total });
+			const { results } = await searchReleases({ barcode: barcode.trim(), perPage: 25 });
+			// Always supplement with a text search on the top candidate's title so
+			// the user sees pressings/variants. Barcode matches come first; text
+			// matches are appended (deduped by id). One extra API call is negligible
+			// for a single-user local app, and it keeps identify/re-identify lists
+			// identical regardless of how many barcode hits Discogs returns.
+			let candidates = results;
+			if (results.length > 0) {
+				const top = results[0];
+				const q = [top.title, top.label?.[0]].filter(Boolean).join(' ');
+				if (q) {
+					try {
+						const extra = await searchReleases({ q, perPage: 25 });
+						const seen = new Set(candidates.map((c) => c.id));
+						for (const c of extra.results) {
+							if (!seen.has(c.id)) candidates.push(c);
+						}
+					} catch {
+						// Non-fatal: the barcode results alone are fine.
+					}
+				}
+			}
+			return Response.json({ mode: 'barcode', barcode: barcode.trim(), candidates, total: candidates.length });
 		}
 
 		const q = url.searchParams.get('q');

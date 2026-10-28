@@ -217,7 +217,11 @@
 	>
 		<input type="hidden" name="op" value={createAnyway ? 'create_anyway' : 'save'} />
 		<!-- F5 — saving a want goes to the wishlist, not the shelf. -->
-		<RecordForm bind:draft submitLabel={draft.status === 'wanted' ? 'Save to wishlist' : 'Save to my collection'} />
+		<RecordForm
+			bind:draft
+			sources={data.sources}
+			submitLabel={draft.status === 'wanted' ? 'Save to wishlist' : 'Save to my collection'}
+		/>
 	</form>
 </div>
 
