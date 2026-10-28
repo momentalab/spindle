@@ -11,7 +11,14 @@
  * the missed-the-bus check on the realized ledger).
  */
 import { getDb } from '$lib/server/db';
-import { DiscogsError, getMarketStats, throttleRemaining } from '$lib/server/discogs';
+import {
+	DiscogsError,
+	getMarketStats,
+	getPriceSuggestions,
+	isConfigured,
+	resolvePrice,
+	throttleRemaining
+} from '$lib/server/discogs';
 import type { PriciestRecord } from './stats';
 import type { RecordStatus } from '$lib/types';
 
@@ -714,6 +721,7 @@ const SNAPSHOT_BUDGET = 45;
  */
 export async function takeMarketSnapshot(): Promise<SnapshotResult> {
 	const db = getDb();
+	const useSuggestions = isConfigured(); // Price Suggestions requires auth
 
 	/* Candidates: shelf rows linked to Discogs, ordered by oldest last-observation
 	   first — never-watched records lead, then the stalest — so repeated snapshots
@@ -727,7 +735,7 @@ export async function takeMarketSnapshot(): Promise<SnapshotResult> {
 				 ORDER BY
 				         (SELECT MAX(mp.id) FROM market_prices mp WHERE mp.record_id = r.id) IS NULL DESC,
 				         COALESCE((SELECT MAX(mp.fetched_at) FROM market_prices mp WHERE mp.record_id = r.id), '') ASC
-			`
+				`
 			)
 			.all() as { id: number; discogs_id: number; condition_media: string | null }[]
 	).slice(0, SNAPSHOT_BUDGET);
@@ -753,9 +761,33 @@ export async function takeMarketSnapshot(): Promise<SnapshotResult> {
 	for (const c of candidates) {
 		result.attempted++;
 		try {
+			let price: number | null = null;
+			let forSale: number | null = null;
+
+			// Always fetch market stats for num_for_sale (liquidity context).
 			const stats = await getMarketStats(c.discogs_id);
-			if (stats.price_cents === null) result.no_listing++;
-			pending.push([c.id, c.discogs_id, stats.price_cents, stats.num_for_sale, c.condition_media]);
+			forSale = stats.num_for_sale;
+
+			if (useSuggestions) {
+				// Try Price Suggestions first (condition-matched fair value).
+				try {
+					const sugg = await getPriceSuggestions(c.discogs_id);
+					if (!sugg.empty) {
+						price = resolvePrice(c.condition_media, sugg.prices, stats.price_cents);
+					}
+				} catch {
+					// Suggestions unavailable (e.g. seller settings not filled) —
+					// fall through to median/lowest from stats.
+				}
+			}
+
+			// Fallback: use median of all condition suggestions, or lowest ask.
+			if (price === null) {
+				price = stats.price_cents;
+			}
+
+			if (price === null) result.no_listing++;
+			pending.push([c.id, c.discogs_id, price, forSale, c.condition_media]);
 		} catch (e) {
 			if (e instanceof DiscogsError && e.status === null) {
 				// Network unreachable — abort before committing anything.
