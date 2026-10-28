@@ -372,3 +372,31 @@ export function joinStyles(styles: readonly string[]): string {
 export function joinLabels(labels: readonly LabelEntry[]): string {
 	return labels.map((l) => (l.catno ? `${l.name} (${l.catno})` : l.name)).join(', ');
 }
+
+/* ------------------------------------------------------------------ */
+/* Media type                                                          */
+/* ------------------------------------------------------------------ */
+
+/** Coarse media format, derived from a record's free-form `format` string. */
+export type MediaType = 'vinyl' | 'cd' | 'other';
+
+/**
+ * Extract the coarse media type from a Discogs format string.
+ * "Vinyl, LP" → 'vinyl', "CD" → 'cd', "Cassette" → 'other', null → 'other'.
+ * Used to label market prices so a vinyl quote is never displayed as if it
+ * applied to a CD (and vice-versa) when a release is multi-format.
+ */
+export function mediaType(format: string | null): MediaType {
+	if (!format) return 'other';
+	const s = format.toLowerCase();
+	if (s.includes('vinyl') || /\d+"/.test(s) || s.includes('lp')) return 'vinyl';
+	if (s.includes('cd')) return 'cd';
+	return 'other';
+}
+
+/** Short display label for a media type. */
+export const MEDIA_TYPE_LABELS: Record<MediaType, string> = {
+	vinyl: 'Vinyl',
+	cd: 'CD',
+	other: 'Other'
+};

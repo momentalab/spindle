@@ -34,6 +34,10 @@ export interface ValueRow {
 	delta_pct: number | null;
 	/** Full quote history oldest→newest (sparkline source). */
 	series: QuotePoint[];
+	/** Record's format string (e.g. "Vinyl, LP") — used to derive media type for display. */
+	format: string | null;
+	/** Record's media condition at snapshot time. */
+	condition_media: string | null;
 }
 
 /** A value row whose change is measured from its FIRST priced observation, not cost. */
@@ -114,6 +118,8 @@ interface ShelfRow {
 	cover_filename: string | null;
 	sale_price: number | null;
 	sold_at: string | null;
+	format: string | null;
+	condition_media: string | null;
 }
 
 interface QuoteRow {
@@ -122,6 +128,7 @@ interface QuoteRow {
 	discogs_id: number;
 	price_cents: number | null;
 	num_for_sale: number | null;
+	condition_media: string | null;
 	fetched_at: string;
 }
 
@@ -206,14 +213,14 @@ export function portfolioStats(): ValueStats {
 	const rows = db
 		.prepare(
 			`SELECT id, discogs_id, artist, title, year, status, price_paid, copies,
-			        cover_filename, sale_price, sold_at
+			        cover_filename, sale_price, sold_at, format, condition_media
 			 FROM records`
 		)
 		.all() as ShelfRow[];
 
 	const quotes = db
 		.prepare(
-			`SELECT id, record_id, discogs_id, price_cents, num_for_sale, fetched_at
+			`SELECT id, record_id, discogs_id, price_cents, num_for_sale, condition_media, fetched_at
 			 FROM market_prices ORDER BY id`
 		)
 		.all() as QuoteRow[];
@@ -362,6 +369,8 @@ export function portfolioStats(): ValueStats {
 				num_for_sale: quote.num_for_sale,
 				delta_pct,
 				series: st!.points,
+				format: r.format,
+				condition_media: r.condition_media,
 				_delta: delta_pct
 			});
 		}
@@ -382,6 +391,8 @@ export function portfolioStats(): ValueStats {
 					num_for_sale: last.num_for_sale,
 					delta_pct: r.price_paid !== null && r.price_paid > 0 ? pctChange(r.price_paid, last.price_cents) : null,
 					series: st.points,
+					format: r.format,
+					condition_media: r.condition_media,
 					first_cents: first.price_cents,
 					first_at: first.fetched_at,
 					change_pct: pctChange(first.price_cents, last.price_cents)
@@ -621,6 +632,8 @@ export interface RecordMarketPoint {
 	at: string; // fetched_at, 'YYYY-MM-DD HH:MM:SS'
 	price_cents: number | null; // null = "no live listings" that day (a data point)
 	num_for_sale: number | null;
+	/** Media condition of the record at snapshot time (Discogs prices span all conditions). */
+	condition_media: string | null;
 }
 
 export interface RecordMarket {
@@ -638,15 +651,21 @@ export function recordMarket(recordId: number): RecordMarket {
 	const db = getDb();
 	const rows = db
 		.prepare(
-			`SELECT price_cents, num_for_sale, fetched_at
+			`SELECT price_cents, num_for_sale, condition_media, fetched_at
 			 FROM market_prices WHERE record_id = ? ORDER BY id`
 		)
-		.all(recordId) as { price_cents: number | null; num_for_sale: number | null; fetched_at: string }[];
+		.all(recordId) as {
+		price_cents: number | null;
+		num_for_sale: number | null;
+		condition_media: string | null;
+		fetched_at: string;
+	}[];
 
 	const points: RecordMarketPoint[] = rows.map((r) => ({
 		at: r.fetched_at,
 		price_cents: r.price_cents,
-		num_for_sale: r.num_for_sale
+		num_for_sale: r.num_for_sale,
+		condition_media: r.condition_media
 	}));
 	const priced_points = points.filter((p): p is RecordMarketPoint & { price_cents: number } => p.price_cents !== null);
 	const first_priced = priced_points[0] ?? null;
@@ -702,7 +721,7 @@ export async function takeMarketSnapshot(): Promise<SnapshotResult> {
 	const candidates = (
 		db
 			.prepare(
-				`SELECT r.id AS id, r.discogs_id AS discogs_id
+				`SELECT r.id AS id, r.discogs_id AS discogs_id, r.condition_media AS condition_media
 				 FROM records r
 				 WHERE r.status = 'in_collection' AND r.discogs_id IS NOT NULL
 				 ORDER BY
@@ -710,7 +729,7 @@ export async function takeMarketSnapshot(): Promise<SnapshotResult> {
 				         COALESCE((SELECT MAX(mp.fetched_at) FROM market_prices mp WHERE mp.record_id = r.id), '') ASC
 			`
 			)
-			.all() as { id: number; discogs_id: number }[]
+			.all() as { id: number; discogs_id: number; condition_media: string | null }[]
 	).slice(0, SNAPSHOT_BUDGET);
 
 	const result: SnapshotResult = {
@@ -719,10 +738,16 @@ export async function takeMarketSnapshot(): Promise<SnapshotResult> {
 		no_listing: 0,
 		errors: []
 	};
-	type Pending = [id: number, discogsId: number, price: number | null, forSale: number | null];
+	type Pending = [
+		id: number,
+		discogsId: number,
+		price: number | null,
+		forSale: number | null,
+		condition: string | null
+	];
 	const pending: Pending[] = [];
 	const insert = db.prepare(
-		'INSERT INTO market_prices (record_id, discogs_id, price_cents, num_for_sale) VALUES (?, ?, ?, ?)'
+		'INSERT INTO market_prices (record_id, discogs_id, price_cents, num_for_sale, condition_media) VALUES (?, ?, ?, ?, ?)'
 	);
 
 	for (const c of candidates) {
@@ -730,7 +755,7 @@ export async function takeMarketSnapshot(): Promise<SnapshotResult> {
 		try {
 			const stats = await getMarketStats(c.discogs_id);
 			if (stats.price_cents === null) result.no_listing++;
-			pending.push([c.id, c.discogs_id, stats.price_cents, stats.num_for_sale]);
+			pending.push([c.id, c.discogs_id, stats.price_cents, stats.num_for_sale, c.condition_media]);
 		} catch (e) {
 			if (e instanceof DiscogsError && e.status === null) {
 				// Network unreachable — abort before committing anything.
@@ -745,7 +770,8 @@ export async function takeMarketSnapshot(): Promise<SnapshotResult> {
 
 	if (pending.length) {
 		const commit = db.transaction(() => {
-			for (const [id, discogsId, price, forSale] of pending) insert.run(id, discogsId, price, forSale);
+			for (const [id, discogsId, price, forSale, condition] of pending)
+				insert.run(id, discogsId, price, forSale, condition);
 		});
 		commit();
 	}

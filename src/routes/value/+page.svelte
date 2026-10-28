@@ -8,6 +8,7 @@
 	import TrendChart, { type TrendSeries } from '$lib/components/TrendChart.svelte';
 	import { appTitle } from '$lib/index';
 	import type { MoverRow, QuotePoint, ValueBarRow, ValueRow } from '$lib/server/value';
+	import { mediaType, MEDIA_TYPE_LABELS } from '$lib/types';
 
 	let { data }: { data: PageData } = $props();
 	const s = $derived(data.stats);
@@ -323,6 +324,7 @@
 
 <!-- One row of the gainers/losers ledger: rank, cover, name, cost→quote, Δ%, sparkline -->
 {#snippet rankRow(r: ValueRow, i: number)}
+	{@const mt = mediaType(r.format)}
 	<li class="flex items-center gap-3 border-b border-hair py-2.5 sm:gap-4">
 		<span class="w-5 shrink-0 text-right font-display text-[15px] italic text-faint">{i + 1}</span>
 		<a href={`/records/${r.id}`} class="block h-10 w-10 shrink-0" title={r.artist}>
@@ -337,6 +339,8 @@
 			</a>
 			<div class="mt-0.5 flex flex-wrap items-center gap-x-2 text-[11px] uppercase tracking-[.12em] text-faint">
 				{#if r.year}<span>{r.year}</span>{/if}
+				{#if mt !== 'other'}<span>{MEDIA_TYPE_LABELS[mt]}</span>{/if}
+				{#if r.condition_media}<span>{r.condition_media}</span>{/if}
 				<span class="text-muted">
 					{money(r.paid_cents)} → {money(r.quote_cents)}
 				</span>

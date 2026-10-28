@@ -256,6 +256,9 @@
 		catno?: string;
 		barcode?: string[];
 		thumb?: string;
+		format?: string[];
+		label?: string[];
+		country?: string;
 		community?: { want?: number; have?: number };
 	}
 
@@ -953,6 +956,8 @@
 		{:else}
 			<ul class="flex flex-col">
 				{#each remoteHits as hit (hit.id)}
+					{@const fmtLabel = hit.format?.filter((f) => f && !/^(album|mixed)$/i.test(f)).join(', ')}
+					{@const labelStr = [hit.label?.[0], hit.catno].filter(Boolean).join(' ')}
 					<li class="border-b border-hair">
 						<div class="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-4 py-3">
 							<span class="block h-12 w-12 sm:h-14 sm:w-14">
@@ -967,13 +972,18 @@
 								>
 									{hit.title}
 								</a>
-								<p class="mt-0.5 truncate text-[12.5px] text-muted">
-									{[hit.year, hit.catno].filter(Boolean).join(' · ') || 'release'}
+								<div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-muted">
+									{#if fmtLabel}<span
+											class="inline-flex items-center rounded bg-surface px-1.5 py-0.5 text-[11px] font-medium tracking-wide"
+											>{fmtLabel}</span
+										>{/if}
+									{#if hit.year}<span>{hit.year}</span>{/if}
+									{#if labelStr}<span class="text-faint">{labelStr}</span>{/if}
+									{#if hit.country}<span class="text-faint">{hit.country}</span>{/if}
 									{#if hit.community}
-										· {hit.community.have ?? 0} have /
-										{hit.community.want ?? 0} want
+										<span class="text-faint">{hit.community.have ?? 0} have / {hit.community.want ?? 0} want</span>
 									{/if}
-								</p>
+								</div>
 							</div>
 							<div class="flex shrink-0 items-center gap-2">
 								<Button type="button" variant="secondary" size="sm" onclick={() => void addRemote(hit, 'add')}>

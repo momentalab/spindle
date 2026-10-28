@@ -939,6 +939,7 @@
 			{#if mk.latest}
 				<p class="font-display text-[13px] italic text-faint">
 					last observed {fmtPlayDate(mk.latest.at)}
+					{#if mk.latest.condition_media}· {mk.latest.condition_media}{/if}
 					{#if mk.latest.num_for_sale !== null}· {mk.latest.num_for_sale} for sale{/if}
 				</p>
 			{/if}

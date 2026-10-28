@@ -85,6 +85,7 @@
 	<ul class="mt-6 flex flex-col">
 		{#each candidates as c (c.id)}
 			{@const selected = selectedId !== null && selectedId === c.id}
+			{@const fmtLabel = c.format?.filter((f) => f && !/^(album|mixed)$/i.test(f)).join(', ')}
 			<li class="border-b border-hair py-4">
 				<div class="grid grid-cols-[64px_minmax(0,1fr)] items-center gap-5 sm:grid-cols-[64px_minmax(0,1fr)_auto]">
 					<span class="block h-16 w-16 shrink-0">
@@ -92,15 +93,22 @@
 					</span>
 					<span class="min-w-0">
 						<span class="block truncate font-display text-[19px]">{c.title}</span>
-						<span class="mt-0.5 block truncate text-[13px] text-muted">
-							{fmtCandidate(c)}
+						<span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-muted">
+							{#if fmtLabel}<span
+									class="inline-flex items-center rounded bg-surface px-1.5 py-0.5 text-[11px] font-medium tracking-wide"
+									>{fmtLabel}</span
+								>{/if}
+							{#if c.year}<span>{c.year}</span>{/if}
+							{#if c.label?.length}<span class="text-faint">{[c.label[0], c.catno].filter(Boolean).join(' ')}</span
+								>{/if}
+							{#if c.country}<span class="text-faint">{c.country}</span>{/if}
 						</span>
 						{#if detailId === c.id}
-							<span class="mt-1 block italic text-faint">Loading details…</span>
+							<span class="mt-1 block text-[12px] italic text-faint">Loading details…</span>
 						{:else}
 							{@const detail = details[c.id]}
 							{#if detail && 'seed' in detail}
-								<span class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px] text-muted">
+								<span class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12.5px] text-muted">
 									{#if detail.seed.limited_edition === 1}
 										<Badge tone="plum">Limited edition</Badge>
 									{/if}
@@ -108,7 +116,7 @@
 										<span class="truncate">{detail.seed.format}</span>
 									{/if}
 									<span class="whitespace-nowrap text-faint"
-										>{detail.seed.year ?? '????'} · {joinLabels(detail.seed.labels)}</span
+										>Released {detail.seed.year ?? '????'} · {joinLabels(detail.seed.labels)}</span
 									>
 								</span>
 							{:else if detail && 'error' in detail}

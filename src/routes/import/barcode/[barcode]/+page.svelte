@@ -123,6 +123,8 @@
 		</h2>
 		<ul class="flex flex-col">
 			{#each data.candidates as c, i (c.id)}
+				{@const fmtLabel = c.format?.filter((f) => f && !/^(album|mixed)$/i.test(f)).join(', ')}
+				{@const labelStr = [c.label?.[0], c.catno].filter(Boolean).join(' ')}
 				<li>
 					<button
 						type="button"
@@ -138,10 +140,17 @@
 						</span>
 						<span class="min-w-0">
 							<span class="block truncate font-display text-[19px]">{c.title}</span>
-							<span class="mt-0.5 block text-[13px] text-muted">
-								{c.year ?? '????'} · {c.catno ?? ''}
-								{#if expandingId === c.id}<span class="italic text-faint"> …loading</span>{/if}
+							<span class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12.5px] text-muted">
+								{#if fmtLabel}<span
+										class="inline-flex items-center rounded bg-surface px-1.5 py-0.5 text-[11px] font-medium tracking-wide"
+										>{fmtLabel}</span
+									>{/if}
+								{#if c.year}<span>{c.year}</span>{/if}
+								{#if labelStr}<span class="text-faint">{labelStr}</span>{/if}
+								{#if c.country}<span class="text-faint">{c.country}</span>{/if}
 							</span>
+							{#if expandingId === c.id}<span class="mt-0.5 block text-[12px] italic text-faint">Loading details…</span
+								>{/if}
 						</span>
 						<span
 							class={`text-[10.5px] font-semibold uppercase tracking-[.2em] ${draft.discogs_id === String(c.id) ? 'text-accent' : 'text-faint'}`}
