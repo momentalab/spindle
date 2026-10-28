@@ -274,6 +274,11 @@
 	let addedFlash = $state<string | null>(null); // brief confirmation line
 	let searchAbort: AbortController | undefined;
 
+	// True when the remote (Discogs) half of the lookup has something to show —
+	// loading, hits, or an error. Drives both the empty-state suppression and the
+	// inline card rendering so remote results join the grid instead of a footer.
+	const remoteActive = $derived(!localOnly && (remoteBusy || remoteHits.length > 0 || remoteError !== null));
+
 	async function runRemoteSearch(query: string): Promise<void> {
 		searchAbort?.abort();
 		const ctrl = new AbortController();
@@ -731,7 +736,7 @@
 </section>
 
 <!-- empty state -->
-{#if displayRecords.length === 0}
+{#if displayRecords.length === 0 && !remoteActive}
 	<div class="flex flex-col items-center border-b border-hair py-20 text-center">
 		<div class="mb-6 flex h-24 w-24 items-center justify-center rounded-full border border-edge">
 			<!-- vinyl placeholder -->
@@ -767,7 +772,7 @@
 			</div>
 		{/if}
 	</div>
-{:else if view === 'index'}
+{:else if view === 'index' && !remoteActive}
 	<!-- the catalogue: numbered entries, no cards. The title line is the anchor;
 	     status + play sit on a second line below it — in the title's column their
 	     varying widths squeezed long titles past recognition and kept the columns
@@ -818,7 +823,7 @@
 			</div>
 		{/each}
 	</div>
-{:else if view === 'table'}
+{:else if view === 'table' && !remoteActive}
 	<!-- TABLE — hairlines only, no box -->
 	<div class="mt-6 overflow-x-auto">
 		<table class="w-full text-sm">
@@ -880,7 +885,8 @@
 		</table>
 	</div>
 {:else}
-	<!-- CARDS — quiet cover tiles, no boxes -->
+	<!-- CARDS — quiet cover tiles, no boxes. Remote (Discogs) hits join the
+		     same grid with a dashed border so they read as "available, not owned" -->
 	<div class="mt-8 grid grid-cols-2 gap-x-5 gap-y-10 sm:grid-cols-3 lg:grid-cols-4">
 		{#each displayRecords as rec, i (rec.id)}
 			<div class="group" style="animation-delay: {Math.min(i * 30, 300)}ms">
@@ -900,7 +906,7 @@
 						{/if}
 					</div>
 					<!-- title → artist → year/genre → status: the badge gets its
-					     own line so it never competes with the album name. -->
+						     own line so it never competes with the album name. -->
 					<p class="mt-3.5 truncate font-display text-[17px] transition-colors group-hover:text-accent">
 						{rec.title}
 					</p>
@@ -921,102 +927,95 @@
 				</div>
 			</div>
 		{/each}
-	</div>
-{/if}
 
-<!-- Discogs matches — the supplementary half of the name lookup. Local results
-     come first (the grid above); this quieter ledger sits below them and only
-     appears while a lookup is in flight / has hits. -->
-{#if !localOnly && (remoteBusy || remoteHits.length > 0 || remoteError)}
-	<section class="mt-14 border-t border-hair pt-6" aria-label="Discogs matches">
-		<div class="mb-4 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-			<h2 class="text-[10.5px] font-semibold uppercase tracking-[.24em] text-faint">
-				{remoteBusy && remoteHits.length === 0
-					? `Discogs — looking for “${qInput}”…`
-					: `Also on Discogs${remoteQ ? ` — “${remoteQ}”` : ''}`}
-			</h2>
-			{#if !remoteBusy && remoteTotal > 0}
-				<span class="text-[11px] font-display italic text-faint">
-					{remoteHits.length} of {remoteTotal} shown
-				</span>
+		<!-- Remote (Discogs) hits — same grid, dashed border signals "not owned" -->
+		{#if remoteActive}
+			{#if displayRecords.length > 0}
+				<!-- thin inline divider so the two groups read as one flow -->
+				<div class="col-span-full mt-2 flex items-center gap-3">
+					<span class="text-[10px] font-semibold uppercase tracking-[.22em] text-faint">Also on Discogs</span>
+					{#if !remoteBusy && remoteTotal > 0}
+						<span class="text-[10px] font-display italic text-faint">{remoteHits.length} of {remoteTotal}</span>
+					{/if}
+				</div>
 			{/if}
-			{#if addedFlash}
-				<span class="text-[11px] font-display italic text-forest">{addedFlash}</span>
-			{/if}
-		</div>
 
-		{#if remoteError}
-			<p class="font-display text-[15px] italic text-rust">{remoteError}</p>
-		{:else if remoteBusy && remoteHits.length === 0}
-			<p class="py-2 font-display text-[15px] italic text-faint">Asking Discogs…</p>
-		{:else if remoteHits.length === 0}
-			<p class="py-2 font-display text-[15px] italic text-muted">
-				No matches on Discogs for “{remoteQ}”.
-			</p>
-		{:else}
-			<ul class="flex flex-col">
-				{#each remoteHits as hit (hit.id)}
-					{@const fmtLabel = hit.format?.filter((f) => f && !/^(album|mixed)$/i.test(f)).join(', ')}
-					{@const labelStr = [hit.label?.[0], hit.catno].filter(Boolean).join(' ')}
-					<li class="border-b border-hair">
-						<div class="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-4 py-3">
-							<span class="block h-12 w-12 sm:h-14 sm:w-14">
-								<CoverImage src={hit.thumb ?? null} alt="" />
-							</span>
-							<div class="min-w-0">
-								<a
-									href={discogsReleaseUrl(hit.id)}
-									{...DISCOGS_LINK_ATTRS}
-									title="Open on Discogs"
-									class="block truncate font-display text-[17px] transition-colors hover:text-accent"
-								>
-									{hit.title}
-								</a>
-								<div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px] text-muted">
-									{#if fmtLabel}<span
-											class="inline-flex items-center rounded bg-surface px-1.5 py-0.5 text-[11px] font-medium tracking-wide"
-											>{fmtLabel}</span
-										>{/if}
-									{#if hit.year}<span>{hit.year}</span>{/if}
-									{#if labelStr}<span class="text-faint">{labelStr}</span>{/if}
-									{#if hit.country}<span class="text-faint">{hit.country}</span>{/if}
-									{#if hit.community}
-										<span class="text-faint">{hit.community.have ?? 0} have / {hit.community.want ?? 0} want</span>
-									{/if}
-								</div>
-							</div>
-							<div class="flex shrink-0 items-center gap-2">
-								<Button type="button" variant="secondary" size="sm" onclick={() => void addRemote(hit, 'add')}>
-									+ Add
-								</Button>
-								<!-- heart = the wishlist: the common case at the shelf —
-								     you scan with the barcode, you *want* by name. -->
-								<button
-									type="button"
-									disabled={saving !== null}
-									onclick={() => void addRemote(hit, 'wish')}
-									title="Add to the wishlist"
-									aria-label={`Wish-list ${hit.title}`}
-									class="inline-flex h-8 w-8 items-center justify-center border border-edge bg-transparent text-ink transition-colors hover:border-accent hover:text-plum disabled:pointer-events-none disabled:opacity-50"
-								>
-									{#if saving?.id === hit.id && saving.kind === 'wish'}
-										<span class="text-[13px]">…</span>
-									{:else}
-										<svg viewBox="0 0 24 24" class="h-4 w-4" aria-hidden="true">
-											<path
-												fill="currentColor"
-												d="M12 21s-7.5-4.7-10-9.3C.4 8.6 2.3 5 5.7 5c2 0 3.4 1.1 4.3 2.6h4C14.9 6.1 16.3 5 18.3 5c3.4 0 5.3 3.6 3.7 6.7C19.5 16.3 12 21 12 21z"
-											/>
-										</svg>
-									{/if}
-								</button>
-							</div>
-						</div>
-					</li>
+			{#if remoteError}
+				<div class="col-span-full py-4">
+					<p class="font-display text-[15px] italic text-rust">{remoteError}</p>
+				</div>
+			{:else if remoteBusy && remoteHits.length === 0}
+				<!-- skeleton placeholders so the grid doesn't jump -->
+				{#each Array(4) as _, si (si)}
+					<div class="animate-pulse rounded border-2 border-dashed border-edge p-3">
+						<div class="aspect-square w-full rounded bg-surface"></div>
+						<div class="mt-3 h-3.5 w-3/4 rounded bg-surface"></div>
+						<div class="mt-1.5 h-3 w-1/2 rounded bg-surface"></div>
+					</div>
 				{/each}
-			</ul>
+			{:else if remoteHits.length === 0}
+				<div class="col-span-full py-4">
+					<p class="font-display text-[15px] italic text-muted">No matches on Discogs for "{remoteQ}".</p>
+				</div>
+			{:else}
+				{#each remoteHits as hit, ri (hit.id)}
+					{@const fmtLabel = hit.format?.filter((f) => f && !/^(album|mixed)$/i.test(f)).join(', ')}
+					<div
+						class="group relative rounded border-2 border-dashed border-edge bg-surface/40 p-3 transition-colors group-hover:border-accent"
+						style="animation-delay: {Math.min((displayRecords.length + ri) * 30, 300)}ms"
+					>
+						<a
+							href={discogsReleaseUrl(hit.id)}
+							target="_blank"
+							rel="noopener noreferrer"
+							class="block"
+							aria-label={`${hit.title} on Discogs`}
+						>
+							<div class="relative">
+								<CoverImage
+									src={hit.thumb ?? null}
+									class="aspect-square w-full rounded opacity-80 transition-opacity duration-300 group-hover:opacity-100"
+								/>
+							</div>
+							<p class="mt-3 truncate font-display text-[15px] transition-colors group-hover:text-accent">
+								{hit.title}
+							</p>
+							<p class="mt-0.5 truncate text-[12px] text-muted">
+								{[fmtLabel, hit.year].filter(Boolean).join(' · ') || '—'}
+							</p>
+						</a>
+						<div class="mt-2.5 flex items-center justify-between gap-2">
+							<Button type="button" variant="secondary" size="sm" onclick={() => void addRemote(hit, 'add')}>
+								+ Add
+							</Button>
+							<button
+								type="button"
+								disabled={saving !== null}
+								onclick={() => void addRemote(hit, 'wish')}
+								title="Add to the wishlist"
+								aria-label={`Wish-list ${hit.title}`}
+								class="inline-flex h-7 w-7 items-center justify-center border border-edge bg-transparent text-ink transition-colors hover:border-accent hover:text-plum disabled:pointer-events-none disabled:opacity-50"
+							>
+								{#if saving?.id === hit.id && saving.kind === 'wish'}
+									<span class="text-[12px]">…</span>
+								{:else}
+									<svg viewBox="0 0 24 24" class="h-3.5 w-3.5" aria-hidden="true">
+										<path
+											fill="currentColor"
+											d="M12 21s-7.5-4.7-10-9.3C.4 8.6 2.3 5 5.7 5c2 0 3.4 1.1 4.3 2.6h4C14.9 6.1 16.3 5 18.3 5c3.4 0 5.3 3.6 3.7 6.7C19.5 16.3 12 21 12 21z"
+										/>
+									</svg>
+								{/if}
+							</button>
+						</div>
+						{#if addedFlash}
+							<p class="mt-1.5 text-[10px] font-display italic text-forest">{addedFlash}</p>
+						{/if}
+					</div>
+				{/each}
+			{/if}
 		{/if}
-	</section>
+	</div>
 {/if}
 
 <!-- Acquire dialog (F5): opened by the "→ acquired" chip on any wanted row.
