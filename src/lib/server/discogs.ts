@@ -417,6 +417,86 @@ export async function getMarketStats(releaseId: number): Promise<MarketStats> {
 	};
 }
 
+/* ------------------------------------------------------------------ */
+/* Price Suggestions (condition-matched fair value)                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Discogs condition label → our short code mapping.
+ * The API returns full labels like "Very Good Plus (VG+)"; we store short codes.
+ */
+const DISCOGS_CONDITION_MAP: Record<string, string> = {
+	'Mint (M)': 'M',
+	'Near Mint (NM or M-)': 'NM',
+	'Very Good Plus (VG+)': 'VG+',
+	'Very Good (VG)': 'VG',
+	'Good Plus (G+)': 'G+',
+	'Good (G)': 'G',
+	'Fair (F)': 'F',
+	'Poor (P)': 'P'
+};
+
+/**
+ * Per-condition suggested prices for a release (Discogs' fair-value algorithm).
+ * Requires authentication. Returns a map of short condition code → price in cents.
+ * Empty object when no suggestions are available.
+ *
+ * Endpoint: GET /marketplace/price_suggestions/{release_id}
+ */
+export interface PriceSuggestions {
+	/** Condition short code (M, NM, VG+, VG, G+, G, F, P) → suggested price in USD cents. */
+	prices: Record<string, number>;
+	/** True when the endpoint returned an empty body (no data for this release). */
+	empty: boolean;
+}
+
+export async function getPriceSuggestions(releaseId: number): Promise<PriceSuggestions> {
+	const raw = await discogsFetch<Record<string, { currency?: string; value?: number }>>(
+		`/marketplace/price_suggestions/${releaseId}`
+	);
+	const prices: Record<string, number> = {};
+	for (const [label, entry] of Object.entries(raw)) {
+		const code = DISCOGS_CONDITION_MAP[label];
+		if (code && typeof entry.value === 'number' && Number.isFinite(entry.value)) {
+			prices[code] = Math.round(entry.value * 100);
+		}
+	}
+	return { prices, empty: Object.keys(prices).length === 0 };
+}
+
+/**
+ * Resolve the best price for a record given its condition and available data.
+ *
+ * Priority:
+ * 1. Condition-matched suggestion (if suggestions exist and cover this condition)
+ * 2. Median of all available suggestion prices (if suggestions exist but not for this condition)
+ * 3. Lowest ask from market stats (fallback when no suggestions available)
+ *
+ * Returns null when no price data is available at all.
+ */
+export function resolvePrice(
+	condition: string | null,
+	suggestions: Record<string, number> | null,
+	lowestAskCents: number | null
+): number | null {
+	// 1. Condition-matched suggestion
+	if (suggestions && condition) {
+		const exact = suggestions[condition];
+		if (exact !== undefined) return exact;
+	}
+
+	// 2. Median of all suggestion prices (averages across conditions)
+	if (suggestions && Object.keys(suggestions).length > 0) {
+		const values = Object.values(suggestions).sort((a, b) => a - b);
+		const mid = Math.floor(values.length / 2);
+		const median = values.length % 2 === 1 ? values[mid] : Math.round((values[mid - 1] + values[mid]) / 2);
+		return median;
+	}
+
+	// 3. Fallback: lowest asking price
+	return lowestAskCents;
+}
+
 /** True when consumer credentials are configured in .env. */
 export function isConfigured(): boolean {
 	return Boolean(env.DISCOGS_CONSUMER_KEY && env.DISCOGS_CONSUMER_SECRET);

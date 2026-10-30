@@ -5,7 +5,14 @@
  */
 import { error, fail, redirect } from '@sveltejs/kit';
 import { searchReleases, getRelease, toSeed, DiscogsError } from '$lib/server/discogs';
-import { findByBarcode, findByDiscogsId, addSpecificCopy, acquireRecord, parseRecordForm } from '$lib/server/records';
+import {
+	findByBarcode,
+	findByDiscogsId,
+	addSpecificCopy,
+	acquireRecord,
+	parseRecordForm,
+	distinctValues
+} from '$lib/server/records';
 import { importRecord } from '$lib/server/importer';
 import type { PageServerLoad, Actions } from './$types';
 import type { DiscogsSeed } from '$lib/types';
@@ -24,6 +31,24 @@ export const load: PageServerLoad = async ({ params }) => {
 	try {
 		const res = await searchReleases({ barcode, perPage: 25 });
 		candidates = res.results;
+		// Always supplement with a text search on the top candidate's title —
+		// same enrichment as /api/import, so initial identify and re-identify
+		// show an identical candidate list.
+		if (candidates.length > 0) {
+			const top = candidates[0];
+			const q = [top.title, top.label?.[0]].filter(Boolean).join(' ');
+			if (q) {
+				try {
+					const extra = await searchReleases({ q, perPage: 25 });
+					const seen = new Set(candidates.map((c) => c.id));
+					for (const c of extra.results) {
+						if (!seen.has(c.id)) candidates.push(c);
+					}
+				} catch {
+					// Non-fatal: barcode results alone are fine.
+				}
+			}
+		}
 		if (candidates.length === 1) {
 			seed = toSeed(await getRelease(candidates[0].id));
 		}
@@ -31,7 +56,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		lookupError = e instanceof DiscogsError ? e.message : 'Discogs lookup failed.';
 	}
 
-	return { barcode, candidates, seed, existing, lookupError };
+	return { barcode, candidates, seed, existing, lookupError, sources: distinctValues('source') };
 };
 
 export const actions: Actions = {

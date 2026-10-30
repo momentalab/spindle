@@ -397,6 +397,14 @@ const migrations: Migration[] = [
 			});
 			backfill();
 		}
+	},
+	{
+		version: 10,
+		description:
+			'market_prices.condition_media: store the record media condition at snapshot time so prices can be displayed with condition context (Discogs aggregate stats span all conditions)',
+		up(db) {
+			db.exec(`ALTER TABLE market_prices ADD COLUMN condition_media TEXT`);
+		}
 	}
 ];
 

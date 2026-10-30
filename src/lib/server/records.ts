@@ -224,10 +224,13 @@ export function createRecord(input: NewRecordInput): RecordRow {
 	const genres = input.genres.map((g) => g.trim()).filter(Boolean);
 	const labels = input.labels.filter((l) => l.name.trim() !== '');
 	// Artist lead-word normalization ("Beatles, The" -> "The Beatles") is applied
-	// here — the single create chokepoint — when the settings toggle is on, so
-	// every import path (barcode, manual, search-bar add, restore-free re-save)
-	// stores the same canonical form.
-	const artist = isLeadWordNormalizationOn() ? normalizeLeadWord(input.artist) : input.artist;
+	// unconditionally on create: Discogs' artists_sort field uses the trailing form
+	// ("Strokes, The") as a sort key, and storing it verbatim makes the collection
+	// look broken. Every import path (barcode, manual, search-bar add) routes
+	// through here, so canonicalizing at birth is the single fix.
+	// The settings toggle (normalize_artist_leadword) gates only the *edit* path
+	// (updateRecord), where a user may deliberately type the trailing form.
+	const artist = normalizeLeadWord(input.artist);
 	// Status invariants are applied at write time, not in SQL. Entering "wanted"
 	// stamps the wish date and forces acquired_at NULL (a wanted record can't be
 	// both wanted and acquired); entering "sold" stamps the sale date.
@@ -653,6 +656,45 @@ export function playCounts(recordIds?: number[]): Record<number, number> {
 		}[];
 	}
 	return Object.fromEntries(rows.map((r) => [r.record_id, r.c]));
+}
+
+/* ------------------------------------------------------------------ */
+/* Track durations — minutes played                                    */
+/* ------------------------------------------------------------------ */
+
+/** Parse a 'M:SS' or 'MM:SS' duration string to seconds (0 when unparseable). */
+export function durationToSeconds(duration: string | null): number {
+	if (!duration) return 0;
+	const m = /^(\d+):(\d{1,2})$/.exec(duration.trim());
+	if (!m) return 0;
+	return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+
+/** Total track duration (seconds) for one record. 0 when no tracks/durations. */
+export function trackDurationSeconds(recordId: number): number {
+	const rows = getDb().prepare('SELECT duration FROM record_tracks WHERE record_id = ?').all(recordId) as {
+		duration: string | null;
+	}[];
+	return rows.reduce((sum, r) => sum + durationToSeconds(r.duration), 0);
+}
+
+/**
+ * Total track durations (seconds) for many records in one pass
+ * (record_id → seconds). Records with no tracks/durations are absent —
+ * callers treat a missing key as 0. Same batch pattern as playCounts().
+ */
+export function trackDurationsFor(recordIds: number[]): Record<number, number> {
+	if (recordIds.length === 0) return {};
+	const db = getDb();
+	const placeholders = recordIds.map(() => '?').join(',');
+	const rows = db
+		.prepare(`SELECT record_id, duration FROM record_tracks WHERE record_id IN (${placeholders})`)
+		.all(...recordIds) as { record_id: number; duration: string | null }[];
+	const out: Record<number, number> = {};
+	for (const r of rows) {
+		out[r.record_id] = (out[r.record_id] ?? 0) + durationToSeconds(r.duration);
+	}
+	return out;
 }
 
 /** Safely delete a media file by its (relative, non-traversal) filename. */

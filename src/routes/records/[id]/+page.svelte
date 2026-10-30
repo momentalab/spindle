@@ -650,7 +650,17 @@
 	const meta = $derived(
 		(
 			[
-				['Plays', playCount > 0 ? `${playCount} · spun ${fmtPlayDate(lastPlayedAt)}` : '—'],
+				[
+					'Plays',
+					playCount > 0
+						? [
+								`${playCount} · spun ${fmtPlayDate(lastPlayedAt)}`,
+								data.minutes_played > 0 ? `≈ ${data.minutes_played} min` : null
+							]
+								.filter(Boolean)
+								.join(' · ')
+						: '—'
+				],
 				['Year', data.record.year ?? ''],
 				['Genre', [data.record.genres.join(', '), joinStyles(data.record.styles)].filter(Boolean).join(' — ')],
 				['Label', joinLabels(data.record.labels)],
@@ -929,6 +939,7 @@
 			{#if mk.latest}
 				<p class="font-display text-[13px] italic text-faint">
 					last observed {fmtPlayDate(mk.latest.at)}
+					{#if mk.latest.condition_media}· {mk.latest.condition_media}{/if}
 					{#if mk.latest.num_for_sale !== null}· {mk.latest.num_for_sale} for sale{/if}
 				</p>
 			{/if}
